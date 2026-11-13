@@ -158,3 +158,49 @@ test('grilla de la Everest V4: braille regular sobre el paso medido y puntos aju
   const mv = G.medidasDePerfil(Object.assign({}, perfil, { carga: { orientacion: 'vertical' } }), 297, 210);
   assert.equal(mv.entrePuntosX, 2.1);
 });
+
+const Bo = require('../web/js/bordes.js');
+
+/** Mapa sintético: mitad izquierda rojo, derecha verde (mismo brillo aprox.), y una «letra» negra chica. */
+function mapaSintetico(W, H) {
+  const d = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    const izq = x < W / 2;
+    d[i] = izq ? 200 : 110; d[i + 1] = izq ? 90 : 140; d[i + 2] = izq ? 90 : 90; d[i + 3] = 255;
+    // «letra» de 6 × 8 px en la región izquierda
+    if (x >= 10 && x < 16 && y >= 10 && y < 18) { d[i] = d[i + 1] = d[i + 2] = 0; }
+  }
+  return d;
+}
+
+test('bordes de mapa: detecta el límite entre colores de igual brillo e ignora la letra', () => {
+  const W = 120, H = 80;  // a 4 px/mm = 30 × 20 mm
+  const r = Bo.detectar(mapaSintetico(W, H), W, H, {
+    modo: 'bordes', umbralBorde: 20, suavizado: 1, pxPorMm: 4, detalleMinMm: 4, paso: 2, quitarSueltos: true
+  });
+  assert.ok(r.nodos.length >= 9, 'hay una línea de puntos');
+  // Todos los puntos están sobre el límite (x = 15 mm -> columna 7 u 8 con paso 2).
+  for (const [c] of r.nodos) assert.ok(c >= 7 && c <= 8, 'columna ' + c);
+  // La línea recorre casi todo el alto (20 mm -> filas 0..10).
+  const filas = new Set(r.nodos.map(n => n[1]));
+  assert.ok(filas.size >= 9);
+  assert.ok(r.quitados >= 1, 'la letra se descartó');
+});
+
+test('bordes de mapa: sin «ignorar detalles», la letra aparece', () => {
+  const W = 120, H = 80;
+  const r = Bo.detectar(mapaSintetico(W, H), W, H, {
+    modo: 'bordes', umbralBorde: 20, suavizado: 1, pxPorMm: 4, detalleMinMm: 0, paso: 2, quitarSueltos: false
+  });
+  assert.ok(r.nodos.some(([c]) => c <= 5), 'hay puntos de la letra a la izquierda');
+});
+
+test('líneas oscuras: una línea gruesa queda de un punto de ancho', () => {
+  const W = 100, H = 60, d = new Uint8ClampedArray(W * H * 4).fill(255);
+  for (let y = 28; y < 34; y++) for (let x = 5; x < 95; x++) { const i = (y * W + x) * 4; d[i] = d[i + 1] = d[i + 2] = 0; }
+  const r = Bo.detectar(d, W, H, { modo: 'lineas', umbral: 128, pxPorMm: 4, detalleMinMm: 2, paso: 2, quitarSueltos: true });
+  const filas = new Set(r.nodos.map(n => n[1]));
+  assert.ok(filas.size <= 2, 'una sola fila de puntos (o dos por redondeo): ' + [...filas]);
+  assert.ok(r.nodos.length >= 10);
+});

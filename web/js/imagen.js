@@ -11,7 +11,37 @@
    * Convierte la imagen en puntos. Muestrea la imagen en una grilla de `paso` mm.
    * Devuelve [[x, y], ...] en mm de la página.
    */
+  /** Modos «bordes» y «lineas»: detección de bordes a buena resolución (ver bordes.js). */
+  function convertirBordes(img, op) {
+    const ancho = op.ancho;
+    const alto = ancho * img.naturalHeight / img.naturalWidth;
+    // Resolución de trabajo: hasta ~1400 px de lado, entre 2 y 8 px por mm.
+    const pxPorMm = Math.max(2, Math.min(8, 1400 / Math.max(ancho, alto)));
+    const W = Math.max(8, Math.round(ancho * pxPorMm));
+    const H = Math.max(8, Math.round(alto * pxPorMm));
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, W, H);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, 0, 0, W, H);
+    const datos = g.getImageData(0, 0, W, H).data;
+    const res = window.Bordes.detectar(datos, W, H, {
+      modo: op.modo, umbral: op.umbral, invertir: op.invertir,
+      // Sensibilidad 0..100 -> diferencia de color 120..6 (más sensible = umbral más bajo).
+      umbralBorde: 120 - op.sens * 1.14,
+      suavizado: op.suavizado, pxPorMm: W / ancho, detalleMinMm: op.detalle,
+      paso: op.paso, quitarSueltos: op.sueltos, quitarTexto: op.texto, textoMaxMm: 30
+    });
+    const r = v => Math.round(v * 1000) / 1000;
+    const puntos = res.nodos.map(([col, fila]) => [r(op.x + col * op.paso), r(op.y + fila * op.paso)]);
+    return { puntos, alto, quitados: res.quitados };
+  }
+
   function convertir(img, op) {
+    if (op.modo === 'bordes' || op.modo === 'lineas') return convertirBordes(img, op);
     const ancho = op.ancho, paso = op.paso;
     const alto = ancho * img.naturalHeight / img.naturalWidth;
     const cols = Math.max(1, Math.floor(ancho / paso) + 1);
@@ -57,8 +87,19 @@
       ancho: Math.max(5, Number($('img-ancho').value) || 60),
       x: Number($('img-x').value) || 0,
       y: Number($('img-y').value) || 0,
-      paso: Math.max(1, Number($('img-paso').value) || 2)
+      paso: Math.max(1, Number($('img-paso').value) || 2),
+      sens: Number($('img-sens').value),
+      suavizado: Number($('img-suavizado').value),
+      detalle: Math.max(0, Number($('img-detalle').value) || 0),
+      sueltos: $('img-sueltos').checked,
+      texto: $('img-texto').checked
     };
+  }
+
+  /** Muestra las opciones de bordes solo en los modos que las usan. */
+  function mostrarOpciones() {
+    const m = $('img-modo').value;
+    $('img-opciones-mapa').hidden = !(m === 'bordes' || m === 'lineas');
   }
 
   function actualizar() {
@@ -86,14 +127,39 @@
     const pag = App.pagina();
     const fuera = op.x + op.ancho > pag.ancho || op.y + res.alto > pag.alto;
     $('img-estado').textContent = `${puntos.length} puntos, ${op.ancho.toFixed(0)} × ${res.alto.toFixed(0)} mm.` +
+      (res.quitados ? ` Se ignoraron ${res.quitados} detalles chicos (letras, manchas).` : '') +
       (fuera ? ' Atención: la imagen se sale de la hoja.' : '');
     $('btn-img-agregar').disabled = puntos.length === 0;
   }
 
   $('btn-imagen').addEventListener('click', () => {
     $('img-paso').value = $('paso-dibujo').value;
+    mostrarOpciones();
     actualizar();
     $('dlg-imagen').showModal();
+  });
+
+  // Usar el fondo de la página del PDF (por ejemplo, un mapa) en su tamaño y lugar reales.
+  $('btn-img-fondo').addEventListener('click', () => {
+    const p = App.pagina();
+    if (!App.pdf || !App.pdf.id || p.pdfPagina == null) {
+      $('img-estado').textContent = 'Esta página no tiene un PDF de fondo. Cargá un PDF o elegí una imagen.';
+      return;
+    }
+    $('img-estado').textContent = 'Cargando el fondo de la página…';
+    const img = new Image();
+    img.onload = () => {
+      imagen = img;
+      imagen.nombre = 'fondo de la página ' + (p.pdfPagina + 1);
+      $('img-ancho').value = p.ancho;
+      $('img-x').value = 0;
+      $('img-y').value = 0;
+      if ($('img-modo').value !== 'lineas') $('img-modo').value = 'bordes';
+      mostrarOpciones();
+      actualizar();
+    };
+    img.onerror = () => { $('img-estado').textContent = 'No se pudo cargar el fondo de la página.'; };
+    img.src = `/api/pdf/${App.pdf.id}/pagina/${p.pdfPagina}.png?dpi=200`;
   });
   $('img-archivo').addEventListener('change', () => {
     const f = $('img-archivo').files[0];
@@ -104,9 +170,17 @@
     img.onerror = () => { $('img-estado').textContent = 'No se pudo leer la imagen.'; };
     img.src = url;
   });
-  ['img-modo', 'img-umbral', 'img-invertir', 'img-ancho', 'img-x', 'img-y', 'img-paso'].forEach(id => {
-    $(id).addEventListener('input', actualizar);
-    $(id).addEventListener('change', actualizar);
+  // Recalcular con una pequeña espera: la detección de bordes tarda un poco en mapas grandes.
+  let espera = null;
+  function actualizarPronto() {
+    clearTimeout(espera);
+    espera = setTimeout(actualizar, 150);
+  }
+  $('img-modo').addEventListener('change', mostrarOpciones);
+  ['img-modo', 'img-umbral', 'img-invertir', 'img-ancho', 'img-x', 'img-y', 'img-paso',
+   'img-sens', 'img-suavizado', 'img-detalle', 'img-sueltos', 'img-texto'].forEach(id => {
+    $(id).addEventListener('input', actualizarPronto);
+    $(id).addEventListener('change', actualizarPronto);
   });
   $('btn-img-agregar').addEventListener('click', () => {
     if (!puntos.length) return;

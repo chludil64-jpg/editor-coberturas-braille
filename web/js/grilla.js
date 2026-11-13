@@ -7,6 +7,8 @@
 
   const BrailleES = (typeof module !== 'undefined' && module.exports)
     ? require('./braille_es.js') : raiz.BrailleES;
+  const Objetos = (typeof module !== 'undefined' && module.exports)
+    ? require('./objetos.js') : raiz.Objetos;
 
   const MEDIDAS = { entrePuntos: 2.5, entreCeldas: 6.0, entreRenglones: 10.0 };
 
@@ -298,12 +300,24 @@
     const puntos = [];
     const rects = [];
     for (const c of pagina.cuadros || []) {
+      if (c.oculto || pagina.capasVisibles && pagina.capasVisibles[c.capa || 'rotulos'] === false) continue;
       const calc = calcularCuadro(c, op.medidas);
       cuadros.set(c.id, calc);
       rects.push(rectCuadro(c, calc));
       for (const p of calc.puntos) puntos.push({ x: p[0], y: p[1], origen: 'braille', id: c.id });
     }
     let quitados = 0;
+    const visibles = (pagina.objetos || []).filter(o => !o.oculto &&
+      !(pagina.capasVisibles && pagina.capasVisibles[o.capa] === false))
+      .slice().sort((a,b) => (a.orden || 0) - (b.orden || 0));
+    for (const o of visibles) {
+      for (const p of Objetos.objetoAPuntos(o, op.medidas)) {
+        if (op.separacionDibujo > 0 && rects.some(r => distanciaARect(p[0],p[1],r) < op.separacionDibujo)) {
+          quitados++; continue;
+        }
+        puntos.push({ x:p[0], y:p[1], origen:'objeto', id:o.id });
+      }
+    }
     for (const t of pagina.trazos || []) {
       for (const p of t.puntos) {
         if (op.separacionDibujo > 0 &&
@@ -400,6 +414,37 @@
     if (calculo.quitados) {
       lista.push({ nivel: 'info', mensaje: `Se omitieron ${calculo.quitados} puntos de dibujo pegados al braille (separación automática).` });
     }
+    const objetos = (pagina.objetos || []).filter(o => !o.oculto && !(pagina.capasVisibles && pagina.capasVisibles[o.capa] === false));
+    const medidas = medidasDePerfil(perfil, pagina.ancho, pagina.alto);
+    const paso = Math.min(...Objetos.pasos(medidas));
+    const lineas = new Set(), rellenos = new Set();
+    for (const o of objetos) {
+      if (o.tipo !== 'puntos') { if (o.linea && o.linea !== 'ninguna') lineas.add(o.linea); if (o.relleno && o.relleno !== 'ninguno') rellenos.add(o.relleno); }
+      const b = Objetos.caja(o);
+      const cerrado = ['rectangulo','elipse','poligono'].includes(o.tipo) || o.cerrado;
+      if (cerrado && (b.ancho < 6 || b.alto < 6)) lista.push({ nivel:'aviso', id:o.id, mensaje:`${o.nombre}: forma cerrada menor a 6 mm.` });
+      if (b.x0 < 0 || b.y0 < 0 || b.x1 > W || b.y1 > H) lista.push({ nivel:'error', id:o.id, mensaje:`${o.nombre}: queda fuera de la hoja.` });
+      else if (b.x0 < mg.izquierdo || b.y0 < mg.superior || b.x1 > W-mg.derecho || b.y1 > H-mg.inferior)
+        lista.push({ nivel:'aviso', id:o.id, mensaje:`${o.nombre}: invade la zona no imprimible.` });
+    }
+    if (lineas.size > 5) lista.push({ nivel:'aviso', mensaje:`La página usa ${lineas.size} tipos de línea; conviene usar hasta 5.` });
+    if (rellenos.size > 5) lista.push({ nivel:'aviso', mensaje:`La página usa ${rellenos.size} rellenos; conviene usar hasta 5.` });
+    const grilla=medidas.grilla;
+    const ptsObjetos=objetos.flatMap(o=>Objetos.objetoAPuntos(o,medidas).map(q=>{
+      const [x,y]=ajustarAGrilla(q[0],q[1],grilla);return {x,y,id:o.id};
+    }));
+    const ptsBraille=(pagina.cuadros||[]).filter(c=>!c.oculto&&!(pagina.capasVisibles&&pagina.capasVisibles[c.capa||'rotulos']===false)).flatMap(c=>calcularCuadro(c,medidas).puntos.map(q=>{
+      const [x,y]=ajustarAGrilla(q[0],q[1],grilla);return {x,y,id:c.id};
+    }));
+    let cercanos = new Set(), brailleCerca = new Set();
+    const idxObjetos=indice(ptsObjetos.map(p=>[p.x,p.y]),Math.max(2*paso,3));
+    ptsObjetos.forEach((a,i)=>{for(const j of idxObjetos.vecinos(a.x,a.y)) {if(j<=i)continue;const b=ptsObjetos[j];
+      if(a.id!==b.id&&Math.hypot(a.x-b.x,a.y-b.y)<2*paso-1e-6){cercanos.add(a.id);cercanos.add(b.id);}}});
+    for (const p of ptsBraille) for (const j of idxObjetos.vecinos(p.x,p.y)) {
+      const q=ptsObjetos[j];if(Math.hypot(p.x-q.x,p.y-q.y)<3-1e-6)brailleCerca.add(p.id);
+    }
+    for (const id of cercanos) lista.push({ nivel:'aviso', id, mensaje:`Puntos de objetos distintos a menos de dos pasos de grilla.` });
+    for (const id of brailleCerca) lista.push({ nivel:'aviso', id, mensaje:`Braille a menos de 3 mm de un objeto.` });
     return lista;
   }
 

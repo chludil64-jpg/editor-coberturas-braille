@@ -14,6 +14,7 @@
   const fondos = new Map(); // clave -> Image
   let arrastre = null;      // estado del gesto en curso
   let vistaPrevia = null;   // puntos de la forma que se está dibujando
+  let verticesPendientes = null;
 
   function escala() { return PX_POR_MM * App.ui.zoom; }
   function aPx(mm) { return MARGEN + mm * escala(); }
@@ -118,6 +119,7 @@
     }
     // Cuadros
     for (const c of p.cuadros) {
+      if(c.oculto||p.capasVisibles&&p.capasVisibles[c.capa||'rotulos']===false)continue;
       const cc = calc.cuadros.get(c.id);
       if (!cc) continue;
       if (App.ui.verTinta && c.tinta) {
@@ -141,12 +143,12 @@
     ctx.setLineDash([]);
     // Puntos
     const radio = Math.max(1.2, DIAM_PUNTO / 2 * e);
-    const lotes = { braille: [], dibujo: [], elegido: [] };
+    const lotes = { braille: [], dibujo: [], objeto: [], elegido: [] };
     for (const pt of calc.puntos) {
-      const esSel = sel && pt.id === sel.id;
-      (esSel && sel.tipo === 'trazo' ? lotes.elegido : lotes[pt.origen]).push(pt);
+      const esSel = App.ui.seleccion && App.ui.seleccion.includes(pt.id);
+      (esSel ? lotes.elegido : lotes[pt.origen]).push(pt);
     }
-    const colores = { braille: '#000000', dibujo: '#0b3d91', elegido: '#d35400' };
+    const colores = { braille: '#000000', dibujo: '#0b3d91', objeto: '#0b3d91', elegido: '#a32600' };
     for (const k of Object.keys(lotes)) {
       ctx.fillStyle = colores[k];
       ctx.beginPath();
@@ -169,6 +171,16 @@
       }
       ctx.fill();
     }
+    for (const id of App.ui.seleccion || []) {
+      const o=(p.objetos||[]).find(q=>q.id===id);if(!o)continue;
+      const b=Objetos.caja(o);ctx.strokeStyle='#a32600';ctx.lineWidth=2;ctx.setLineDash([5,3]);
+      ctx.strokeRect(aPx(b.x0-1),aPx(b.y0-1),(b.ancho+2)*e,(b.alto+2)*e);ctx.setLineDash([]);
+      for(const [x,y] of [[b.x0,b.y0],[b.x1,b.y0],[b.x0,b.y1],[b.x1,b.y1],[b.x1+5,b.y0-5]]) {
+        ctx.fillStyle='#fff';ctx.fillRect(aPx(x)-4,aPx(y)-4,8,8);ctx.strokeRect(aPx(x)-4,aPx(y)-4,8,8);
+      }
+    }
+    if(arrastre&&arrastre.tipo==='marco') {const a=arrastre.inicio,b=arrastre.ultimo;
+      ctx.strokeStyle='#0047b3';ctx.setLineDash([4,2]);ctx.strokeRect(aPx(Math.min(a[0],b[0])),aPx(Math.min(a[1],b[1])),Math.abs(a[0]-b[0])*e,Math.abs(a[1]-b[1])*e);ctx.setLineDash([]);}
     if (arrastre && arrastre.tipo === 'goma' && arrastre.ultimo) {
       ctx.strokeStyle = '#c0392b';
       ctx.lineWidth = 1.5;
@@ -196,6 +208,7 @@
     const p = App.pagina();
     const calc = App.calculo();
     const dentro = c => {
+      if(c.oculto||p.capasVisibles&&p.capasVisibles[c.capa||'rotulos']===false)return false;
       const cc = calc.cuadros.get(c.id);
       if (!cc) return false;
       const r = Grilla.rectCuadro(c, cc);
@@ -211,6 +224,11 @@
       if (dentro(p.cuadros[i])) return { tipo: 'cuadro', id: p.cuadros[i].id };
     }
     const tol = Math.max(1.5, 6 / escala());
+    for(const o of (p.objetos||[]).slice().sort((a,b)=>(b.orden||0)-(a.orden||0))) {
+      if(o.oculto||p.capasVisibles&&p.capasVisibles[o.capa]===false)continue;
+      const b=Objetos.caja(o);
+      if(mm[0]>=b.x0-tol&&mm[0]<=b.x1+tol&&mm[1]>=b.y0-tol&&mm[1]<=b.y1+tol) return {tipo:'objeto',id:o.id};
+    }
     for (let i = p.trazos.length - 1; i >= 0; i--) {
       const t = p.trazos[i];
       if (t.puntos.some(q => Math.hypot(q[0] - mm[0], q[1] - mm[1]) <= tol)) return { tipo: 'trazo', id: t.id };
@@ -230,12 +248,12 @@
     const p = App.pagina();
     const r = radioGoma();
     let quitados = 0;
-    for (const t of p.trazos) {
+    for (const t of p.objetos.filter(o=>o.tipo==='puntos'&&!o.bloqueado)) {
       const antes = t.puntos.length;
       t.puntos = t.puntos.filter(q => Math.hypot(q[0] - mm[0], q[1] - mm[1]) > r);
       quitados += antes - t.puntos.length;
     }
-    p.trazos = p.trazos.filter(t => t.puntos.length > 0);
+    p.objetos = p.objetos.filter(t => t.tipo!=='puntos'||t.puntos.length > 0);
     return quitados;
   }
 
@@ -247,15 +265,28 @@
     lienzo.setPointerCapture(ev.pointerId);
     if (h === 'seleccionar') {
       const t = tocar(mm);
-      App.seleccionar(t && t.tipo, t && t.id);
-      if (t) arrastre = { tipo: 'mover', inicio: mm, ultimo: mm, registrado: false };
-      else App.anunciar('Nada elegido.');
+      if(t&&t.tipo==='objeto') App.EditorObjetos.seleccionar(t.id,ev.shiftKey);
+      else if(t) App.seleccionar(t.tipo,t.id);
+      else if(!ev.shiftKey) App.EditorObjetos.seleccionar(null,false);
+      if (t) {
+        const o=t.tipo==='objeto'&&App.EditorObjetos.buscar(t.id),b=o&&Objetos.caja(o);
+        if((o&&o.bloqueado)||(t.tipo==='cuadro'&&App.buscarSel()?.bloqueado)){App.anunciar('Elemento bloqueado.');return;}
+        const cerca=(x,y)=>Math.hypot(mm[0]-x,mm[1]-y)<Math.max(2,7/escala());
+        if(o&&!o.bloqueado&&b&&cerca(b.x1+5,b.y0-5)) arrastre={tipo:'rotar',id:o.id,inicio:mm,registrado:false};
+        else if(o&&!o.bloqueado&&b&&cerca(b.x1,b.y1)) arrastre={tipo:'escalar',id:o.id,inicio:mm,base:b,original:JSON.parse(JSON.stringify(o)),registrado:false};
+        else arrastre = { tipo: 'mover', inicio: mm, ultimo: mm, registrado: false };
+      } else arrastre={tipo:'marco',inicio:mm,ultimo:mm};
       return;
     }
     if (h === 'punto') {
-      App.registrar();
-      App.Dibujo.agregarTrazo('punto', [mm], 'Punto');
+      App.EditorObjetos.crear('punto',{x:mm[0],y:mm[1]});
       return;
+    }
+    if(h==='polilinea'||h==='poligono') {
+      if(!verticesPendientes)verticesPendientes={tipo:h,puntos:[]};
+      const ult=verticesPendientes.puntos.at(-1);
+      if(!ult||Math.hypot(ult[0]-mm[0],ult[1]-mm[1])>0.5)verticesPendientes.puntos.push(mm);
+      vistaPrevia=verticesPendientes.puntos.slice();dibujar();return;
     }
     if (h === 'goma') {
       App.registrar();
@@ -284,6 +315,15 @@
       if (!arrastre.registrado) { App.registrar(); arrastre.registrado = true; }
       mover(dx, dy, true);
       arrastre.ultimo = mm;
+    } else if(arrastre.tipo==='marco') { arrastre.ultimo=mm;dibujar();
+    } else if(arrastre.tipo==='escalar') {
+      if(!arrastre.registrado){App.registrar();arrastre.registrado=true;}
+      const b=arrastre.base,sx=b.ancho?Math.max(0.01,(mm[0]-b.x0)/b.ancho):1,sy=b.alto?Math.max(0.01,(mm[1]-b.y0)/b.alto):1;
+      App.EditorObjetos.reemplazar(arrastre.id,Objetos.escalar(arrastre.original,sx,sy,[b.x0,b.y0]));App.cambio('arrastre');
+    } else if(arrastre.tipo==='rotar') {
+      if(!arrastre.registrado){App.registrar();arrastre.registrado=true;}
+      const o=App.EditorObjetos.buscar(arrastre.id),c=Objetos.centro(o),ang=Math.atan2(mm[1]-c[1],mm[0]-c[0])*180/Math.PI;
+      const n=Object.assign({},o,{rotacion:Math.round(ang)});App.EditorObjetos.reemplazar(o.id,n);App.cambio('arrastre');
     } else if (arrastre.tipo === 'goma') {
       arrastre.ultimo = mm;
       arrastre.quitados += borrarConGoma(mm);
@@ -305,11 +345,10 @@
     arrastre = null;
     const mm = ev ? posicion(ev) : null;
     if (a.tipo === 'forma') {
-      const pts = puntosForma(a.forma, a.inicio, mm || a.inicio);
       vistaPrevia = null;
-      App.registrar();
-      const nombres = { linea: 'Línea', rectangulo: 'Rectángulo', elipse: 'Elipse' };
-      App.Dibujo.agregarTrazo(a.forma, pts, nombres[a.forma]);
+      const b=mm||a.inicio,datos=a.forma==='linea'?{vertices:[a.inicio,b]}:
+        {x:Math.min(a.inicio[0],b[0]),y:Math.min(a.inicio[1],b[1]),ancho:Math.abs(b[0]-a.inicio[0]),alto:Math.abs(b[1]-a.inicio[1])};
+      App.EditorObjetos.crear(a.forma,datos);
     } else if (a.tipo === 'mano') {
       const pts = Grilla.muestrearTrayecto(a.camino, pasoDibujo(), false);
       vistaPrevia = null;
@@ -322,6 +361,11 @@
       const el = App.buscarSel();
       if (el && App.ui.sel.tipo === 'cuadro') App.anunciar(`Cuadro en x ${el.x.toFixed(1)}, y ${el.y.toFixed(1)} mm.`);
       App.cambio('mover');
+    } else if(a.tipo==='marco') {
+      const b=a.ultimo||a.inicio,x0=Math.min(a.inicio[0],b[0]),x1=Math.max(a.inicio[0],b[0]),y0=Math.min(a.inicio[1],b[1]),y1=Math.max(a.inicio[1],b[1]);
+      const ids=App.pagina().objetos.filter(o=>{const r=Objetos.caja(o);return r.x0>=x0&&r.x1<=x1&&r.y0>=y0&&r.y1<=y1;}).map(o=>o.id);
+      App.ui.seleccion=ids;App.ui.sel=ids.length?{tipo:'objeto',id:ids.at(-1)}:null;App.cambio('seleccion');
+    } else if((a.tipo==='escalar'||a.tipo==='rotar')&&a.registrado){App.cambio('objetos');App.anunciar('Forma transformada.');
     }
   }
   lienzo.addEventListener('pointerup', terminar);
@@ -333,9 +377,12 @@
     if (!el) return;
     const r = v => Math.round(v * 1000) / 1000;
     if (App.ui.sel.tipo === 'cuadro') {
+      if(el.bloqueado)return;
       el.x = r(el.x + dx);
       el.y = r(el.y + dy);
       el.alineacion = 'libre';
+    } else if(App.ui.sel.tipo==='objeto') {
+      for(const id of App.ui.seleccion||[el.id]) {const o=App.EditorObjetos.buscar(id);if(o&&!o.bloqueado)App.EditorObjetos.reemplazar(id,Objetos.mover(o,dx,dy));}
     } else {
       el.puntos = el.puntos.map(q => [r(q[0] + dx), r(q[1] + dy)]);
     }
@@ -344,7 +391,7 @@
 
   function elementosOrdenados() {
     const p = App.pagina();
-    return p.cuadros.map(c => ({ tipo: 'cuadro', id: c.id })).concat(p.trazos.map(t => ({ tipo: 'trazo', id: t.id })));
+    return p.cuadros.map(c => ({ tipo: 'cuadro', id: c.id })).concat((p.objetos||[]).map(t => ({ tipo: 'objeto', id: t.id })));
   }
 
   function describirSel() {
@@ -353,16 +400,17 @@
     if (App.ui.sel.tipo === 'cuadro') {
       return `Cuadro «${el.texto.replace(/\n/g, ' / ')}», x ${el.x.toFixed(1)}, y ${el.y.toFixed(1)} mm.`;
     }
-    return `Trazo «${el.nombre}», ${el.puntos.length} puntos.`;
+    return `Objeto «${el.nombre}», tipo ${el.tipo}.`;
   }
 
   lienzo.addEventListener('keydown', ev => {
     const flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if (flechas[ev.key]) {
       if (!App.buscarSel()) { App.anunciar('Elegí un elemento con Av Pág o desde la lista.'); ev.preventDefault(); return; }
-      const paso = ev.shiftKey ? 5 : App.ui.pasoTeclado;
+      const paso = ev.shiftKey ? 5 : 1;
+      const medidas=Objetos.pasos(App.medidas());
       App.registrar();
-      mover(flechas[ev.key][0] * paso, flechas[ev.key][1] * paso, false);
+      mover(flechas[ev.key][0] * paso * medidas[0], flechas[ev.key][1] * paso * medidas[1], false);
       App.anunciar(describirSel());
       ev.preventDefault();
     } else if (ev.key === 'PageDown' || ev.key === 'PageUp') {
@@ -376,14 +424,21 @@
       ev.preventDefault();
     } else if (ev.key === 'Delete' || ev.key === 'Backspace') {
       if (App.buscarSel()) {
-        App.Cuadros.borrarSeleccion();
+        if(App.ui.sel.tipo==='objeto')App.EditorObjetos.operar('borrar');else App.Cuadros.borrarSeleccion();
         ev.preventDefault();
       }
     } else if (ev.key === 'Escape') {
-      App.seleccionar(null);
+      verticesPendientes=null;vistaPrevia=null;App.seleccionar(null);
       App.anunciar('Nada elegido.');
+    } else if(ev.key==='Enter'&&verticesPendientes){terminarVertices();ev.preventDefault();
+    } else if(ev.ctrlKey&&ev.key.toLowerCase()==='d'){App.EditorObjetos.operar('duplicar');ev.preventDefault();
+    } else if(ev.ctrlKey&&ev.key.toLowerCase()==='g'){App.EditorObjetos.operar(ev.shiftKey?'desagrupar':'agrupar');ev.preventDefault();
+    } else if(ev.ctrlKey&&ev.key.toLowerCase()==='a'){App.ui.seleccion=App.pagina().objetos.map(o=>o.id);App.ui.sel=App.ui.seleccion.length?{tipo:'objeto',id:App.ui.seleccion.at(-1)}:null;App.cambio('seleccion');ev.preventDefault();
     }
   });
+  function terminarVertices(){if(!verticesPendientes)return;const v=verticesPendientes;verticesPendientes=null;vistaPrevia=null;
+    if(v.puntos.length>=(v.tipo==='poligono'?3:2))App.EditorObjetos.crear(v.tipo,{vertices:v.puntos,cerrado:v.tipo==='poligono'});else dibujar();}
+  lienzo.addEventListener('dblclick',()=>terminarVertices());
 
   window.addEventListener('pointerup', () => { if (arrastre) terminar(null); });
 

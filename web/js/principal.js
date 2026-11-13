@@ -53,7 +53,8 @@
   async function abrirImprimir(carga, titulo) {
     cargaImpresion = carga || null;
     const d = carga || paraExportar();
-    $('imprimir-resumen').textContent = `${titulo || 'Página ' + (App.ui.pagina + 1)}: ${d.puntos.length} puntos, diseño de ${d.ancho} × ${d.alto} mm.`;
+    const advertencias = carga ? [] : Grilla.avisos(App.pagina(),App.calculo(),App.perfil);
+    $('imprimir-resumen').textContent = `${titulo || 'Página ' + (App.ui.pagina + 1)}: ${d.puntos.length} puntos, diseño de ${d.ancho} × ${d.alto} mm. ${advertencias.length ? advertencias.length + ' avisos antes de imprimir: ' + advertencias.map(a=>a.mensaje).join(' ') : 'Sin avisos.'}`;
     $('imp-confirmo').checked = false;
     $('imprimir-estado').textContent = 'Buscando impresoras…';
     $('imp-formato').value = App.perfil.codificador || 'grilla';
@@ -218,7 +219,7 @@
         const ancho = pg.ancho || 297, alto = pg.alto || 210;
         App.doc.paginas.push(App.paginaVacia(ancho, alto, {
           nombre: `${archivo.name}${r.paginas.length > 1 ? ' ' + (i + 1) : ''}`,
-          trazos: [{ id: App.nuevoId('t'), tipo: 'ibe', nombre: archivo.name, puntos: pg.puntos }]
+          objetos: [Objetos.crearObjeto('puntos', { id: App.nuevoId('t'), nombre: archivo.name, puntos: pg.puntos })]
         }));
       });
       App.ui.pagina = App.doc.paginas.length - r.paginas.length;
@@ -261,6 +262,7 @@
   $('btn-exp-pdf').addEventListener('click', () => exportar('pdf'));
   $('btn-exp-png').addEventListener('click', () => exportar('png'));
   $('btn-imprimir').addEventListener('click', () => abrirImprimir(null));
+  $('btn-comprobar').addEventListener('click',()=>{mostrarAvisos();$('t-avisos').scrollIntoView({behavior:'instant'});$('lista-avisos').setAttribute('tabindex','-1');$('lista-avisos').focus();App.anunciar(`${Grilla.avisos(App.pagina(),App.calculo(),App.perfil).length} avisos.`);});
   $('btn-salir').addEventListener('click', async () => {
     if (App.sucio && !confirm('Hay cambios sin guardar. ¿Cerrar el programa igual?')) return;
     try { await App.api('/api/apagar', { method: 'POST', json: {} }); } catch (e) { /* ya cerrado */ }
@@ -307,8 +309,13 @@
       if (a.id) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.textContent = 'Ir al cuadro';
-        b.addEventListener('click', () => { App.seleccionar('cuadro', a.id); $('cuadro-texto').focus(); });
+        b.textContent = 'Ir al elemento';
+        b.addEventListener('click', () => {
+          const tipo=App.pagina().cuadros.some(c=>c.id===a.id)?'cuadro':'objeto';
+          App.seleccionar(tipo,a.id);
+          if(tipo==='cuadro')$('cuadro-texto').focus();
+          else {const fila=[...$('lista-elementos').querySelectorAll('button')].find(x=>x.getAttribute('aria-pressed')==='true');if(fila)fila.focus();}
+        });
         li.append(document.createElement('br'), b);
       }
       ul.append(li);

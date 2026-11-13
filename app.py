@@ -1,6 +1,6 @@
 """Servidor local del editor de coberturas braille.
 
-Uso:  python app.py [--puerto 8765] [--sin-navegador]
+Uso:  python app.py [--puerto 8777] [--sin-navegador]
 
 Escucha solo en 127.0.0.1. Sirve la interfaz de ``web/`` y una API JSON.
 """
@@ -11,6 +11,7 @@ import json
 import mimetypes
 import os
 import sys
+import socket
 import threading
 import uuid
 import webbrowser
@@ -270,10 +271,21 @@ class Manejador(BaseHTTPRequestHandler):
                                      "copias": copias, "formato": ext, "avisos": avisos, "info": info})
 
 
+class ServidorExclusivo(ThreadingHTTPServer):
+    """En Windows, SO_REUSEADDR deja que dos programas escuchen el mismo puerto.
+    Se desactiva y se pide uso exclusivo, para que un puerto ocupado dé error y se pruebe otro."""
+    allow_reuse_address = False
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def crear_servidor(puerto):
     for intento in range(puerto, puerto + 20):
         try:
-            return ThreadingHTTPServer(("127.0.0.1", intento), Manejador)
+            return ServidorExclusivo(("127.0.0.1", intento), Manejador)
         except OSError:
             continue
     raise OSError("No hay puertos libres para el servidor.")
@@ -305,7 +317,7 @@ def main():
     mimetypes.add_type("text/javascript", ".js")
     mimetypes.add_type("text/css", ".css")
     ap = argparse.ArgumentParser(description="Editor de coberturas braille (servidor local)")
-    ap.add_argument("--puerto", type=int, default=8765)
+    ap.add_argument("--puerto", type=int, default=8777)
     ap.add_argument("--sin-navegador", action="store_true")
     args = ap.parse_args()
     if ya_esta_abierto(args.puerto):

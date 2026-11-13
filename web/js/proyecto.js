@@ -6,7 +6,7 @@
   const A4H = { ancho: 297, alto: 210 };
 
   function paginaVacia(ancho, alto, extra) {
-    return Object.assign({ ancho, alto, cuadros: [], trazos: [], pdfPagina: null, nombre: '' }, extra || {});
+    return Object.assign({ ancho, alto, cuadros: [], objetos: [], trazos: [], capasVisibles: {}, pdfPagina: null, nombre: '' }, extra || {});
   }
 
   function docNuevo() {
@@ -20,7 +20,7 @@
     doc: docNuevo(),
     ui: {
       pagina: 0, sel: null, herramienta: 'seleccionar', zoom: 1, opacidad: 0.6,
-      vista: 'boleta', verTinta: true, resaltado: null, pasoTeclado: 0.5
+      vista: 'boleta', verTinta: true, resaltado: null, pasoTeclado: 0.5, seleccion: []
     },
     pdf: { id: null, nombre: '', base64: null, info: [] },
     perfil: null,
@@ -75,6 +75,7 @@
     _ajustarTrasRestaurar() {
       if (this.ui.pagina >= this.doc.paginas.length) this.ui.pagina = this.doc.paginas.length - 1;
       if (this.ui.sel && !this.buscarSel()) this.ui.sel = null;
+      this.ui.seleccion=(this.ui.seleccion||[]).filter(id=>this.pagina().objetos.some(o=>o.id===id));
       this.cambio('historial');
     },
     limpiarHistorial() { this._historial = []; this._rehacer = []; },
@@ -92,11 +93,12 @@
       const s = this.ui.sel;
       if (!s) return null;
       const p = this.pagina();
-      const lista = s.tipo === 'cuadro' ? p.cuadros : p.trazos;
+      const lista = s.tipo === 'cuadro' ? p.cuadros : s.tipo === 'objeto' ? p.objetos : p.trazos;
       return lista.find(x => x.id === s.id) || null;
     },
     seleccionar(tipo, id) {
       this.ui.sel = tipo ? { tipo, id } : null;
+      this.ui.seleccion = tipo ? [id] : [];
       this.cambio('seleccion');
     },
 
@@ -201,8 +203,10 @@
       // perfil actual de la impresora, para que un proyecto viejo no traiga calibraciones viejas.
       this.doc = datos.doc;
       this.doc.opciones = Object.assign({ separarDibujo: true, separacionDibujo: 3 }, this.doc.opciones || {});
+      this.doc.paginas.forEach(p => { Objetos.migrarTrazos(p); p.capasVisibles = p.capasVisibles || {}; });
       this.ui.pagina = 0;
       this.ui.sel = null;
+      this.ui.seleccion = [];
       this.limpiarHistorial();
       this.sucio = false;
       this.cambio('proyecto');

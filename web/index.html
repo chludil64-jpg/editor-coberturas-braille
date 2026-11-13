@@ -10,6 +10,7 @@
 <body>
 <a class="saltar" href="#lienzo">Saltar al lienzo</a>
 <a class="saltar" href="#lista-cuadros">Saltar a la lista de cuadros</a>
+<a class="saltar" href="#lista-elementos">Saltar a páginas y elementos</a>
 
 <header class="barra" role="banner">
   <h1>Editor de coberturas braille <span class="sub">Index Everest-D V4</span></h1>
@@ -31,6 +32,7 @@
       <button type="button" id="btn-exp-prn">Plan B .prn</button>
     </div>
     <div class="grupo" role="group" aria-label="Impresora">
+      <button type="button" id="btn-comprobar">Comprobar</button>
       <button type="button" id="btn-imprimir" class="destacado">Imprimir…</button>
       <button type="button" id="btn-perfil">Perfil de impresora…</button>
       <button type="button" id="btn-calibracion">Calibración…</button>
@@ -44,7 +46,22 @@
 
 <main class="area">
   <!-- Panel izquierdo: textos y cuadros -->
-  <aside class="panel" id="panel-izq" aria-label="Textos y cuadros braille">
+  <aside class="panel" id="panel-izq" aria-label="Páginas y elementos">
+    <section aria-labelledby="t-elementos"><h2 id="t-elementos">Páginas y elementos</h2>
+      <div id="capas-controles" role="group" aria-label="Capas visibles"></div>
+      <ul id="lista-elementos" class="lista-elementos" aria-label="Elementos de la página" tabindex="-1"></ul>
+      <div class="fila botones" role="group" aria-label="Organizar elementos">
+        <button type="button" data-accion="frente">Traer al frente</button><button type="button" data-accion="atras">Enviar atrás</button>
+        <button type="button" data-accion="bloquear">Bloquear o desbloquear</button><button type="button" data-accion="ocultar">Ocultar o mostrar</button>
+        <button type="button" data-accion="agrupar">Agrupar</button><button type="button" data-accion="desagrupar">Desagrupar</button>
+        <button type="button" data-accion="duplicar">Duplicar</button><button type="button" data-accion="borrar">Borrar</button>
+      </div>
+      <div class="fila botones" role="group" aria-label="Alinear selección">
+        <button type="button" data-alinear="izquierda">Izquierda</button><button type="button" data-alinear="centro">Centro</button><button type="button" data-alinear="derecha">Derecha</button>
+        <button type="button" data-alinear="arriba">Arriba</button><button type="button" data-alinear="medio">Medio</button><button type="button" data-alinear="abajo">Abajo</button>
+        <button type="button" data-alinear="distribuir-h">Distribuir horizontal</button><button type="button" data-alinear="distribuir-v">Distribuir vertical</button>
+      </div>
+    </section>
     <section aria-labelledby="t-textos">
       <h2 id="t-textos">Textos del PDF</h2>
       <p id="textos-vacio" class="nota">Abrí un PDF para ver sus textos. Si es un escaneo sin texto, creá los cuadros a mano.</p>
@@ -131,7 +148,7 @@
     </div>
     <div class="contenedor-lienzo" id="contenedor-lienzo">
       <canvas id="lienzo" tabindex="0" role="img"
-        aria-label="Lienzo de la página. Con un elemento elegido: flechas lo mueven, Mayúscula más flecha mueve 5 mm, Suprimir lo borra, Av Pág y Re Pág cambian de elemento, Escape lo suelta."
+        aria-label="Lienzo de la página. Con un elemento elegido: flechas lo mueven un paso de grilla, Mayúscula más flecha mueve cinco pasos, Suprimir lo borra, Av Pág y Re Pág cambian de elemento, Escape lo suelta. La lista de páginas y elementos es la alternativa textual."
         aria-describedby="estado-lienzo"></canvas>
     </div>
     <p id="estado-lienzo" class="estado" aria-live="polite"></p>
@@ -139,19 +156,24 @@
   </section>
 
   <!-- Panel derecho: dibujo y avisos -->
-  <aside class="panel" id="panel-der" aria-label="Dibujo y avisos">
-    <section aria-labelledby="t-dibujo">
-      <h2 id="t-dibujo">Dibujo en relieve</h2>
+  <aside class="panel" id="panel-der" aria-label="Crear y propiedades">
+    <section id="panel-crear" aria-labelledby="t-dibujo">
+      <h2 id="t-dibujo">Crear</h2>
       <fieldset class="herr-dibujo">
         <legend>Herramienta</legend>
         <label><input type="radio" name="herramienta" value="seleccionar" checked> Elegir y mover</label>
         <label><input type="radio" name="herramienta" value="punto"> Punto</label>
         <label><input type="radio" name="herramienta" value="linea"> Línea</label>
+        <label><input type="radio" name="herramienta" value="polilinea"> Polilínea</label>
+        <label><input type="radio" name="herramienta" value="poligono"> Polígono</label>
         <label><input type="radio" name="herramienta" value="rectangulo"> Rectángulo</label>
         <label><input type="radio" name="herramienta" value="elipse"> Elipse</label>
         <label><input type="radio" name="herramienta" value="mano"> Mano alzada</label>
         <label><input type="radio" name="herramienta" value="goma"> Goma</label>
       </fieldset>
+      <div class="fila dos"><label>Estilo de línea <select id="estilo-linea"><option value="continua">Continua</option><option value="punteada">Punteada</option><option value="rayada">Rayada</option><option value="ninguna">Ninguna</option></select></label>
+      <label>Relleno táctil <select id="estilo-relleno"><option value="ninguno">Ninguno</option><option value="reticula">Retícula</option><option value="horizontales">Horizontales</option><option value="diagonales">Diagonales</option><option value="disperso">Disperso</option></select></label></div>
+      <div id="muestras-patrones" aria-label="Muestras de patrones a escala real"></div>
       <div class="fila dos">
         <label>Paso entre puntos (mm) <input type="number" id="paso-dibujo" step="0.1" min="1" value="2"></label>
         <label>Radio de la goma (mm) <input type="number" id="radio-goma" step="0.5" min="0.5" value="2"></label>
@@ -166,6 +188,8 @@
           <label>Forma
             <select id="forma-tipo">
               <option value="linea">Línea</option>
+              <option value="polilinea">Polilínea</option>
+              <option value="poligono">Polígono</option>
               <option value="rectangulo">Rectángulo</option>
               <option value="elipse">Elipse</option>
               <option value="punto">Punto</option>
@@ -179,6 +203,8 @@
             <label>X2 (mm) <input type="number" id="forma-x2" step="0.5" value="60"></label>
             <label>Y2 (mm) <input type="number" id="forma-y2" step="0.5" value="40"></label>
           </div>
+          <label>Vértices para polilínea o polígono (uno por renglón: X,Y en mm)
+            <textarea id="forma-vertices" rows="4" placeholder="20,20&#10;60,20&#10;60,40"></textarea></label>
           <button type="button" id="btn-agregar-forma">Agregar forma</button>
         </form>
       </details>
@@ -187,17 +213,25 @@
         <button type="button" id="btn-calcar">Calcar vectores del PDF…</button>
         <button type="button" id="btn-ralear">Ralear puntos</button>
       </div>
-      <h3 id="t-trazos">Trazos</h3>
+      <h3 id="t-trazos">Puntos fijos importados</h3>
       <ul id="lista-trazos" class="lista-cuadros" aria-labelledby="t-trazos"></ul>
     </section>
-
-    <section aria-labelledby="t-avisos">
-      <h2 id="t-avisos">Avisos <span id="avisos-cuenta" class="cuenta"></span></h2>
-      <ul id="lista-avisos" class="avisos"></ul>
-      <p class="nota" id="total-puntos"></p>
+    <section id="panel-propiedades" aria-labelledby="t-propiedades" hidden><h2 id="t-propiedades">Propiedades</h2>
+      <div class="editor"><label>Nombre <input id="obj-nombre" type="text"></label>
+      <div class="fila dos"><label>X (mm) <input id="obj-x" type="number" step="0.01"></label><label>Y (mm) <input id="obj-y" type="number" step="0.01"></label>
+      <label>Ancho (mm) <input id="obj-ancho" type="number" step="0.01" min="0"></label><label>Alto (mm) <input id="obj-alto" type="number" step="0.01" min="0"></label>
+      <label>Rotación (°) <input id="obj-rotacion" type="number" step="1"></label></div>
+      <label>Línea <select id="obj-linea"><option>continua</option><option>punteada</option><option>rayada</option><option>ninguna</option></select></label>
+      <label>Relleno <select id="obj-relleno"><option>ninguno</option><option>reticula</option><option>horizontales</option><option>diagonales</option><option>disperso</option></select></label>
+      <label>Capa <select id="obj-capa"><option>referencia</option><option>dibujo</option><option value="rotulos">rótulos</option><option>claves</option></select></label></div>
     </section>
   </aside>
 </main>
+<footer class="pie-avisos" aria-labelledby="t-avisos"><section>
+      <h2 id="t-avisos">Avisos <span id="avisos-cuenta" class="cuenta"></span></h2>
+      <ul id="lista-avisos" class="avisos"></ul>
+      <p class="nota" id="total-puntos"></p>
+    </section></footer>
 
 <div id="anuncio" class="solo-lector" aria-live="assertive" role="status"></div>
 
@@ -398,17 +432,33 @@
     <h2 id="t-imagen">Importar imagen como puntos</h2>
     <label for="img-archivo">Imagen (PNG o JPG)</label>
     <input type="file" id="img-archivo" accept="image/png,image/jpeg">
+    <p class="nota">O usá el mapa o dibujo que ya está de fondo en la página del PDF: queda del mismo tamaño y en el mismo lugar.</p>
+    <button type="button" id="btn-img-fondo">Usar el fondo de la página</button>
     <div class="fila tres">
       <label>Modo
         <select id="img-modo">
-          <option value="umbral">Umbral (todo lo oscuro)</option>
-          <option value="contornos">Contornos</option>
+          <option value="bordes">Bordes de mapa (límites entre colores)</option>
+          <option value="lineas">Líneas oscuras (mapa o dibujo en blanco y negro)</option>
+          <option value="umbral">Umbral (todo lo oscuro, relleno)</option>
+          <option value="contornos">Contornos de lo oscuro</option>
           <option value="relleno">Contorno con relleno</option>
         </select>
       </label>
-      <label>Umbral <input type="range" id="img-umbral" min="1" max="254" value="128"></label>
+      <label>Umbral de brillo <input type="range" id="img-umbral" min="1" max="254" value="128"></label>
       <label><input type="checkbox" id="img-invertir"> Invertir</label>
     </div>
+    <fieldset id="img-opciones-mapa">
+      <legend>Bordes de mapa</legend>
+      <div class="fila cuatro">
+        <label>Sensibilidad <input type="range" id="img-sens" min="0" max="100" value="80"
+          aria-describedby="img-sens-ayuda"></label>
+        <label>Suavizado <input type="range" id="img-suavizado" min="0" max="3" value="0"></label>
+        <label>Ignorar detalles menores a (mm) <input type="number" id="img-detalle" value="4" min="0" max="40" step="0.5"></label>
+        <label><input type="checkbox" id="img-sueltos" checked> Quitar puntos sueltos</label>
+      </div>
+      <label><input type="checkbox" id="img-texto" checked> Quitar nombres y números escritos en el mapa</label>
+      <p class="nota" id="img-sens-ayuda">Más sensibilidad detecta límites entre colores parecidos. «Ignorar detalles» quita manchas chicas. Si el mapa es un escaneo con granulado, subí el suavizado. Los nombres que tocan una línea pueden quedar: borralos con la goma.</p>
+    </fieldset>
     <div class="fila cuatro">
       <label>Ancho (mm) <input type="number" id="img-ancho" value="60" min="5" step="1"></label>
       <label>X (mm) <input type="number" id="img-x" value="20" step="0.5"></label>
@@ -443,11 +493,14 @@
 </dialog>
 
 <script src="js/braille_es.js"></script>
+<script src="js/objetos.js"></script>
 <script src="js/grilla.js"></script>
 <script src="js/proyecto.js"></script>
+<script src="js/editor_objetos.js"></script>
 <script src="js/lienzo.js"></script>
 <script src="js/cuadros.js"></script>
 <script src="js/dibujo.js"></script>
+<script src="js/bordes.js"></script>
 <script src="js/imagen.js"></script>
 <script src="js/calibracion.js"></script>
 <script src="js/principal.js"></script>

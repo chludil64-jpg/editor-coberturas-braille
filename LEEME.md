@@ -11,10 +11,14 @@ Funciona sin internet. Se usa en el navegador, pero todo corre en esta PC: el se
 
 ## Cómo se abre
 
-1. Doble clic en **`iniciar.bat`**. Se abre una ventana negra (el servidor) y el navegador en `http://127.0.0.1:8765/`.
+1. Doble clic en **`iniciar.bat`**. Se abre una ventana negra (el servidor) y el navegador en `http://127.0.0.1:8777/`.
 2. Para salir, usá el botón **Cerrar programa** o cerrá la ventana negra.
 
 ## Uso básico
+
+### Editor de gráficos táctiles (fase 1)
+
+Cada página puede tener objetos editables en milímetros: línea, polilínea, polígono, rectángulo, elipse y punto. En «Crear» elegí el estilo de línea y el relleno; la lista «Páginas y elementos» permite seleccionar, renombrar, ordenar, bloquear, ocultar y borrar. Con el lienzo enfocado, las flechas mueven un paso de grilla (Mayús: cinco), Supr borra, Ctrl+D duplica, Ctrl+G agrupa, Ctrl+Mayús+G desagrupa y Ctrl+A selecciona los objetos. Para polilíneas y polígonos, hacé clic en cada vértice y terminá con Enter o doble clic; Escape cancela. También podés editar posición, tamaño y rotación numéricamente en «Propiedades». «Comprobar» abre los avisos de legibilidad táctil; al imprimir, se muestra su resumen antes del envío. Los proyectos viejos convierten los trazos en objetos de puntos fijos al abrirlos.
 
 1. **Abrir PDF…**: se carga la boleta. El lienzo toma el tamaño de la página en mm reales, con el PDF de fondo (opacidad regulable), zoom y reglas en mm.
 2. **Textos del PDF**: lista de los textos que se detectaron, con su posición. Con «Agrupar renglones vecinos» los renglones de un mismo bloque (por ejemplo «PARTIDO CHUBUT / SOMOS TODOS») van juntos. Marcá los que querés y tocá **Crear cuadros con los elegidos**. Si el PDF es un escaneo sin texto, usá **Nuevo cuadro vacío**.
