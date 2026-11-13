@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de coberturas braille</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<a class="saltar" href="#lienzo">Saltar al lienzo</a>
+<a class="saltar" href="#lista-cuadros">Saltar a la lista de cuadros</a>
+
+<header class="barra" role="banner">
+  <h1>Editor de coberturas braille <span class="sub">Index Everest-D V4</span></h1>
+  <div class="herramientas" role="toolbar" aria-label="Archivo y salida">
+    <div class="grupo" role="group" aria-label="Archivo">
+      <button type="button" id="btn-abrir-pdf">Abrir PDF…</button>
+      <button type="button" id="btn-abrir-proyecto">Abrir proyecto…</button>
+      <button type="button" id="btn-guardar-proyecto">Guardar proyecto</button>
+      <button type="button" id="btn-abrir-ibe">Abrir .ibe…</button>
+    </div>
+    <div class="grupo" role="group" aria-label="Edición">
+      <button type="button" id="btn-deshacer" aria-keyshortcuts="Control+Z">Deshacer</button>
+      <button type="button" id="btn-rehacer" aria-keyshortcuts="Control+Y">Rehacer</button>
+    </div>
+    <div class="grupo" role="group" aria-label="Exportar">
+      <button type="button" id="btn-exp-ibe">Exportar .ibe</button>
+      <button type="button" id="btn-exp-pdf">PDF de prueba 1:1</button>
+      <button type="button" id="btn-exp-png">PNG</button>
+      <button type="button" id="btn-exp-prn">Plan B .prn</button>
+    </div>
+    <div class="grupo" role="group" aria-label="Impresora">
+      <button type="button" id="btn-imprimir" class="destacado">Imprimir…</button>
+      <button type="button" id="btn-perfil">Perfil de impresora…</button>
+      <button type="button" id="btn-calibracion">Calibración…</button>
+      <button type="button" id="btn-salir">Cerrar programa</button>
+    </div>
+  </div>
+  <input type="file" id="archivo-pdf" accept="application/pdf,.pdf" hidden>
+  <input type="file" id="archivo-proyecto" accept=".json,application/json" hidden>
+  <input type="file" id="archivo-ibe" accept=".ibe,.txt" hidden>
+</header>
+
+<main class="area">
+  <!-- Panel izquierdo: textos y cuadros -->
+  <aside class="panel" id="panel-izq" aria-label="Textos y cuadros braille">
+    <section aria-labelledby="t-textos">
+      <h2 id="t-textos">Textos del PDF</h2>
+      <p id="textos-vacio" class="nota">Abrí un PDF para ver sus textos. Si es un escaneo sin texto, creá los cuadros a mano.</p>
+      <div class="fila">
+        <label><input type="checkbox" id="agrupar" checked> Agrupar renglones vecinos</label>
+      </div>
+      <ul id="lista-textos" class="lista-textos" aria-label="Textos detectados en la página"></ul>
+      <div class="fila botones">
+        <button type="button" id="btn-elegir-todos">Elegir todos</button>
+        <button type="button" id="btn-elegir-ninguno">Ninguno</button>
+      </div>
+      <div class="fila">
+        <label for="alin-defecto">Alinear con la tinta</label>
+        <select id="alin-defecto">
+          <option value="centro">Centro</option>
+          <option value="izquierda">Izquierda</option>
+          <option value="derecha">Derecha</option>
+        </select>
+      </div>
+      <button type="button" id="btn-crear-cuadros" class="ancho">Crear cuadros con los elegidos</button>
+    </section>
+
+    <section aria-labelledby="t-cuadros">
+      <h2 id="t-cuadros">Cuadros braille</h2>
+      <button type="button" id="btn-nuevo-cuadro" class="ancho">Nuevo cuadro vacío</button>
+      <ul id="lista-cuadros" class="lista-cuadros" aria-label="Cuadros de la página" tabindex="-1"></ul>
+      <form id="editor-cuadro" class="editor" aria-labelledby="t-editor" hidden onsubmit="return false">
+        <h3 id="t-editor">Cuadro elegido</h3>
+        <label for="cuadro-texto">Texto (Enter = nuevo renglón)</label>
+        <textarea id="cuadro-texto" rows="3" spellcheck="false"></textarea>
+        <p class="braille-vista" id="cuadro-braille" aria-label="Vista en braille"></p>
+        <p class="nota" id="cuadro-info" aria-live="polite"></p>
+        <div class="fila dos">
+          <label>X (mm) <input type="number" id="cuadro-x" step="0.5"></label>
+          <label>Y (mm) <input type="number" id="cuadro-y" step="0.5"></label>
+        </div>
+        <div class="fila dos">
+          <label>Alineación
+            <select id="cuadro-alin">
+              <option value="centro">Centro de la tinta</option>
+              <option value="izquierda">Izquierda de la tinta</option>
+              <option value="derecha">Derecha de la tinta</option>
+              <option value="libre">Libre (posición a mano)</option>
+            </select>
+          </label>
+          <label>Mayúsculas
+            <select id="cuadro-mayus">
+              <option value="signo">Con signo (46-46 en palabra)</option>
+              <option value="cada_letra">Signo en cada letra</option>
+              <option value="sin_signo">Todo mayúsculas sin signo</option>
+            </select>
+          </label>
+        </div>
+        <div class="fila dos">
+          <label>Ancho máx. (mm) <input type="number" id="cuadro-ancho-max" step="1" min="5"></label>
+          <button type="button" id="btn-partir">Partir en renglones</button>
+        </div>
+        <div class="fila botones">
+          <button type="button" id="btn-ubicar">Ubicar sobre la tinta</button>
+          <button type="button" id="btn-duplicar">Duplicar</button>
+          <button type="button" id="btn-borrar-cuadro" class="peligro">Borrar</button>
+        </div>
+      </form>
+    </section>
+  </aside>
+
+  <!-- Centro: lienzo -->
+  <section class="centro" aria-labelledby="t-lienzo">
+    <h2 id="t-lienzo" class="solo-lector">Lienzo</h2>
+    <div class="barra-lienzo" role="toolbar" aria-label="Vista">
+      <label>Página <select id="sel-pagina"></select></label>
+      <button type="button" id="btn-zoom-menos" aria-label="Alejar">−</button>
+      <output id="zoom-valor" aria-live="polite">100 %</output>
+      <button type="button" id="btn-zoom-mas" aria-label="Acercar">+</button>
+      <button type="button" id="btn-zoom-ajustar">Ajustar</button>
+      <label>Opacidad del fondo <input type="range" id="opacidad" min="0" max="100" value="60"></label>
+      <label>Vista
+        <select id="vista">
+          <option value="boleta">Sobre la boleta</option>
+          <option value="puntos">Solo puntos</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="ver-tinta" checked> Marcar texto en tinta</label>
+    </div>
+    <div class="contenedor-lienzo" id="contenedor-lienzo">
+      <canvas id="lienzo" tabindex="0" role="img"
+        aria-label="Lienzo de la página. Con un elemento elegido: flechas lo mueven, Mayúscula más flecha mueve 5 mm, Suprimir lo borra, Av Pág y Re Pág cambian de elemento, Escape lo suelta."
+        aria-describedby="estado-lienzo"></canvas>
+    </div>
+    <p id="estado-lienzo" class="estado" aria-live="polite"></p>
+    <p id="cursor-mm" class="estado" aria-hidden="true"></p>
+  </section>
+
+  <!-- Panel derecho: dibujo y avisos -->
+  <aside class="panel" id="panel-der" aria-label="Dibujo y avisos">
+    <section aria-labelledby="t-dibujo">
+      <h2 id="t-dibujo">Dibujo en relieve</h2>
+      <fieldset class="herr-dibujo">
+        <legend>Herramienta</legend>
+        <label><input type="radio" name="herramienta" value="seleccionar" checked> Elegir y mover</label>
+        <label><input type="radio" name="herramienta" value="punto"> Punto</label>
+        <label><input type="radio" name="herramienta" value="linea"> Línea</label>
+        <label><input type="radio" name="herramienta" value="rectangulo"> Rectángulo</label>
+        <label><input type="radio" name="herramienta" value="elipse"> Elipse</label>
+        <label><input type="radio" name="herramienta" value="mano"> Mano alzada</label>
+        <label><input type="radio" name="herramienta" value="goma"> Goma</label>
+      </fieldset>
+      <div class="fila dos">
+        <label>Paso entre puntos (mm) <input type="number" id="paso-dibujo" step="0.1" min="1" value="2"></label>
+        <label>Radio de la goma (mm) <input type="number" id="radio-goma" step="0.5" min="0.5" value="2"></label>
+      </div>
+      <div class="fila">
+        <label><input type="checkbox" id="separar-dibujo" checked> Separar el dibujo del braille</label>
+        <label class="corto">a <input type="number" id="separacion-dibujo" step="0.5" min="0" value="3"> mm</label>
+      </div>
+      <details>
+        <summary>Agregar forma por coordenadas</summary>
+        <form id="form-forma" class="editor" onsubmit="return false">
+          <label>Forma
+            <select id="forma-tipo">
+              <option value="linea">Línea</option>
+              <option value="rectangulo">Rectángulo</option>
+              <option value="elipse">Elipse</option>
+              <option value="punto">Punto</option>
+            </select>
+          </label>
+          <div class="fila dos">
+            <label>X1 (mm) <input type="number" id="forma-x1" step="0.5" value="20"></label>
+            <label>Y1 (mm) <input type="number" id="forma-y1" step="0.5" value="20"></label>
+          </div>
+          <div class="fila dos">
+            <label>X2 (mm) <input type="number" id="forma-x2" step="0.5" value="60"></label>
+            <label>Y2 (mm) <input type="number" id="forma-y2" step="0.5" value="40"></label>
+          </div>
+          <button type="button" id="btn-agregar-forma">Agregar forma</button>
+        </form>
+      </details>
+      <div class="fila botones">
+        <button type="button" id="btn-imagen">Importar imagen…</button>
+        <button type="button" id="btn-calcar">Calcar vectores del PDF…</button>
+        <button type="button" id="btn-ralear">Ralear puntos</button>
+      </div>
+      <h3 id="t-trazos">Trazos</h3>
+      <ul id="lista-trazos" class="lista-cuadros" aria-labelledby="t-trazos"></ul>
+    </section>
+
+    <section aria-labelledby="t-avisos">
+      <h2 id="t-avisos">Avisos <span id="avisos-cuenta" class="cuenta"></span></h2>
+      <ul id="lista-avisos" class="avisos"></ul>
+      <p class="nota" id="total-puntos"></p>
+    </section>
+  </aside>
+</main>
+
+<div id="anuncio" class="solo-lector" aria-live="assertive" role="status"></div>
+
+<!-- Diálogo: imprimir -->
+<dialog id="dlg-imprimir" aria-labelledby="t-imprimir">
+  <form method="dialog" class="editor" id="form-imprimir">
+    <h2 id="t-imprimir">Imprimir en la impresora braille</h2>
+    <p id="imprimir-resumen" class="nota"></p>
+    <fieldset>
+      <legend>Destino</legend>
+      <label><input type="radio" name="destino" value="windows" checked> Impresora de Windows (envío RAW)</label>
+      <label for="sel-impresora" class="sangria">Impresora</label>
+      <select id="sel-impresora" class="sangria"></select>
+      <label><input type="radio" name="destino" value="red"> Por red (IP y puerto)</label>
+      <div class="fila dos sangria">
+        <label>IP <input type="text" id="imp-ip" inputmode="decimal" autocomplete="off"></label>
+        <label>Puerto <input type="number" id="imp-puerto" value="9100"></label>
+      </div>
+    </fieldset>
+    <div class="fila dos">
+      <label>Formato
+        <select id="imp-formato">
+          <option value="grilla">Grilla ESC BEL (.prn, Everest V4)</option>
+          <option value="punto_libre">Punto libre ESC F (.ibe, solo Index V5)</option>
+        </select>
+      </label>
+      <label>Copias <input type="number" id="imp-copias" min="1" max="50" value="1"></label>
+    </div>
+    <label class="confirmar"><input type="checkbox" id="imp-confirmo">
+      Confirmo que la impresora tiene cargada la hoja correcta y quiero enviar el trabajo ahora.</label>
+    <p id="imprimir-estado" class="estado" aria-live="polite"></p>
+    <div class="fila botones">
+      <button type="button" id="btn-enviar-impresion" class="destacado" disabled>Enviar a la impresora</button>
+      <button value="cancelar">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo: perfil -->
+<dialog id="dlg-perfil" aria-labelledby="t-perfil">
+  <form method="dialog" class="editor ancho-dlg" id="form-perfil">
+    <h2 id="t-perfil">Perfil de impresora</h2>
+    <fieldset>
+      <legend>Carga de la hoja</legend>
+      <div class="fila dos">
+        <label>Cómo entra la hoja
+          <select data-ruta="carga.orientacion">
+            <option value="horizontal">Apaisada (A4 horizontal, 297 mm de ancho)</option>
+            <option value="vertical">Parada (se gira el diseño 90°)</option>
+          </select>
+        </label>
+        <label>Sentido del giro
+          <select data-ruta="carga.sentido_giro">
+            <option value="horario">Horario</option>
+            <option value="antihorario">Antihorario</option>
+          </select>
+        </label>
+      </div>
+      <div class="fila dos">
+        <label>Espejo
+          <select data-ruta="carga.espejo">
+            <option value="no">No</option>
+            <option value="horizontal">Horizontal (izquierda-derecha)</option>
+            <option value="vertical">Vertical (arriba-abajo)</option>
+          </select>
+        </label>
+        <label>Copias por defecto <input type="number" min="1" max="50" data-ruta="carga.copias"></label>
+      </div>
+      <div class="fila dos">
+        <label>Desplazamiento X (mm) <input type="number" step="0.05" data-ruta="carga.desplazamiento_x_mm"></label>
+        <label>Desplazamiento Y (mm) <input type="number" step="0.05" data-ruta="carga.desplazamiento_y_mm"></label>
+      </div>
+      <div class="fila dos">
+        <label>Escala X <input type="number" step="0.0001" data-ruta="carga.escala_x"></label>
+        <label>Escala Y <input type="number" step="0.0001" data-ruta="carga.escala_y"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Márgenes no imprimibles (mm)</legend>
+      <div class="fila cuatro">
+        <label>Izq. <input type="number" step="0.5" data-ruta="margenes_mm.izquierdo"></label>
+        <label>Der. <input type="number" step="0.5" data-ruta="margenes_mm.derecho"></label>
+        <label>Sup. <input type="number" step="0.5" data-ruta="margenes_mm.superior"></label>
+        <label>Inf. <input type="number" step="0.5" data-ruta="margenes_mm.inferior"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Braille y puntos (mm)</legend>
+      <div class="fila tres">
+        <label>Entre puntos <input type="number" step="0.05" data-ruta="braille.entre_puntos_mm"></label>
+        <label>Entre celdas <input type="number" step="0.05" data-ruta="braille.entre_celdas_mm"></label>
+        <label>Entre renglones <input type="number" step="0.1" data-ruta="braille.entre_renglones_mm"></label>
+      </div>
+      <div class="fila tres">
+        <label>Separación mínima <input type="number" step="0.1" data-ruta="separacion_minima_mm"></label>
+        <label>Paso de dibujo <input type="number" step="0.1" data-ruta="paso_dibujo_mm"></label>
+        <label>Dibujo–braille <input type="number" step="0.5" data-ruta="separacion_dibujo_braille_mm"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Formato de salida</legend>
+      <label>Codificador
+        <select data-ruta="codificador">
+          <option value="grilla">Grilla ESC BEL (.prn, Everest V4)</option>
+          <option value="punto_libre">Punto libre ESC F (.ibe, solo Index V5: la V4 da error 202)</option>
+        </select>
+      </label>
+      <p class="nota">Probado en la Everest-D V4: la grilla ESC BEL funciona; el punto libre ESC F da error 202. Encabezado del punto libre copiado de las muestras de Index V5. El significado de DP, CH, LP y OR no está confirmado: cambialos solo para probar.</p>
+      <div class="fila seis" role="group" aria-label="Encabezado hoja apaisada">
+        <span class="rotulo">Apaisada</span>
+        <label>DP <input type="number" data-ruta="punto_libre.encabezado_horizontal.DP"></label>
+        <label>LS <input type="number" data-ruta="punto_libre.encabezado_horizontal.LS"></label>
+        <label>TM <input type="number" data-ruta="punto_libre.encabezado_horizontal.TM"></label>
+        <label>BI <input type="number" data-ruta="punto_libre.encabezado_horizontal.BI"></label>
+        <label>CH <input type="number" data-ruta="punto_libre.encabezado_horizontal.CH"></label>
+        <label>LP <input type="number" data-ruta="punto_libre.encabezado_horizontal.LP"></label>
+        <label>OR X <input type="number" step="0.01" data-ruta="punto_libre.origen_horizontal.0"></label>
+        <label>OR Y <input type="number" step="0.01" data-ruta="punto_libre.origen_horizontal.1"></label>
+      </div>
+      <div class="fila seis" role="group" aria-label="Encabezado hoja parada">
+        <span class="rotulo">Parada</span>
+        <label>DP <input type="number" data-ruta="punto_libre.encabezado_vertical.DP"></label>
+        <label>LS <input type="number" data-ruta="punto_libre.encabezado_vertical.LS"></label>
+        <label>TM <input type="number" data-ruta="punto_libre.encabezado_vertical.TM"></label>
+        <label>BI <input type="number" data-ruta="punto_libre.encabezado_vertical.BI"></label>
+        <label>CH <input type="number" data-ruta="punto_libre.encabezado_vertical.CH"></label>
+        <label>LP <input type="number" data-ruta="punto_libre.encabezado_vertical.LP"></label>
+        <label>OR X <input type="number" step="0.01" data-ruta="punto_libre.origen_vertical.0"></label>
+        <label>OR Y <input type="number" step="0.01" data-ruta="punto_libre.origen_vertical.1"></label>
+      </div>
+      <div class="fila dos">
+        <label>Fin de línea
+          <select data-ruta="punto_libre.terminador">
+            <option value="LF">LF (como everest)</option>
+            <option value="CRLF">CR LF (como geometry)</option>
+          </select>
+        </label>
+        <label><input type="checkbox" data-ruta="punto_libre.cierre_punto_y_coma"> Cerrar con «;» al final</label>
+      </div>
+      <div class="fila cuatro" role="group" aria-label="Grilla de la Everest V4">
+        <label>Paso horizontal (mm) <input type="number" step="0.01" data-ruta="grilla.paso_x_mm"></label>
+        <label>Paso vertical (mm) <input type="number" step="0.01" data-ruta="grilla.paso_y_mm"></label>
+        <label>LS <input type="number" data-ruta="grilla.LS"></label>
+        <label>TM <input type="number" data-ruta="grilla.TM"></label>
+        <label>BI <input type="number" data-ruta="grilla.BI"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Impresora</legend>
+      <div class="fila dos">
+        <label>Impresora de Windows <input type="text" data-ruta="impresora_windows" autocomplete="off"></label>
+        <label>IP de red <input type="text" data-ruta="red.ip" autocomplete="off"></label>
+      </div>
+      <label>Puerto de red <input type="number" data-ruta="red.puerto"></label>
+    </fieldset>
+    <p id="perfil-estado" class="estado" aria-live="polite"></p>
+    <div class="fila botones">
+      <button type="button" id="btn-perfil-guardar" class="destacado">Guardar perfil</button>
+      <button type="button" id="btn-perfil-defecto">Valores por defecto</button>
+      <button value="cancelar">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo: calibración -->
+<dialog id="dlg-calibracion" aria-labelledby="t-calibracion">
+  <form method="dialog" class="editor ancho-dlg">
+    <h2 id="t-calibracion">Calibración</h2>
+    <ol class="pasos">
+      <li>Imprimí la hoja de calibración en <strong>papel</strong>. Tiene cinco cruces de puntos (cuatro a <span id="cal-margen">20</span> mm de los bordes y una al centro), una regla de 100 mm y la palabra «calibración» en braille arriba a la izquierda.</li>
+      <li>Con la hoja tal como sale de la impresora (la palabra braille arriba a la izquierda), medí con regla:</li>
+    </ol>
+    <div class="fila dos">
+      <label>Centro de la cruz sup. izq. desde el borde izquierdo (mm) <input type="number" step="0.1" id="cal-mx"></label>
+      <label>… desde el borde superior (mm) <input type="number" step="0.1" id="cal-my"></label>
+    </div>
+    <div class="fila dos">
+      <label>Distancia entre las cruces de arriba (mm; debería ser <span id="cal-esp-h"></span>) <input type="number" step="0.1" id="cal-dh"></label>
+      <label>Distancia entre las cruces de la izquierda (mm; debería ser <span id="cal-esp-v"></span>) <input type="number" step="0.1" id="cal-dv"></label>
+    </div>
+    <p id="cal-estado" class="estado" aria-live="polite"></p>
+    <div class="fila botones">
+      <button type="button" id="btn-cal-ibe">Descargar hoja .ibe</button>
+      <button type="button" id="btn-cal-pdf">PDF de la hoja</button>
+      <button type="button" id="btn-cal-ver">Ver la hoja en el editor</button>
+      <button type="button" id="btn-cal-imprimir">Imprimir la hoja…</button>
+    </div>
+    <div class="fila botones">
+      <button type="button" id="btn-cal-aplicar" class="destacado">Calcular y guardar en el perfil</button>
+      <button value="cancelar">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo: importar imagen -->
+<dialog id="dlg-imagen" aria-labelledby="t-imagen">
+  <form method="dialog" class="editor ancho-dlg">
+    <h2 id="t-imagen">Importar imagen como puntos</h2>
+    <label for="img-archivo">Imagen (PNG o JPG)</label>
+    <input type="file" id="img-archivo" accept="image/png,image/jpeg">
+    <div class="fila tres">
+      <label>Modo
+        <select id="img-modo">
+          <option value="umbral">Umbral (todo lo oscuro)</option>
+          <option value="contornos">Contornos</option>
+          <option value="relleno">Contorno con relleno</option>
+        </select>
+      </label>
+      <label>Umbral <input type="range" id="img-umbral" min="1" max="254" value="128"></label>
+      <label><input type="checkbox" id="img-invertir"> Invertir</label>
+    </div>
+    <div class="fila cuatro">
+      <label>Ancho (mm) <input type="number" id="img-ancho" value="60" min="5" step="1"></label>
+      <label>X (mm) <input type="number" id="img-x" value="20" step="0.5"></label>
+      <label>Y (mm) <input type="number" id="img-y" value="20" step="0.5"></label>
+      <label>Paso (mm) <input type="number" id="img-paso" value="2" min="1" step="0.1"></label>
+    </div>
+    <canvas id="img-vista" width="360" height="240" role="img" aria-label="Vista previa de los puntos de la imagen"></canvas>
+    <p id="img-estado" class="estado" aria-live="polite"></p>
+    <div class="fila botones">
+      <button type="button" id="btn-img-agregar" class="destacado" disabled>Agregar al dibujo</button>
+      <button value="cancelar">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo: calcar vectores -->
+<dialog id="dlg-calcar" aria-labelledby="t-calcar">
+  <form method="dialog" class="editor">
+    <h2 id="t-calcar">Calcar vectores del PDF</h2>
+    <p class="nota">Convierte las líneas y recuadros del PDF (por ejemplo, los casilleros de marcado) en líneas de puntos.</p>
+    <label><input type="checkbox" id="calcar-rellenos"> Incluir el borde de las formas rellenas</label>
+    <div class="fila dos">
+      <label>Largo mínimo (mm) <input type="number" id="calcar-min" value="5" min="0" step="0.5"></label>
+      <label>Paso (mm) <input type="number" id="calcar-paso" value="2" min="1" step="0.1"></label>
+    </div>
+    <p id="calcar-estado" class="estado" aria-live="polite"></p>
+    <div class="fila botones">
+      <button type="button" id="btn-calcar-ok" class="destacado">Calcar</button>
+      <button value="cancelar">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="js/braille_es.js"></script>
+<script src="js/grilla.js"></script>
+<script src="js/proyecto.js"></script>
+<script src="js/lienzo.js"></script>
+<script src="js/cuadros.js"></script>
+<script src="js/dibujo.js"></script>
+<script src="js/imagen.js"></script>
+<script src="js/calibracion.js"></script>
+<script src="js/principal.js"></script>
+</body>
+</html>

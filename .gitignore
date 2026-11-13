@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Copia del último trabajo enviado a la impresora (diagnóstico local)
+ultimo_trabajo.*
+
+# Archivos de prueba generados por herramientas/pruebas_impresora.py (se regeneran)
+pruebas_impresora/
+
+# Herramientas de prueba del navegador
+.playwright-mcp/
+
+# Sistema
+Thumbs.db
+desktop.ini

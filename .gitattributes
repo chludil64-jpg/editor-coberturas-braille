@@ -1,0 +1,16 @@
+# Archivos que deben guardarse byte a byte (sin conversión de saltos de línea)
+*.pdf binary
+*.ibe binary
+*.prn binary
+*.png binary
+
+# El archivo de arranque de Windows necesita CRLF
+*.bat text eol=crlf
+
+# Código y texto: LF en el repositorio
+*.py text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf

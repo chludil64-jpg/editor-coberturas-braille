@@ -1,0 +1,80 @@
+{
+  "nombre": "Index Everest-D V4",
+  "hoja": {
+    "ancho_max_mm": 297.0,
+    "alto_max_mm": 210.0
+  },
+  "carga": {
+    "orientacion": "vertical",
+    "sentido_giro": "horario",
+    "espejo": "no",
+    "desplazamiento_x_mm": 0.0,
+    "desplazamiento_y_mm": -4.9,
+    "escala_x": 1.0,
+    "escala_y": 1.0,
+    "copias": 1
+  },
+  "margenes_mm": {
+    "izquierdo": 5.0,
+    "derecho": 3.0,
+    "superior": 3.0,
+    "inferior": 3.0
+  },
+  "braille": {
+    "entre_puntos_mm": 2.5,
+    "entre_celdas_mm": 6.0,
+    "entre_renglones_mm": 10.0
+  },
+  "separacion_minima_mm": 2.0,
+  "paso_dibujo_mm": 2.0,
+  "separacion_dibujo_braille_mm": 3.0,
+  "codificador": "grilla",
+  "punto_libre": {
+    "encabezado_horizontal": {
+      "DP": 2,
+      "LS": 50,
+      "TM": 0,
+      "BI": 0,
+      "CH": 46,
+      "LP": 27
+    },
+    "origen_horizontal": [
+      0.0,
+      0.0
+    ],
+    "encabezado_vertical": {
+      "DP": 2,
+      "LS": 50,
+      "TM": 0,
+      "BI": 0,
+      "CH": 34,
+      "LP": 29
+    },
+    "origen_vertical": [
+      3.0,
+      0.0
+    ],
+    "terminador": "\n",
+    "cierre_punto_y_coma": true
+  },
+  "grilla": {
+    "paso_mm": 2.05,
+    "TM": 0,
+    "BI": 0,
+    "LS": 50,
+    "paso_x_mm": 2.05,
+    "paso_y_mm": 2.02,
+    "MI": 1,
+    "DP": 1,
+    "TD": 0,
+    "GD": 0,
+    "CH": "auto",
+    "LP": "auto",
+    "BT": 0
+  },
+  "red": {
+    "ip": "",
+    "puerto": 9100
+  },
+  "impresora_windows": ""
+}
