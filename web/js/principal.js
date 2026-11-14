@@ -5,6 +5,55 @@
   const App = window.App;
   const $ = id => document.getElementById(id);
 
+  // Menús con foco administrado según el patrón «menu button» de WAI-ARIA.
+  const menus = [...document.querySelectorAll('.menu-desplegable')].map(contenedor => ({
+    contenedor, boton: contenedor.querySelector('.menu-boton'),
+    panel: contenedor.querySelector('[role="menu"]'),
+    items: [...contenedor.querySelectorAll('[role="menuitem"]')]
+  }));
+  function cerrarMenus(devolverFoco) {
+    for (const m of menus) {
+      if (!m.panel.hidden) {
+        m.panel.hidden = true;
+        m.boton.setAttribute('aria-expanded', 'false');
+        if (devolverFoco) m.boton.focus();
+      }
+    }
+  }
+  function abrirMenu(m, ultimo = false) {
+    cerrarMenus(false);
+    m.panel.hidden = false;
+    m.boton.setAttribute('aria-expanded', 'true');
+    m.items[ultimo ? m.items.length - 1 : 0].focus();
+  }
+  for (const m of menus) {
+    m.boton.addEventListener('click', () => m.panel.hidden ? abrirMenu(m) : cerrarMenus(false));
+    m.boton.addEventListener('keydown', ev => {
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault(); abrirMenu(m, ev.key === 'ArrowUp');
+      } else if (ev.key === 'Escape' && !m.panel.hidden) {
+        ev.preventDefault(); cerrarMenus(true);
+      }
+    });
+    m.panel.addEventListener('keydown', ev => {
+      const i = m.items.indexOf(document.activeElement);
+      let siguiente;
+      if (ev.key === 'ArrowDown') siguiente = (i + 1) % m.items.length;
+      else if (ev.key === 'ArrowUp') siguiente = (i - 1 + m.items.length) % m.items.length;
+      else if (ev.key === 'Home') siguiente = 0;
+      else if (ev.key === 'End') siguiente = m.items.length - 1;
+      else if (ev.key === 'Escape') { ev.preventDefault(); cerrarMenus(true); return; }
+      else if (ev.key === 'Tab') { cerrarMenus(false); return; }
+      if (siguiente !== undefined) { ev.preventDefault(); m.items[siguiente].focus(); }
+    });
+    m.panel.addEventListener('click', ev => {
+      if (ev.target.closest('[role="menuitem"]')) cerrarMenus(!document.querySelector('dialog[open]'));
+    });
+  }
+  document.addEventListener('pointerdown', ev => {
+    if (!ev.target.closest('.menu-desplegable')) cerrarMenus(false);
+  });
+
   function paraExportar() {
     const p = App.pagina();
     return {
@@ -247,12 +296,61 @@
       App.Lienzo.limpiarFondos();
       aplicarPerfilUi();
       App.Lienzo.ajustarZoom();
-      App.anunciar(`Proyecto ${f.name} abierto: ${App.doc.paginas.length} páginas. Se usa el perfil guardado en el proyecto (no se cambió el perfil por defecto).`);
+      App.anunciar(`Proyecto ${f.name} abierto: ${App.doc.paginas.length} páginas. Se usa la calibración actual de la impresora.`);
     } catch (err) {
       App.anunciar('No se pudo abrir el proyecto: ' + err.message);
     }
   });
   $('btn-guardar-proyecto').addEventListener('click', () => App.guardarProyecto());
+
+  // ------------------------------------------------------------ disposición braille
+  // Solo los cuadros braille y los dibujos, sin el PDF: para reaplicarlos sobre el mismo
+  // PDF (o uno corregido) sin empezar de cero.
+  $('btn-exportar-disposicion').addEventListener('click', () => {
+    const datos = Disposicion.extraer(App.doc, App.pdf.nombre);
+    const { cuadros, dibujos } = Disposicion.contar(datos);
+    if (!cuadros && !dibujos) { App.anunciar('No hay cuadros braille ni dibujos para exportar.'); return; }
+    const nombre = (App.pdf.nombre || 'braille').replace(/\.[^.]+$/, '') + '.disposicion.json';
+    App.descargarBlob(nombre, new Blob([JSON.stringify(datos, null, 1)], { type: 'application/json' }));
+    App.anunciar(`Disposición exportada como ${nombre} (en la carpeta de descargas): ` +
+      `${cuadros} cuadros braille y ${dibujos} dibujos en ${datos.paginas.length} páginas.`);
+  });
+  $('btn-importar-disposicion').addEventListener('click', () => $('archivo-disposicion').click());
+  $('archivo-disposicion').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const datos = JSON.parse(await f.text());
+      Disposicion.validar(datos);
+      const hayAlgo = App.doc.paginas.some(p => (p.cuadros || []).length || (p.trazos || []).length || (p.objetos || []).length);
+      let modo = 'reemplazar';
+      if (hayAlgo) {
+        modo = confirm('Ya hay cuadros o dibujos en el documento.\n\nAceptar: REEMPLAZARLOS por los de la disposición.\n' +
+          'Cancelar: AGREGAR los de la disposición a los actuales.') ? 'reemplazar' : 'agregar';
+      }
+      App.registrar();
+      const r = Disposicion.aplicar(App.doc, datos, modo, p => App.nuevoId(p), App.paginaVacia);
+      App.ui.sel = null;
+      App.cambio('disposicion');
+      App.Lienzo.ajustarZoom();
+      App.anunciar(`Disposición ${f.name} ${modo === 'reemplazar' ? 'aplicada' : 'agregada'}: ` +
+        `${r.cuadros} cuadros braille y ${r.dibujos} dibujos. ${r.avisos.join(' ')} Podés deshacer con Ctrl+Z.`);
+    } catch (err) {
+      App.anunciar('No se pudo importar la disposición: ' + err.message);
+    }
+  });
+  function nuevaPagina(ancho, alto, nombre) {
+    App.registrar();
+    App.doc.paginas.push(App.paginaVacia(ancho, alto, { nombre }));
+    App.ui.pagina = App.doc.paginas.length - 1;
+    App.ui.sel = null;
+    App.cambio('pagina');
+    App.Lienzo.ajustarZoom();
+    App.anunciar(`${nombre} creada. Página ${App.ui.pagina + 1} de ${App.doc.paginas.length}.`);
+  }
+  $('btn-nueva-horizontal').addEventListener('click', () => nuevaPagina(297, 210, 'Hoja A4 horizontal'));
+  $('btn-nueva-vertical').addEventListener('click', () => nuevaPagina(210, 297, 'Hoja A4 vertical'));
 
   $('btn-deshacer').addEventListener('click', () => App.deshacer());
   $('btn-rehacer').addEventListener('click', () => App.rehacer());
@@ -352,7 +450,7 @@
     if (App.perfil) aplicarPerfilUi();
     App.cambio('inicio');
     App.Lienzo.ajustarZoom();
-    App.anunciar('Listo. Abrí un PDF de la boleta para empezar.');
+    App.anunciar('Listo. Abrí un PDF para empezar o creá una página A4 desde Archivo.');
   }
 
   App.Principal = { abrirImprimir, exportar, paraExportar };

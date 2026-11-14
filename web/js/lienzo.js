@@ -97,7 +97,7 @@
       ctx.globalAlpha = 1;
     }
     // Zona no imprimible
-    const mg = (App.perfil && App.perfil.margenes_mm) || null;
+    const mg = App.perfil ? Grilla.margenesDeDiseno(App.perfil, p.ancho, p.alto) : null;
     if (mg) {
       ctx.fillStyle = 'rgba(200, 30, 30, 0.12)';
       ctx.fillRect(aPx(0), aPx(0), p.ancho * e, mg.superior * e);

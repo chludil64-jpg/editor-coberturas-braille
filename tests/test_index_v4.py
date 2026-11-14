@@ -15,6 +15,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
 
 from motor import impresion, index_v4, perfil  # noqa: E402
+import app  # noqa: E402
 
 MUESTRAS = sorted(glob.glob(os.path.join(BASE, "ejemplos", "ibe", "*.ibe")))
 PDF_GAIMAN = os.path.join(BASE, "ejemplos", "plantilla_boleta_gaiman_A4.pdf")
@@ -141,6 +142,40 @@ class TestPerfil(unittest.TestCase):
         self.assertEqual(perfil.encabezado_para(p, 210, 297), (
             {"DP": 2, "LS": 50, "TM": 0, "BI": 0, "CH": 34, "LP": 29}, (3.0, 0.0)))
 
+    def test_perfil_real_paginas_vertical_y_apaisada(self):
+        real = perfil.cargar(os.path.join(BASE, "perfiles", "everest_v4.json"))
+        self.assertEqual(real["carga"]["orientacion"], "vertical")
+        self.assertEqual(real["grilla"]["paso_x_mm"], 2.05)
+        self.assertEqual(real["grilla"]["paso_y_mm"], 2.02)
+        casos = [
+            (210, 297, [(10.25, 10.10), (102.5, 202.0)],
+             [(10.25, 5.20), (102.5, 197.10)]),
+            (297, 210, [(10.10, 10.25), (202.0, 102.5)],
+             [(199.75, 5.20), (107.5, 197.10)]),
+        ]
+        for ancho, alto, entrada, esperado in casos:
+            with self.subTest(orientacion=(ancho, alto)):
+                pts, w, h, avisos = perfil.transformar(entrada, ancho, alto, real)
+                self.assertEqual((w, h), (210.0, 297.0))
+                self.assertEqual(len(pts), len(esperado))
+                for (x, y), (ex, ey) in zip(pts, esperado):
+                    self.assertAlmostEqual(x, ex, places=6)
+                    self.assertAlmostEqual(y, ey, places=6)
+                self.assertEqual(avisos, [])
+                self.assertTrue(all(0 <= x <= w and 0 <= y <= h for x, y in pts))
+                datos, ext, avisos, info = app.generar_archivo({
+                    "puntos": entrada, "ancho": ancho, "alto": alto, "perfil": real
+                })
+                self.assertEqual(ext, "prn")
+                self.assertEqual((info["ancho_hoja"], info["alto_hoja"], info["puntos"]), (210, 297, 2))
+                self.assertEqual(avisos, [])
+                vuelta = index_v4.decodificar_grilla(datos, 2.05, 2.02)
+                self.assertEqual(len(vuelta), 2)
+                for (x, y), (ex, ey) in zip(sorted(vuelta), sorted(esperado)):
+                    self.assertAlmostEqual(x, round(ex / 2.05) * 2.05, places=2)
+                    self.assertAlmostEqual(y, round(ey / 2.02) * 2.02, places=2)
+                    self.assertTrue(0 <= x <= 210 and 0 <= y <= 297)
+
 
 class TestPdf(unittest.TestCase):
     @classmethod
@@ -171,6 +206,14 @@ class TestPdf(unittest.TestCase):
         d = pymupdf.open(stream=datos, filetype="pdf")
         self.assertAlmostEqual(d[0].rect.width * 25.4 / 72, 297, places=1)
         self.assertTrue(self.pdf_io.png_puntos(50, 30, [(5, 5)], 4).startswith(b"\x89PNG"))
+
+    def test_pdf_vertical_y_png(self):
+        import pymupdf
+        datos = self.pdf_io.pdf_prueba(210, 297, [(10, 10), (100, 200)])
+        d = pymupdf.open(stream=datos, filetype="pdf")
+        self.assertAlmostEqual(d[0].rect.width * 25.4 / 72, 210, places=1)
+        self.assertAlmostEqual(d[0].rect.height * 25.4 / 72, 297, places=1)
+        self.assertTrue(self.pdf_io.png_puntos(210, 297, [(10, 10)], 4).startswith(b"\x89PNG"))
 
 
 class TestImpresion(unittest.TestCase):

@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const B = require('../web/js/braille_es.js');
 const G = require('../web/js/grilla.js');
+const real = require('../perfiles/everest_v4.json');
 
 const L = B.LETRAS;
 const MAY = [4, 6], NUM = [3, 4, 5, 6];
@@ -157,4 +158,67 @@ test('grilla de la Everest V4: braille regular sobre el paso medido y puntos aju
   // Si la hoja se carga parada y el diseño es apaisado, se intercambian los pasos.
   const mv = G.medidasDePerfil(Object.assign({}, perfil, { carga: { orientacion: 'vertical' } }), 297, 210);
   assert.equal(mv.entrePuntosX, 2.1);
+});
+
+test('perfil real: página vertical conserva los pasos y apaisada los intercambia', () => {
+  const vertical = G.medidasDePerfil(real, 210, 297);
+  assert.deepEqual(vertical.grilla, { px: 2.05, py: 2.02 });
+  const horizontal = G.medidasDePerfil(real, 297, 210);
+  assert.deepEqual(horizontal.grilla, { px: 2.02, py: 2.05 });
+  for (const [ancho, alto, m] of [[210, 297, vertical], [297, 210, horizontal]]) {
+    const pagina = { ancho, alto, cuadros: [{ id: 'c', texto: 'abc', x: 12, y: 12 }], trazos: [] };
+    for (const p of G.calcularPagina(pagina, { medidas: m }).puntos) {
+      assert.ok(Math.abs(p.x / m.grilla.px - Math.round(p.x / m.grilla.px)) < 1e-6);
+      assert.ok(Math.abs(p.y / m.grilla.py - Math.round(p.y / m.grilla.py)) < 1e-6);
+    }
+  }
+});
+
+test('franja de entrada: arriba en vertical e izquierda en apaisado', () => {
+  assert.deepEqual(G.margenesDeDiseno(real, 210, 297),
+    { izquierdo: 3, derecho: 3, superior: 5, inferior: 3 });
+  assert.deepEqual(G.margenesDeDiseno(real, 297, 210),
+    { izquierdo: 5, derecho: 3, superior: 3, inferior: 3 });
+  const pagina = (ancho, alto) => ({ ancho, alto, cuadros: [], trazos: [{ id: 't', puntos: [[2, 4], [4, 2]] }] });
+  const v = pagina(210, 297), h = pagina(297, 210);
+  assert.equal(G.avisos(v, G.calcularPagina(v), real).find(a => /zona no imprimible/.test(a.mensaje)).mensaje.includes('2 puntos'), true);
+  assert.equal(G.avisos(h, G.calcularPagina(h), real).find(a => /zona no imprimible/.test(a.mensaje)).mensaje.includes('2 puntos'), true);
+});
+
+const D = require('../web/js/disposicion.js');
+
+test('disposición: exporta solo cuadros y dibujos, sin el PDF', () => {
+  const doc = { paginas: [{ ancho: 297, alto: 210, pdfPagina: 0, cuadros: [{ id: 'c1', texto: 'LISTA 160', x: 20, y: 30 }], trazos: [{ id: 't1', puntos: [[1, 2]] }] }] };
+  const d = D.extraer(doc, 'boleta.pdf');
+  assert.equal(d.formato, 'disposicion-braille');
+  assert.equal(d.pdfOrigen, 'boleta.pdf');
+  assert.equal(JSON.stringify(d).includes('base64'), false);
+  assert.deepEqual(D.contar(d), { cuadros: 1, dibujos: 1 });
+});
+
+test('disposición: reemplazar y agregar sobre un documento nuevo', () => {
+  const origen = { paginas: [{ ancho: 297, alto: 210, cuadros: [{ id: 'c1', texto: 'BRUNT', x: 25, y: 130, alineacion: 'centro' }], trazos: [] }] };
+  const d = D.extraer(origen, 'b.pdf');
+  let n = 0; const id = p => 'nuevo-' + p + (++n);
+  const vacia = (ancho, alto, extra) => Object.assign({ ancho, alto, cuadros: [], trazos: [] }, extra);
+  const destino = { paginas: [{ ancho: 297, alto: 210, cuadros: [{ id: 'x', texto: 'viejo', x: 1, y: 1 }], trazos: [] }] };
+  const r = D.aplicar(destino, d, 'reemplazar', id, vacia);
+  assert.equal(r.cuadros, 1);
+  assert.equal(destino.paginas[0].cuadros.length, 1);
+  assert.equal(destino.paginas[0].cuadros[0].texto, 'BRUNT');
+  assert.equal(destino.paginas[0].cuadros[0].x, 25);
+  assert.notEqual(destino.paginas[0].cuadros[0].id, 'c1');
+  D.aplicar(destino, d, 'agregar', id, vacia);
+  assert.equal(destino.paginas[0].cuadros.length, 2);
+});
+
+test('disposición: avisa si la página mide distinto y agrega páginas que faltan', () => {
+  const d = { formato: 'disposicion-braille', version: 1, paginas: [
+    { ancho: 210, alto: 297, cuadros: [], trazos: [] }, { ancho: 297, alto: 210, cuadros: [{ id: 'a', texto: 'x', x: 0, y: 0 }], trazos: [] }] };
+  const doc = { paginas: [{ ancho: 297, alto: 210, cuadros: [], trazos: [] }] };
+  const r = D.aplicar(doc, d, 'reemplazar', p => p + Math.random(), (ancho, alto, e) => Object.assign({ ancho, alto, cuadros: [], trazos: [] }, e));
+  assert.equal(doc.paginas.length, 2);
+  assert.ok(r.avisos.some(a => /mide/.test(a)));
+  assert.ok(r.avisos.some(a => /se agregó/.test(a)));
+  assert.throws(() => D.aplicar(doc, { formato: 'otro' }, 'reemplazar', () => 'x', () => ({})));
 });

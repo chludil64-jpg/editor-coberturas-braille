@@ -13,7 +13,7 @@
   /**
    * Medidas del braille según el perfil.
    * Con el codificador «grilla» (Everest-D V4) la impresora solo pone puntos en una
-   * grilla fija (medida: 2,05 mm horizontal, 2,10 mm vertical). Entonces el braille
+   * grilla fija (medida real: 2,05 mm transversal y 2,02 mm en el avance). Entonces el braille
    * se arma sobre esa grilla —1 paso entre puntos, 3 entre celdas, 5 entre renglones—
    * y todos los puntos se ajustan a ella, para que la pantalla muestre lo que sale.
    * `ancho`/`alto` (mm de la página) sirven para saber si el diseño se gira al imprimir.
@@ -336,6 +336,25 @@
     return calculo.puntos.map(p => [p.x, p.y]);
   }
 
+  /** Margen en el diseño correspondiente al borde de entrada de la hoja cargada. */
+  function margenesDeDiseno(perfil, ancho, alto) {
+    const mg = (perfil && perfil.margenes_mm) || {};
+    const carga = (perfil && perfil.carga) || {};
+    const base = Math.min(...['izquierdo', 'derecho', 'superior', 'inferior'].map(k => Number(mg[k]) || 0));
+    const salida = Object.fromEntries(['izquierdo', 'derecho', 'superior', 'inferior']
+      .map(k => [k, Number(mg[k]) || 0]));
+    // El perfil histórico guarda los 5 mm de entrada en «izquierdo»; al cambiar
+    // de orientación, ese valor debe acompañar al borde físico de entrada.
+    const franja = Math.max(salida.izquierdo, -(Number(carga.desplazamiento_y_mm) || 0));
+    const gira = (carga.orientacion === 'vertical' && ancho > alto) ||
+      (carga.orientacion === 'horizontal' && alto > ancho);
+    const borde = !gira ? 'superior' :
+      carga.sentido_giro === 'antihorario' ? 'derecho' : 'izquierdo';
+    if (borde !== 'izquierdo') salida.izquierdo = base;
+    salida[borde] = Math.max(salida[borde], franja);
+    return salida;
+  }
+
   /**
    * Avisos de una página: desbordes, fuera de hoja, zona no imprimible,
    * choques entre cuadros, puntos demasiado juntos y caracteres sin transcribir.
@@ -343,8 +362,8 @@
   function avisos(pagina, calculo, perfil) {
     const lista = [];
     const minimo = (perfil && Number(perfil.separacion_minima_mm)) || 2.0;
-    const mg = (perfil && perfil.margenes_mm) || { izquierdo: 0, derecho: 0, superior: 0, inferior: 0 };
     const W = pagina.ancho, H = pagina.alto;
+    const mg = margenesDeDiseno(perfil, W, H);
     const hoja = (perfil && perfil.hoja) || { ancho_max_mm: 297, alto_max_mm: 210 };
     const lmax = Math.max(hoja.ancho_max_mm, hoja.alto_max_mm), lmin = Math.min(hoja.ancho_max_mm, hoja.alto_max_mm);
     if (Math.max(W, H) > lmax + 0.5 || Math.min(W, H) > lmin + 0.5) {
@@ -406,7 +425,7 @@
   const api = {
     MEDIDAS, medidasDePerfil, ajustarAGrilla, calcularCuadro, ubicarSegunTinta, partirEnRenglones,
     muestrearLinea, muestrearPoligono, muestrearRectangulo, muestrearTrayecto, muestrearElipse,
-    quitarDuplicados, ralear, calcularPagina, listaParaExportar, avisos, rectCuadro, anchoRenglon
+    quitarDuplicados, ralear, calcularPagina, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else raiz.Grilla = api;
