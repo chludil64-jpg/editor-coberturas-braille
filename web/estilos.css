@@ -206,6 +206,13 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 #img-vista, #img-original { border: 1px solid var(--borde); background: #fff; max-width: 100%; height: auto; display: block; }
 .comparar-imagen { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
 .comparar-imagen > div { min-width: 0; }
+.tabla-capas-contenedor { max-width: 100%; overflow-x: auto; }
+#img-tabla-capas { width: 100%; border-collapse: collapse; font-size: .9rem; }
+#img-tabla-capas th, #img-tabla-capas td { border: 1px solid var(--borde); padding: 5px; text-align: left; vertical-align: middle; }
+#img-tabla-capas thead { background: var(--fondo); color: var(--texto); }
+#img-tabla-capas select { min-width: 115px; max-width: 180px; }
+#img-tabla-capas canvas { display: block; width: 72px; height: 54px; border: 1px solid var(--borde); background: #fff; }
+.img-muestra-color { display: inline-block; width: 22px; height: 22px; border: 2px solid #111; vertical-align: middle; }
 @media (max-width: 600px) { .comparar-imagen { grid-template-columns: 1fr; } }
 
 @media (max-width: 1100px) {

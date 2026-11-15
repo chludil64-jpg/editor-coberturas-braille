@@ -119,6 +119,27 @@
         const x=o.x+xx*o.ancho-cx,y=o.y+yy*o.alto-cy;
         return [red(cx+x*Math.cos(ang)-y*Math.sin(ang)),red(cy+x*Math.sin(ang)+y*Math.cos(ang))];
       };
+      if(o.mapaCapa){
+        const estilo=o.estiloMapa||'continua', ciclo=estilo==='ultrafina'?[1,0,0]:estilo==='punteada'?[1,0]:LINEAS[estilo]||LINEAS.continua;
+        for(const linea of o.polilineas||[]){const v=linea.map(llevar);let arco=0;
+          for(let i=0;i<v.length-1;i++){const a=v[i],b=v[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(l/paso));
+            for(let j=0;j<=n;j++)if(ciclo[Math.floor((arco+j*l/n)/paso)%ciclo.length])salida.push([red(a[0]+(b[0]-a[0])*j/n),red(a[1]+(b[1]-a[1])*j/n)]);arco+=l;}}
+        for(const p of o.simbolos||[]){const q=llevar(p);salida.push(q);if(estilo==='cuadradito')for(const d of [[px,0],[-px,0],[0,py],[0,-py]])salida.push([red(q[0]+d[0]),red(q[1]+d[1])]);}
+        if(o.mascara&&estilo!=='sin-relleno'){
+          const mask=o.mascara,ang=-(o.rotacion||0)*Math.PI/180,cx=o.x+o.ancho/2,cy=o.y+o.alto/2;
+          const x0=Math.min(...geometria(o).map(q=>q[0])),x1=Math.max(...geometria(o).map(q=>q[0]));
+          const y0=Math.min(...geometria(o).map(q=>q[1])),y1=Math.max(...geometria(o).map(q=>q[1]));
+          const cada=estilo==='reticula8'?4:3;
+          for(let iy=Math.ceil(y0/py);iy<=Math.floor(y1/py);iy++)for(let ix=Math.ceil(x0/px);ix<=Math.floor(x1/px);ix++){
+            const usar=estilo==='reticula6'||estilo==='reticula8'?ix%cada===0&&iy%cada===0:estilo==='horizontales'?iy%3===0:estilo==='diagonales'?(ix+iy)%3===0:estilo==='disperso'?iy%4===0&&ix%4===0:false;
+            if(!usar)continue;const x=ix*px-cx,y=iy*py-cy,rx=cx+x*Math.cos(ang)-y*Math.sin(ang),ry=cy+x*Math.sin(ang)+y*Math.cos(ang);
+            let u=(rx-o.x)/o.ancho,v=(ry-o.y)/o.alto;if(o.espejoX)u=1-u;if(o.espejoY)v=1-v;
+            const mx=Math.floor(u*mask.W),my=Math.floor(v*mask.H);if(mx<0||my<0||mx>=mask.W||my>=mask.H)continue;
+            const row=mask.filas[my]||[];if(row.some(r=>mx>=r[0]&&mx<=r[1]))salida.push([red(ix*px),red(iy*py)]);
+          }
+        }
+        return salida;
+      }
       for(const linea of o.polilineas||[]){
         const v=linea.map(llevar);let distancia=0,ciclo=LINEAS[o.linea]||LINEAS.continua;
         for(let i=0;i<v.length-1;i++){

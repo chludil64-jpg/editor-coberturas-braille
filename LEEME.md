@@ -87,6 +87,12 @@ En el perfil también se elige cómo entra la hoja: **apaisada** (A4 horizontal,
 
 Medidas: hoja **A4 como máximo** (297 × 210 mm horizontal o 210 × 297 mm vertical). Las páginas de PDF mayores que A4 muestran un aviso. La Everest-D V4 admite hojas de 130 a 297 mm de ancho; papel de 120 a 180 g/m². El acetato hay que probarlo.
 
+## Mapas por capas de color
+
+En **Importar imagen**, elegí **Mapa por capas de color** y cargá un PNG/JPG o el fondo del PDF. El editor agrupa colores en Lab (K de 4 a 12, predeterminado 8) y muestra una miniatura aislada, porcentaje y medidas por capa. Revisá **significado** y **estilo táctil**; las capas marcadas **texto** o **ignorar** no se agregan. Los rótulos braille se ponen a mano.
+
+Usá **Vista previa en puntos** para ver una capa o el conjunto sobre la grilla del perfil actual. **Agregar al dibujo** crea un grupo editable: movelo, escalalo o rotalo con las manijas. Las áreas se representan con textura; el contorno se agrega solo si marcás la casilla. Para reasignar, seleccioná una capa del grupo y elegí **Reconvertir imagen**: la receta y la imagen reducida se guardan en el proyecto. Antes de imprimir, revisá el aviso de hasta cinco estilos de línea y cinco texturas, y comprobá la legibilidad táctil del resultado.
+
 ## Archivos
 
 - `iniciar.bat` — arranca todo.
