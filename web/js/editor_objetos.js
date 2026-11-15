@@ -106,9 +106,9 @@
     const vals={nombre:o?o.nombre:c.nombre||c.texto.split('\n')[0],x:b.x0,y:b.y0,ancho:b.ancho,alto:b.alto,rotacion:o?.rotacion||0,linea:o?.linea||'ninguna',relleno:o?.relleno||'ninguno',capa:o?.capa||'rotulos'};
     Object.entries(campos).forEach(([k,id])=>{if(document.activeElement!==$(id)) $(id).value=vals[k];});
     $('obj-ancho').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';$('obj-alto').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';
-    for(const id of ['obj-proporcion','obj-girar90','obj-voltear-h','obj-voltear-v','obj-restablecer','obj-reconvertir'])$(id).disabled=!!c;
-    $('obj-restablecer').disabled=!!c||o.tipo!=='imagen';
-    $('obj-reconvertir').disabled=!!c||o.tipo!=='imagen'||!o.original;
+    for(const id of ['obj-proporcion','obj-girar90','obj-voltear-h','obj-voltear-v','obj-restablecer'])$(id).disabled=!!c;
+    $('obj-restablecer').disabled=!!c||!['imagen','referencia'].includes(o.tipo);
+    $('obj-ref-opacidad-label').hidden=!o||o.tipo!=='referencia';if(o?.tipo==='referencia')$('obj-ref-opacidad').value=Math.round((o.opacidad??.5)*100);
     for(const k of ['rotacion','linea','relleno','capa'])$(campos[k]).disabled=!!c;
   }
   Object.entries(campos).forEach(([k,id])=>$(id).addEventListener('change',()=>{
@@ -138,7 +138,9 @@
     App.registrar();reemplazar(o.id,Object.assign({},o,{ancho:o.baseAncho,alto:o.baseAlto,rotacion:0,espejoX:false,espejoY:false}));
     App.cambio('objetos');App.anunciar('Tamaño original restablecido.');
   });
-  $('obj-reconvertir').addEventListener('click',()=>{const o=App.ui.sel&&buscar(App.ui.sel.id);if(o?.tipo==='imagen')App.Imagen.reconvertir(o);});
+  $('obj-ref-opacidad').addEventListener('change',()=>{const o=App.ui.sel&&buscar(App.ui.sel.id);if(o?.tipo!=='referencia')return;App.registrar();o.opacidad=Math.max(0,Math.min(1,Number($('obj-ref-opacidad').value)/100));App.cambio('objetos');App.anunciar('Opacidad de referencia actualizada.');});
+  function unirSeleccion(){const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado&&['linea','polilinea'].includes(o.tipo));if(a.length!==2){App.anunciar('Elegí exactamente dos líneas abiertas con Mayúsculas y clic.');return;}try{const nuevo=O.unirLineas(a[0],a[1],Math.max(...O.pasos(App.medidas()))*1.5);App.registrar();reemplazar(a[0].id,nuevo);App.pagina().objetos=objetos().filter(o=>o.id!==a[1].id);seleccionar(nuevo.id,false);App.cambio('objetos');App.anunciar('Dos líneas unidas.');}catch(e){App.anunciar(e.message);}}
+  $('btn-unir-lineas').addEventListener('click',unirSeleccion);$('btn-unir-prop').addEventListener('click',unirSeleccion);
   function muestras() {
     const cont=$('muestras-patrones');
     for(const tipo of Object.keys(O.LINEAS).concat(Object.keys(O.RELLENOS).filter(x=>x!=='ninguno'))){

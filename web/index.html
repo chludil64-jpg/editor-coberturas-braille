@@ -20,6 +20,7 @@
       <div id="menu-archivo" class="menu-panel" role="menu" aria-labelledby="menu-archivo-boton" hidden>
         <button type="button" role="menuitem" id="btn-abrir-pdf" tabindex="-1">Abrir PDF…</button>
         <button type="button" role="menuitem" id="btn-abrir-proyecto" tabindex="-1">Abrir proyecto…</button>
+        <button type="button" role="menuitem" id="btn-svg-menu" tabindex="-1">Importar SVG…</button>
         <button type="button" role="menuitem" id="btn-guardar-proyecto" tabindex="-1">Guardar proyecto</button>
         <button type="button" role="menuitem" id="btn-exportar-disposicion" tabindex="-1">Exportar disposición braille…</button>
         <button type="button" role="menuitem" id="btn-importar-disposicion" tabindex="-1">Importar disposición braille…</button>
@@ -191,7 +192,14 @@
         <label><input type="radio" name="herramienta" value="elipse"> Elipse</label>
         <label><input type="radio" name="herramienta" value="mano"> Mano alzada</label>
         <label><input type="radio" name="herramienta" value="goma"> Goma</label>
+        <label><input type="radio" name="herramienta" value="lazo"> Lazo magnético</label>
+        <label><input type="radio" name="herramienta" value="editar-vertices"> Editar vértices</label>
+        <label><input type="radio" name="herramienta" value="borrar-linea"> Borrar línea</label>
+        <label><input type="radio" name="herramienta" value="tijera"> Tijera</label>
       </fieldset>
+      <div class="fila dos"><label>Significado del lazo <select id="lazo-significado"><option>costa</option><option>río</option><option>límite</option><option>ruta</option><option>área de agua</option><option>otro</option></select></label><label><input type="checkbox" id="lazo-iman" checked> Imán</label></div>
+      <div class="fila tres"><label>Intensidad <input id="lazo-intensidad" type="range" min="0" max="10" value="6"></label><label>Radio (mm) <input id="lazo-radio" type="number" min="1" max="40" value="8"></label><label>Simplificación (mm) <input id="lazo-simplificar" type="number" min="0" max="5" step="0.1" value="0.4"></label></div>
+      <button type="button" id="btn-unir-lineas">Unir dos líneas seleccionadas</button>
       <div class="fila dos"><label>Estilo de línea <select id="estilo-linea"><option value="continua">Continua</option><option value="punteada">Punteada</option><option value="rayada">Rayada</option><option value="ninguna">Ninguna</option></select></label>
       <label>Relleno táctil <select id="estilo-relleno"><option value="ninguno">Ninguno</option><option value="reticula">Retícula</option><option value="horizontales">Horizontales</option><option value="diagonales">Diagonales</option><option value="disperso">Disperso</option></select></label></div>
       <div id="muestras-patrones" aria-label="Muestras de patrones a escala real"></div>
@@ -230,7 +238,8 @@
         </form>
       </details>
       <div class="fila botones">
-        <button type="button" id="btn-imagen">Importar imagen…</button>
+        <button type="button" id="btn-imagen">Imagen de referencia…</button>
+        <button type="button" id="btn-svg">Importar SVG…</button>
         <button type="button" id="btn-calcar">Calcar vectores del PDF…</button>
         <button type="button" id="btn-ralear">Ralear puntos</button>
       </div>
@@ -243,7 +252,8 @@
       <label>Ancho (mm) <input id="obj-ancho" type="number" step="0.01" min="0"></label><label>Alto (mm) <input id="obj-alto" type="number" step="0.01" min="0"></label>
       <label class="corto"><input id="obj-proporcion" type="checkbox" checked> Mantener proporción</label>
       <label>Rotación (°) <input id="obj-rotacion" type="number" step="1"></label></div>
-      <div class="fila botones"><button type="button" id="obj-girar90">Girar 90°</button><button type="button" id="obj-voltear-h">Voltear horizontal</button><button type="button" id="obj-voltear-v">Voltear vertical</button><button type="button" id="obj-restablecer">Restablecer tamaño original</button><button type="button" id="obj-reconvertir">Reconvertir imagen…</button></div>
+      <div class="fila botones"><button type="button" id="obj-girar90">Girar 90°</button><button type="button" id="obj-voltear-h">Voltear horizontal</button><button type="button" id="obj-voltear-v">Voltear vertical</button><button type="button" id="obj-restablecer">Restablecer tamaño original</button><button type="button" id="btn-unir-prop">Unir dos líneas seleccionadas</button></div>
+      <label id="obj-ref-opacidad-label" hidden>Opacidad de referencia (%) <input id="obj-ref-opacidad" type="number" min="0" max="100"></label>
       <label>Línea <select id="obj-linea"><option>continua</option><option>punteada</option><option>rayada</option><option>ninguna</option></select></label>
       <label>Relleno <select id="obj-relleno"><option>ninguno</option><option>reticula</option><option>horizontales</option><option>diagonales</option><option>disperso</option></select></label>
       <label>Capa <select id="obj-capa"><option>referencia</option><option>dibujo</option><option value="rotulos">rótulos</option><option>claves</option></select></label></div>
@@ -449,66 +459,34 @@
   </form>
 </dialog>
 
-<!-- Diálogo: importar imagen -->
+<!-- Diálogo: imagen de referencia -->
 <dialog id="dlg-imagen" aria-labelledby="t-imagen">
   <form method="dialog" class="editor ancho-dlg">
-    <h2 id="t-imagen">Importar imagen como líneas editables</h2>
+    <h2 id="t-imagen">Imagen de referencia</h2>
     <label for="img-archivo">Imagen (PNG o JPG)</label>
     <input type="file" id="img-archivo" accept="image/png,image/jpeg">
     <p class="nota">O usá el mapa o dibujo que ya está de fondo en la página del PDF: queda del mismo tamaño y en el mismo lugar.</p>
     <button type="button" id="btn-img-fondo">Usar el fondo de la página</button>
-    <div class="fila tres">
-      <label>Modo
-        <select id="img-modo">
-            <option value="bordes">Bordes de mapa (límites entre colores)</option>
-            <option value="capas-color">Mapa por capas de color</option>
-          <option value="regiones">Regiones de color (mapas políticos)</option>
-          <option value="lineas">Líneas oscuras (mapa o dibujo en blanco y negro)</option>
-          <option value="umbral">Umbral (todo lo oscuro, relleno)</option>
-          <option value="contornos">Contornos de lo oscuro</option>
-          <option value="relleno">Contorno con relleno</option>
-        </select>
-      </label>
-      <label>Umbral de brillo <input type="range" id="img-umbral" min="1" max="254" value="128"></label>
-      <label><input type="checkbox" id="img-invertir"> Invertir</label>
-    </div>
-    <fieldset id="img-opciones-mapa">
-      <legend>Bordes de mapa</legend>
-      <div class="fila cuatro">
-        <label>Sensibilidad <input type="range" id="img-sens" min="0" max="100" value="80"
-          aria-describedby="img-sens-ayuda"></label>
-        <label>Suavizado <input type="range" id="img-suavizado" min="0" max="3" value="0"></label>
-        <label>Ignorar detalles menores a (mm) <input type="number" id="img-detalle" value="4" min="0" max="40" step="0.5"></label>
-        <label><input type="checkbox" id="img-sueltos" checked> Quitar puntos sueltos</label>
-      </div>
-      <label><input type="checkbox" id="img-texto" checked> Quitar nombres y números escritos en el mapa</label>
-      <div class="fila dos" id="img-regiones-opciones"><label>Cantidad de colores <input id="img-colores" type="number" min="2" max="12" value="6"></label><label>Área mínima de región (mm²) <input id="img-area" type="number" min="0" step="1" value="4"></label></div>
-      <div class="fila tres"><label>Simplificación (mm) <input id="img-simplificacion" type="number" min="0" max="5" step="0.1" value="0.4"></label><label>Suavizar curvas <select id="img-chaikin"><option value="0">No</option><option value="1">Una pasada</option><option value="2">Dos pasadas</option></select></label><label>Largo mínimo de línea (mm) <input id="img-min-largo" type="number" min="0" step="0.5" value="2"></label></div>
-      <p class="nota" id="img-sens-ayuda">Más sensibilidad detecta límites entre colores parecidos. «Ignorar detalles» quita manchas chicas. Si el mapa es un escaneo con granulado, subí el suavizado. Los nombres que tocan una línea pueden quedar: borralos con la goma.</p>
-      </fieldset>
-      <section id="img-panel-capas" hidden aria-labelledby="img-t-capas">
-        <h3 id="img-t-capas">Capas por color</h3>
-        <label>Cantidad de colores K (4 a 12) <input id="img-k" type="number" min="4" max="12" value="8"></label>
-        <p>Revisá el significado y el estilo de cada color antes de agregarlo. Los textos se omiten; agregá los rótulos braille a mano.</p>
-        <div class="tabla-capas-contenedor"><table id="img-tabla-capas"><caption>Colores detectados en el mapa</caption><thead><tr><th scope="col">Color y muestra</th><th scope="col">Porcentaje</th><th scope="col">Medidas y sugerencia</th><th scope="col">Significado</th><th scope="col">Estilo táctil</th><th scope="col">Contorno</th></tr></thead><tbody></tbody></table></div>
-        <label>Ver puntos de <select id="img-vista-capa"><option value="todas">Todas las capas</option></select></label>
-        <button type="button" id="btn-img-puntos">Vista previa en puntos</button>
-        <p id="img-aviso-bana" role="status" aria-live="polite"></p>
-      </section>
     <div class="fila cuatro">
       <label>Ancho (mm) <input type="number" id="img-ancho" value="60" min="5" step="1"></label>
       <label>X (mm) <input type="number" id="img-x" value="20" step="0.5"></label>
       <label>Y (mm) <input type="number" id="img-y" value="20" step="0.5"></label>
-      <label>Paso (mm) <input type="number" id="img-paso" value="2" min="1" step="0.1"></label>
+      <label>Opacidad (%) <input type="number" id="img-opacidad" value="50" min="0" max="100"></label>
     </div>
-    <div class="comparar-imagen"><div><strong>Original</strong><canvas id="img-original" width="300" height="220" role="img" aria-label="Vista previa de la imagen original"></canvas></div><div><strong>Resultado</strong><canvas id="img-vista" width="300" height="220" role="img" aria-label="Vista previa de las líneas convertidas"></canvas></div></div>
+    <label><input type="checkbox" id="img-bloqueado" checked> Bloquear referencia</label>
     <p id="img-estado" class="estado" aria-live="polite"></p>
     <div class="fila botones">
-      <button type="button" id="btn-img-agregar" class="destacado" disabled>Agregar al dibujo</button>
+      <button type="button" id="btn-img-agregar" class="destacado" disabled>Colocar como fondo</button>
       <button value="cancelar">Cerrar</button>
     </div>
   </form>
 </dialog>
+
+<dialog id="dlg-svg" aria-labelledby="t-svg"><div class="editor ancho-dlg"><h2 id="t-svg">Importar SVG</h2>
+  <label>Archivo SVG <input id="svg-archivo" type="file" accept="image/svg+xml,.svg"></label>
+  <div class="fila dos"><label>Ancho (mm) <input id="svg-ancho" type="number" min="5" value="100"></label><label>X (mm) <input id="svg-x" type="number" value="10"></label><label>Y (mm) <input id="svg-y" type="number" value="10"></label></div>
+  <p id="svg-estado" role="status" aria-live="polite"></p><div class="tabla-capas-contenedor"><table id="svg-tabla"><caption>Capas por color del SVG</caption><thead><tr><th>Color y muestra</th><th>Elementos</th><th>Miniatura</th><th>Significado</th><th>Estilo</th></tr></thead><tbody></tbody></table></div>
+  <div class="fila botones"><button id="svg-agregar" type="button" disabled>Agregar capas editables</button><button id="svg-cerrar" type="button">Cerrar</button></div></div></dialog>
 
 <!-- Diálogo: calcar vectores -->
 <dialog id="dlg-calcar" aria-labelledby="t-calcar">
@@ -537,9 +515,9 @@
 <script src="js/lienzo.js"></script>
 <script src="js/cuadros.js"></script>
 <script src="js/dibujo.js"></script>
-<script src="js/bordes.js"></script>
-<script src="js/vectorizar.js"></script>
 <script src="js/capas_color.js"></script>
+<script src="js/svg_importar.js"></script>
+<script src="js/lazo.js"></script>
 <script src="js/imagen.js"></script>
 <script src="js/calibracion.js"></script>
 <script src="js/principal.js"></script>

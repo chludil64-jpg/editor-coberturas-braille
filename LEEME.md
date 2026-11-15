@@ -18,7 +18,7 @@ Funciona sin internet. Se usa en el navegador, pero todo corre en esta PC: el se
 
 ### Editor de gráficos táctiles (fase 1)
 
-**Imágenes editables (v2):** «Importar imagen…» permite extraer bordes con Canny, líneas oscuras o límites entre regiones de color (útil para mapas). La vista previa compara original y resultado. La imagen se guarda como líneas en mm, por lo que al ampliarla se generan puntos nuevos con el paso de la grilla. Desde Propiedades podés cambiar ancho y alto con proporción fija, girar, voltear, restablecer el tamaño original o reconvertirla. Las manijas del lienzo permiten cambiar tamaño y rotación; Mayús conserva la proporción o ajusta la rotación a pasos de 15°. Con el lienzo enfocado, Ctrl+flechas o +/− cambian el tamaño un 5 % y R/Mayús+R giran 15°. Revisá siempre la legibilidad táctil y el PDF de prueba antes de imprimir.
+**Imagen de referencia:** desde «Crear → Imagen de referencia…» cargá un PNG/JPG o elegí «Usar el fondo de la página» para calcar un PDF ya abierto. Ajustá ancho y posición en mm, opacidad y bloqueo. La referencia queda en el proyecto como fondo visual; no genera puntos ni se envía a la impresora. Podés seleccionarla en «Páginas y elementos» para moverla, escalarla, girarla o cambiar su opacidad.
 
 Cada página puede tener objetos editables en milímetros: línea, polilínea, polígono, rectángulo, elipse y punto. En «Crear» elegí el estilo de línea y el relleno; la lista «Páginas y elementos» permite seleccionar, renombrar, ordenar, bloquear, ocultar y borrar. Con el lienzo enfocado, las flechas mueven un paso de grilla (Mayús: cinco), Supr borra, Ctrl+D duplica, Ctrl+G agrupa, Ctrl+Mayús+G desagrupa y Ctrl+A selecciona los objetos. Para polilíneas y polígonos, hacé clic en cada vértice y terminá con Enter o doble clic; Escape cancela. También podés editar posición, tamaño y rotación numéricamente en «Propiedades». «Comprobar» abre los avisos de legibilidad táctil; al imprimir, se muestra su resumen antes del envío. Los proyectos viejos convierten los trazos en objetos de puntos fijos al abrirlos.
 
@@ -31,7 +31,9 @@ Cada página puede tener objetos editables en milímetros: línea, polilínea, p
 4. **Mover**: arrastrar con el mouse, o con el lienzo enfocado usar las flechas (0,5 mm; Mayúscula + flecha = 5 mm). **Av Pág / Re Pág** pasan de un elemento al siguiente, **Suprimir** borra, **Escape** suelta. **Ctrl+Z / Ctrl+Y** deshacen y rehacen; **Ctrl+S** guarda el proyecto.
 5. **Avisos** (panel derecho): braille más ancho que el texto impreso, puntos fuera de la hoja o en la zona no imprimible, cuadros que se chocan, puntos a menos de la separación mínima (2 mm por defecto) y caracteres sin transcribir.
 6. **Dibujo en relieve**: herramientas punto, línea, rectángulo, elipse, mano alzada y goma (los dibujos se convierten en puntos cada «Paso» mm, 2 mm por defecto). Para teclado: «Agregar forma por coordenadas».
-   - **Importar imagen…**: PNG o JPG a puntos (umbral, contornos o contorno con relleno raleado), con ancho, posición y paso.
+   - **Lazo magnético**: elegí significado, estilo de línea y relleno. Hacé clic para iniciar y fijar tramos sobre la referencia; el imán propone un recorrido que sigue bordes y líneas. Podés apagarlo para unir clics con tramos rectos, y ajustar intensidad, radio y simplificación. Doble clic o Enter termina, Escape cancela, Retroceso quita el último tramo y un clic cerca del primer punto cierra el polígono. Con el lienzo enfocado, las flechas mueven el cursor de trazado y Enter fija un punto; Enter nuevamente en el mismo sitio termina.
+   - **Importar SVG…**: elegí el ancho final y la posición en mm. La tabla agrupa elementos por colores parecidos de relleno y trazo; revisá significado y estilo táctil antes de agregarlos. Agua y tierra se vuelven áreas con textura; costas, ríos, límites y rutas se vuelven líneas editables. Los textos se omiten. Cada significado forma una capa agrupada que podés transformar con las manijas.
+   - **Corregir líneas**: «Editar vértices» permite arrastrar un vértice, agregar uno con doble clic sobre un tramo y borrar el vértice elegido con Supr. «Borrar línea» borra la línea entera con un clic; Alt+clic borra solo el tramo. «Tijera» corta una línea en dos. Elegí dos líneas con Mayús y clic y tocá «Unir dos líneas seleccionadas» para unir extremos cercanos. La goma sigue borrando puntos fijos de una zona. Todas estas operaciones se pueden deshacer y rehacer.
    - **Calcar vectores del PDF…**: pasa las líneas y recuadros del PDF (casilleros de marcado) a líneas de puntos.
    - **Ralear puntos**: quita puntos de dibujo a menos de la separación mínima (nunca toca el braille).
    - **Separar el dibujo del braille**: omite los puntos de dibujo que quedan a menos de X mm de un cuadro braille.
@@ -87,11 +89,9 @@ En el perfil también se elige cómo entra la hoja: **apaisada** (A4 horizontal,
 
 Medidas: hoja **A4 como máximo** (297 × 210 mm horizontal o 210 × 297 mm vertical). Las páginas de PDF mayores que A4 muestran un aviso. La Everest-D V4 admite hojas de 130 a 297 mm de ancho; papel de 120 a 180 g/m². El acetato hay que probarlo.
 
-## Mapas por capas de color
+## Mapas táctiles
 
-En **Importar imagen**, elegí **Mapa por capas de color** y cargá un PNG/JPG o el fondo del PDF. El editor agrupa colores en Lab (K de 4 a 12, predeterminado 8) y muestra una miniatura aislada, porcentaje y medidas por capa. Revisá **significado** y **estilo táctil**; las capas marcadas **texto** o **ignorar** no se agregan. Los rótulos braille se ponen a mano.
-
-Usá **Vista previa en puntos** para ver una capa o el conjunto sobre la grilla del perfil actual. **Agregar al dibujo** crea un grupo editable: movelo, escalalo o rotalo con las manijas. Las áreas se representan con textura; el contorno se agrega solo si marcás la casilla. Para reasignar, seleccioná una capa del grupo y elegí **Reconvertir imagen**: la receta y la imagen reducida se guardan en el proyecto. Antes de imprimir, revisá el aviso de hasta cinco estilos de línea y cinco texturas, y comprobá la legibilidad táctil del resultado.
+Para mapas raster, colocá una imagen de referencia y trazá con el lazo magnético o con línea, polilínea y mano alzada. Para mapas SVG, revisá la tabla de colores y corregí a mano los significados sugeridos antes de importar. Revisá siempre la separación y legibilidad táctil en el PDF de prueba antes de imprimir.
 
 ## Archivos
 

@@ -12,6 +12,9 @@
   const ctx = lienzo.getContext('2d');
   const contenedor = document.getElementById('contenedor-lienzo');
   const fondos = new Map(); // clave -> Image
+  const referencias=new Map();
+  let mapaLazo=null,claveLazo='';
+  let lazo=null,cursorLazo=[10,10],verticeElegido=null;
   let arrastre = null;      // estado del gesto en curso
   let vistaPrevia = null;   // puntos de la forma que se está dibujando
   let verticesPendientes = null;
@@ -106,6 +109,7 @@
       ctx.drawImage(img, aPx(0), aPx(0), p.ancho * e, p.alto * e);
       ctx.globalAlpha = 1;
     }
+    for(const o of p.objetos||[]){if(o.tipo!=='referencia'||o.oculto||p.capasVisibles?.referencia===false)continue;let ref=referencias.get(o.src);if(!ref){ref=new Image();ref.onload=()=>dibujar();ref.src=o.src;referencias.set(o.src,ref);}if(ref.complete&&ref.naturalWidth){ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,o.opacidad??.5));const c=[o.x+o.ancho/2,o.y+o.alto/2];ctx.translate(aPx(c[0]),aPx(c[1]));ctx.rotate((o.rotacion||0)*Math.PI/180);ctx.drawImage(ref,-o.ancho*e/2,-o.alto*e/2,o.ancho*e,o.alto*e);ctx.restore();}}
     // Zona no imprimible
     const mg = App.perfil ? Grilla.margenesDeDiseno(App.perfil, p.ancho, p.alto) : null;
     if (mg) {
@@ -180,6 +184,8 @@
       }
       ctx.fill();
     }
+    if(lazo?.puntos.length){const pts=lazo.puntos.concat(lazo.preview||[]);ctx.strokeStyle='#9b2d00';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();pts.forEach((q,i)=>i?ctx.lineTo(aPx(q[0]),aPx(q[1])):ctx.moveTo(aPx(q[0]),aPx(q[1])));ctx.stroke();}
+    if(verticeElegido){ctx.fillStyle='#a32600';ctx.beginPath();ctx.arc(aPx(verticeElegido.p[0]),aPx(verticeElegido.p[1]),7,0,Math.PI*2);ctx.fill();}
     const bs=cajaSeleccion();if(bs){
       ctx.strokeStyle='#a32600';ctx.lineWidth=2;ctx.setLineDash([5,3]);
       ctx.strokeRect(aPx(bs.x0),aPx(bs.y0),(bs.x1-bs.x0)*e,(bs.y1-bs.y0)*e);ctx.setLineDash([]);
@@ -262,9 +268,19 @@
       t.puntos = t.puntos.filter(q => Math.hypot(q[0] - mm[0], q[1] - mm[1]) > r);
       quitados += antes - t.puntos.length;
     }
+    for(const o of p.objetos.filter(q=>['linea','polilinea','poligono'].includes(q.tipo)&&!q.bloqueado)){
+      const cerca=Objetos.objetoAPuntos(o,App.medidas()).some(q=>Math.hypot(q[0]-mm[0],q[1]-mm[1])<=r);
+      if(cerca){o.borrados=o.borrados||[];o.borrados.push([mm[0],mm[1],r]);quitados++;}
+    }
     p.objetos = p.objetos.filter(t => t.tipo!=='puntos'||t.puntos.length > 0);
     return quitados;
   }
+  function fuenteLazo(){const p=App.pagina(),o=(p.objetos||[]).find(q=>q.tipo==='referencia'&&!q.oculto),img=o?referencias.get(o.src):imagenFondo();if(!img||!img.naturalWidth)return null;return {img,o,x:o?.x||0,y:o?.y||0,w:o?.ancho||p.ancho,h:o?.alto||p.alto,clave:o?.src||`${App.pdf.id}:${p.pdfPagina}`};}
+  function prepararLazo(){const f=fuenteLazo();if(!f)return null;if(claveLazo!==f.clave){const c=document.createElement('canvas'),s=Math.min(1,700/Math.max(f.img.naturalWidth,f.img.naturalHeight));c.width=Math.max(1,Math.round(f.img.naturalWidth*s));c.height=Math.max(1,Math.round(f.img.naturalHeight*s));const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(f.img,0,0,c.width,c.height);mapaLazo=window.Lazo.costos(g.getImageData(0,0,c.width,c.height).data,c.width,c.height);claveLazo=f.clave;}return f;}
+  function tramoLazo(a,b){const f=prepararLazo();if(!f||!document.getElementById('lazo-iman').checked)return [a,b];const px=q=>[(q[0]-f.x)/f.w*mapaLazo.W,(q[1]-f.y)/f.h*mapaLazo.H],mm=q=>[f.x+q[0]/mapaLazo.W*f.w,f.y+q[1]/mapaLazo.H*f.h];const radio=Number(document.getElementById('lazo-radio').value)||8,inten=Number(document.getElementById('lazo-intensidad').value)/5;return window.Lazo.camino(mapaLazo,px(a),px(b),Math.ceil(radio*mapaLazo.W/f.w),inten).map(mm);}
+  function terminarLazo(cerrar=false){if(!lazo)return;const puntos=lazo.puntos;const minimo=cerrar?3:2;if(puntos.length>=minimo){const tipo=cerrar?'poligono':'polilinea',tol=Number(document.getElementById('lazo-simplificar').value)||0,v=window.Lazo.simplificar(puntos,tol);const sig=document.getElementById('lazo-significado').value;App.EditorObjetos.crear(tipo,{nombre:sig[0].toUpperCase()+sig.slice(1),vertices:v,cerrado:cerrar});App.anunciar(`${sig}: ${v.length} vértices. ${cerrar?'Forma cerrada.':'Trazo terminado.'}`);}lazo=null;dibujar();}
+  function lineaCercana(mm){const tol=Math.max(2,7/escala());let mejor=null;for(const o of App.pagina().objetos||[]){if(o.bloqueado||o.oculto||!['linea','polilinea','poligono'].includes(o.tipo))continue;const v=Objetos.geometria(o);for(let i=0;i<v.length-(o.tipo==='poligono'?0:1);i++){const d=Objetos.distanciaSegmento(mm[0],mm[1],v[i],v[(i+1)%v.length]);if(d<tol&&(!mejor||d<mejor.d))mejor={o,i,d};}}return mejor;}
+  function verticeCercano(mm){const o=App.ui.sel?.tipo==='objeto'&&App.EditorObjetos.buscar(App.ui.sel.id);if(!o||o.bloqueado||!['linea','polilinea','poligono'].includes(o.tipo))return null;const v=Objetos.geometria(o),i=v.findIndex(p=>Math.hypot(mm[0]-p[0],mm[1]-p[1])<Math.max(2,8/escala()));return i<0?null:{o,i,p:v[i]};}
 
   lienzo.addEventListener('pointerdown', ev => {
     if (ev.button !== 0) return;
@@ -272,6 +288,9 @@
     const mm = posicion(ev);
     const h = App.ui.herramienta;
     lienzo.setPointerCapture(ev.pointerId);
+    if(h==='lazo'){if(!lazo){lazo={puntos:[mm],tramos:[],preview:[]};App.anunciar('Lazo iniciado. Hacé clic para fijar tramos; Enter termina.');}else if(lazo.puntos.length>2&&Math.hypot(mm[0]-lazo.puntos[0][0],mm[1]-lazo.puntos[0][1])<2.5){const seg=tramoLazo(lazo.puntos.at(-1),lazo.puntos[0]);lazo.puntos.push(...seg.slice(1,-1));terminarLazo(true);return;}else{const seg=tramoLazo(lazo.puntos.at(-1),mm);lazo.tramos.push(seg);lazo.puntos.push(...seg.slice(1));App.anunciar(`Tramo ${lazo.tramos.length} fijado.`);}dibujar();return;}
+    if(h==='editar-vertices'){const v=verticeCercano(mm);if(v){verticeElegido=v;arrastre={tipo:'vertice',id:v.o.id,i:v.i,registrado:false};dibujar();}else{const hit=lineaCercana(mm);if(hit)App.EditorObjetos.seleccionar(hit.o.id,false);}return;}
+    if(h==='borrar-linea'||h==='tijera'){const hit=lineaCercana(mm);if(!hit)return;App.registrar();if(h==='borrar-linea'){if(ev.altKey){const partes=Objetos.borrarTramo(hit.o,hit.i);App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);for(const parte of partes){parte.id=App.nuevoId('o');parte.grupo=null;App.pagina().objetos.push(parte);}App.anunciar('Tramo borrado.');}else{App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);App.anunciar('Línea borrada.');}App.EditorObjetos.seleccionar(null,false);}else{try{const partes=Objetos.cortarLinea(hit.o,hit.i,mm);partes[0].id=hit.o.id;partes[1].id=App.nuevoId('o');partes[0].grupo=partes[1].grupo=null;App.EditorObjetos.reemplazar(hit.o.id,partes[0]);App.pagina().objetos.push(partes[1]);App.anunciar('Línea cortada en dos.');}catch(e){App.anunciar(e.message);}}App.cambio('objetos');return;}
     if (h === 'seleccionar') {
       const manija=tocarManija(mm);
       if(manija){
@@ -320,6 +339,8 @@
   lienzo.addEventListener('pointermove', ev => {
     const mm = posicion(ev);
     document.getElementById('cursor-mm').textContent = `x ${mm[0].toFixed(1)} mm · y ${mm[1].toFixed(1)} mm`;
+    cursorLazo=mm;
+    if(lazo&&!arrastre&&App.ui.herramienta==='lazo'){const now=performance.now();if(!lazo.ultimaVista||now-lazo.ultimaVista>80){lazo.preview=tramoLazo(lazo.puntos.at(-1),mm).slice(1);lazo.ultimaVista=now;dibujar();}}
     if(!arrastre&&App.ui.herramienta==='seleccionar'){
       const h=tocarManija(mm);lienzo.style.cursor=h==='rotar'?'grab':h?({n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',nw:'nwse-resize',se:'nwse-resize',ne:'nesw-resize',sw:'nesw-resize'}[h]):tocar(mm)?'move':'default';}
     if (!arrastre) return;
@@ -329,6 +350,7 @@
       if (!arrastre.registrado) { App.registrar(); arrastre.registrado = true; }
       mover(dx, dy, true);
       arrastre.ultimo = mm;
+    } else if(arrastre.tipo==='vertice'){const o=App.EditorObjetos.buscar(arrastre.id);if(!arrastre.registrado){App.registrar();arrastre.registrado=true;}App.EditorObjetos.reemplazar(o.id,Objetos.editarVertice(o,arrastre.i,mm));verticeElegido={o,i:arrastre.i,p:mm};App.cambio('arrastre');
     } else if(arrastre.tipo==='marco') { arrastre.ultimo=mm;dibujar();
     } else if(arrastre.tipo==='escalar') {
       if(!arrastre.registrado){App.registrar();arrastre.registrado=true;}
@@ -389,6 +411,7 @@
       const b=a.ultimo||a.inicio,x0=Math.min(a.inicio[0],b[0]),x1=Math.max(a.inicio[0],b[0]),y0=Math.min(a.inicio[1],b[1]),y1=Math.max(a.inicio[1],b[1]);
       const ids=App.pagina().objetos.filter(o=>{const r=Objetos.caja(o);return r.x0>=x0&&r.x1<=x1&&r.y0>=y0&&r.y1<=y1;}).map(o=>o.id);
       App.ui.seleccion=ids;App.ui.sel=ids.length?{tipo:'objeto',id:ids.at(-1)}:null;App.cambio('seleccion');
+    } else if(a.tipo==='vertice'&&a.registrado){App.cambio('objetos');App.anunciar('Vértice movido.');
     } else if((a.tipo==='escalar'||a.tipo==='rotar')&&a.registrado){App.cambio('objetos');App.anunciar('Forma transformada.');
     }
   }
@@ -429,6 +452,8 @@
 
   lienzo.addEventListener('keydown', ev => {
     const flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){lazo={puntos:[cursorLazo],tramos:[],preview:[]};App.anunciar('Lazo iniciado.');}else if(Math.hypot(cursorLazo[0]-lazo.puntos.at(-1)[0],cursorLazo[1]-lazo.puntos.at(-1)[1])<.5){terminarLazo();}else{const seg=tramoLazo(lazo.puntos.at(-1),cursorLazo);lazo.puntos.push(...seg.slice(1));lazo.tramos.push(seg);App.anunciar('Tramo fijado.');}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){lazo.tramos.pop();lazo.puntos=lazo.tramos.length?lazo.tramos.flatMap((s,i)=>i?s.slice(1):s):[lazo.puntos[0]];App.anunciar('Último tramo borrado.');ev.preventDefault();dibujar();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
+    if(ev.key==='Delete'&&verticeElegido&&App.ui.herramienta==='editar-vertices'){try{const v=verticeElegido,o=App.EditorObjetos.buscar(v.o.id);App.registrar();App.EditorObjetos.reemplazar(o.id,Objetos.quitarVertice(o,v.i));verticeElegido=null;App.cambio('objetos');App.anunciar('Vértice borrado.');}catch(e){App.anunciar(e.message);}ev.preventDefault();return;}
     if (flechas[ev.key]) {
       if (!App.buscarSel()) { App.anunciar('Elegí un elemento con Av Pág o desde la lista.'); ev.preventDefault(); return; }
       if(ev.ctrlKey&&App.ui.sel.tipo==='objeto'){
@@ -468,7 +493,7 @@
   });
   function terminarVertices(){if(!verticesPendientes)return;const v=verticesPendientes;verticesPendientes=null;vistaPrevia=null;
     if(v.puntos.length>=(v.tipo==='poligono'?3:2))App.EditorObjetos.crear(v.tipo,{vertices:v.puntos,cerrado:v.tipo==='poligono'});else dibujar();}
-  lienzo.addEventListener('dblclick',()=>terminarVertices());
+  lienzo.addEventListener('dblclick',ev=>{if(App.ui.herramienta==='lazo'){terminarLazo();return;}if(App.ui.herramienta==='editar-vertices'){const mm=posicion(ev),hit=lineaCercana(mm);if(hit){App.registrar();App.EditorObjetos.reemplazar(hit.o.id,Objetos.agregarVertice(hit.o,hit.i,mm));App.cambio('objetos');App.anunciar('Vértice agregado.');}return;}terminarVertices();});
 
   window.addEventListener('pointerup', () => { if (arrastre) terminar(null); });
 

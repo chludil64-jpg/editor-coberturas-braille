@@ -294,6 +294,16 @@
    * opciones: { medidas, separacionDibujo (mm; 0 = no separar) }
    * Devuelve { puntos: [{x, y, origen:'braille'|'dibujo', id}], cuadros: Map(id -> calc), quitados }
    */
+  /** Punto dentro de polígono (regla par-impar). */
+  function dentroPoligono(x, y, v) {
+    let adentro = false;
+    for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+      const a = v[i], b = v[j];
+      if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / ((b[1] - a[1]) || 1e-12) + a[0]) adentro = !adentro;
+    }
+    return adentro;
+  }
+
   function calcularPagina(pagina, opciones) {
     const op = Object.assign({ medidas: MEDIDAS, separacionDibujo: 0 }, opciones || {});
     const cuadros = new Map();
@@ -310,11 +320,22 @@
     const visibles = (pagina.objetos || []).filter(o => !o.oculto &&
       !(pagina.capasVisibles && pagina.capasVisibles[o.capa] === false))
       .slice().sort((a,b) => (a.orden || 0) - (b.orden || 0));
+    // Zonas importadas de un SVG: como en el SVG original, lo que está dibujado ENCIMA tapa lo de
+    // abajo. Por ejemplo, el mar suele ser un rectángulo de fondo con la tierra encima: el relleno
+    // del mar no tiene que aparecer sobre la tierra.
+    const zonasSvg = visibles.filter(o => o.grupoSvg && o.tipo === 'poligono')
+      .map(o => ({ o, v: Objetos.geometria(o), caja: Objetos.caja(o) }));
+    function tapado(o, x, y) {
+      if (!o.grupoSvg || o.tipo !== 'poligono' || !o.relleno || o.relleno === 'ninguno') return false;
+      return zonasSvg.some(z => z.o !== o && z.o.grupoSvg === o.grupoSvg && (z.o.orden || 0) > (o.orden || 0) &&
+        x >= z.caja.x0 && x <= z.caja.x1 && y >= z.caja.y0 && y <= z.caja.y1 && dentroPoligono(x, y, z.v));
+    }
     for (const o of visibles) {
       for (const p of Objetos.objetoAPuntos(o, op.medidas)) {
         if (op.separacionDibujo > 0 && rects.some(r => distanciaARect(p[0],p[1],r) < op.separacionDibujo)) {
           quitados++; continue;
         }
+        if (tapado(o, p[0], p[1])) continue;
         puntos.push({ x:p[0], y:p[1], origen:'objeto', id:o.id });
       }
     }

@@ -15,7 +15,7 @@
     return Object.assign({ id: null,
       tipo, nombre: tipo, capa: 'dibujo', rotacion: 0, bloqueado: false, oculto: false,
       grupo: null, orden: 0, linea: 'continua', relleno: 'ninguno',
-      x: 0, y: 0, ancho: 0, alto: 0, vertices: [], puntos: [], cerrado: false }, copiar(d));
+      x: 0, y: 0, ancho: 0, alto: 0, vertices: [], puntos: [], borrados: [], cerrado: false }, copiar(d));
   }
   function migrarTrazos(pagina) {
     pagina.objetos = pagina.objetos || [];
@@ -28,7 +28,7 @@
     return pagina;
   }
   function vertices(o) {
-    if (o.tipo === 'imagen') return [[o.x,o.y],[o.x+o.ancho,o.y],[o.x+o.ancho,o.y+o.alto],[o.x,o.y+o.alto]];
+    if (o.tipo === 'imagen' || o.tipo === 'referencia') return [[o.x,o.y],[o.x+o.ancho,o.y],[o.x+o.ancho,o.y+o.alto],[o.x,o.y+o.alto]];
     if (o.tipo === 'puntos') return (o.puntos || []).map(par);
     if (o.tipo === 'punto') return [[o.x, o.y]];
     if (o.tipo === 'linea' || o.tipo === 'polilinea' || o.tipo === 'poligono') return (o.vertices || []).map(par);
@@ -67,6 +67,7 @@
   }
   function mover(o, dx, dy) {
     const n=copiar(o);
+    n.borrados=(n.borrados||[]).map(q=>[red(q[0]+dx),red(q[1]+dy),q[2]]);
     if (['puntos','linea','polilinea','poligono'].includes(n.tipo)) {
       const k=n.tipo==='puntos'?'puntos':'vertices';
       n[k]=(n[k]||[]).map(q=>[red(q[0]+dx),red(q[1]+dy)]);
@@ -75,6 +76,7 @@
   }
   function escalar(o, sx, sy, origen) {
     const n=copiar(o), c=origen||centro(o);
+    n.borrados=(n.borrados||[]).map(q=>[red(c[0]+(q[0]-c[0])*sx),red(c[1]+(q[1]-c[1])*sy),q[2]*Math.max(Math.abs(sx),Math.abs(sy))]);
     if (['puntos','linea','polilinea','poligono'].includes(n.tipo)) {
       const k=n.tipo==='puntos'?'puntos':'vertices';
       n[k]=(n[k]||[]).map(q=>[red(c[0]+(q[0]-c[0])*sx),red(c[1]+(q[1]-c[1])*sy)]);
@@ -106,8 +108,15 @@
     const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1)));
     return Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy);
   }
+  function editarVertice(o,i,p){const n=copiar(o);if(!Array.isArray(n.vertices)||i<0||i>=n.vertices.length)throw Error('Vértice inválido');n.vertices[i]=par(p);return n;}
+  function agregarVertice(o,i,p){const n=copiar(o);if(!Array.isArray(n.vertices)||i<0||i>=n.vertices.length)throw Error('Tramo inválido');n.vertices.splice(i+1,0,par(p));return n;}
+  function quitarVertice(o,i){const n=copiar(o),min=n.tipo==='poligono'?3:2;if(!n.vertices||n.vertices.length<=min||i<0||i>=n.vertices.length)throw Error('No se puede borrar ese vértice');n.vertices.splice(i,1);return n;}
+  function cortarLinea(o,i,p){if(o.tipo!=='polilinea'&&o.tipo!=='linea')throw Error('Elegí una línea abierta');const a=agregarVertice(o,i,p),primero=copiar(a),segundo=copiar(a);primero.tipo=segundo.tipo='polilinea';primero.vertices=a.vertices.slice(0,i+2);segundo.vertices=a.vertices.slice(i+1);return [primero,segundo];}
+  function borrarTramo(o,i){if(!['linea','polilinea'].includes(o.tipo)||i<0||i>=o.vertices.length-1)throw Error('Tramo inválido');const n=o.vertices,partes=[n.slice(0,i+1),n.slice(i+1)].filter(v=>v.length>=2);return partes.map(v=>crearObjeto('polilinea',{...o,vertices:v}));}
+  function unirLineas(a,b,tolerancia=3){if(!['linea','polilinea'].includes(a.tipo)||!['linea','polilinea'].includes(b.tipo))throw Error('Elegí dos líneas abiertas');let av=a.vertices.slice(),bv=b.vertices.slice(),pares=[[0,0],[0,1],[1,0],[1,1]].map(([i,j])=>({i,j,d:Math.hypot(av[i?av.length-1:0][0]-bv[j?bv.length-1:0][0],av[i?av.length-1:0][1]-bv[j?bv.length-1:0][1])})).sort((x,y)=>x.d-y.d);const q=pares[0];if(q.d>tolerancia)throw Error('Los extremos están demasiado lejos');if(q.i===0)av.reverse();if(q.j===1)bv.reverse();return crearObjeto('polilinea',{...a,vertices:av.concat(bv.slice(1)),grupo:a.grupo===b.grupo?a.grupo:null});}
   function objetoAPuntos(o,m) {
     if (!o || o.oculto) return [];
+    if(o.tipo==='referencia')return [];
     if(o.tipo==='imagen') {
       const [px,py]=pasos(m),paso=Math.min(px,py),salida=[];
       const baseW=o.baseAncho||o.ancho,baseH=o.baseAlto||o.alto;
@@ -165,7 +174,7 @@
     let distancia=0;
     for(let i=0;i<v.length-(cerrado?0:1);i++) {
       const a=v[i],b=v[(i+1)%v.length],l=Math.hypot(b[0]-a[0],b[1]-a[1]);
-      const n=Math.max(1,Math.round(l/paso));
+      const n=Math.max(1,Math.ceil(l/paso));
       for(let j=0;j<(cerrado?n:n+1);j++) {
         const fase=Math.round((distancia+j*l/n)/paso)%ciclo.length;
         if(ciclo[fase]) salida.push([red(a[0]+(b[0]-a[0])*j/n),red(a[1]+(b[1]-a[1])*j/n)]);
@@ -188,8 +197,8 @@
         salida.push([x,y]);
       }
     }
-    return salida;
+    return (o.borrados||[]).length?salida.filter(p=>!o.borrados.some(q=>Math.hypot(p[0]-q[0],p[1]-q[1])<=q[2])):salida;
   }
-  const api={ LINEAS,RELLENOS,CAPAS,crearObjeto,migrarTrazos,mover,escalar,rotar,voltear,caja,centro,geometria,objetoAPuntos,pasos };
+  const api={ LINEAS,RELLENOS,CAPAS,crearObjeto,migrarTrazos,mover,escalar,rotar,voltear,caja,centro,geometria,objetoAPuntos,pasos,editarVertice,agregarVertice,quitarVertice,cortarLinea,borrarTramo,unirLineas,distanciaSegmento };
   if(typeof module!=='undefined'&&module.exports) module.exports=api; else raiz.Objetos=api;
 })(typeof self!=='undefined'?self:this);
