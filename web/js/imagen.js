@@ -1,18 +1,15 @@
-/* Importar una imagen (PNG/JPG) y convertirla en puntos:
-   umbral (todo lo oscuro), contornos, o contorno con relleno raleado. */
+/* Importación local de imágenes como vectores táctiles editables. */
 (function () {
   'use strict';
   const App = window.App;
   const $ = id => document.getElementById(id);
   let imagen = null;
-  let puntos = [];
+  let resultado = null;
+  let reconvertirId = null;
+  let trabajo = null,serie=0;
 
-  /**
-   * Convierte la imagen en puntos. Muestrea la imagen en una grilla de `paso` mm.
-   * Devuelve [[x, y], ...] en mm de la página.
-   */
-  /** Modos «bordes» y «lineas»: detección de bordes a buena resolución (ver bordes.js). */
-  function convertirBordes(img, op) {
+  /** Detecta bordes y conserva sus trayectos en mm para volver a muestrearlos al escalar. */
+  async function convertirBordes(img, op) {
     const ancho = op.ancho;
     const alto = ancho * img.naturalHeight / img.naturalWidth;
     // Resolución de trabajo: hasta ~1400 px de lado, entre 2 y 8 px por mm.
@@ -28,55 +25,36 @@
     g.imageSmoothingQuality = 'high';
     g.drawImage(img, 0, 0, W, H);
     const datos = g.getImageData(0, 0, W, H).data;
-    const res = window.Bordes.detectar(datos, W, H, {
+    const opcionesBorde={
       modo: op.modo, umbral: op.umbral, invertir: op.invertir,
       // Sensibilidad 0..100 -> diferencia de color 120..6 (más sensible = umbral más bajo).
       umbralBorde: 120 - op.sens * 1.14,
       suavizado: op.suavizado, pxPorMm: W / ancho, detalleMinMm: op.detalle,
-      paso: op.paso, quitarSueltos: op.sueltos, quitarTexto: op.texto, textoMaxMm: 30
-    });
-    const r = v => Math.round(v * 1000) / 1000;
-    const puntos = res.nodos.map(([col, fila]) => [r(op.x + col * op.paso), r(op.y + fila * op.paso)]);
-    return { puntos, alto, quitados: res.quitados };
+      paso: op.paso, quitarSueltos: op.sueltos, quitarTexto: op.texto, textoMaxMm: 30,
+      colores:op.colores,areaMinMm2:op.area,unirMm:op.modo==='lineas'?0.6:0,
+      minLargo:op.minLargo,simplificacion:op.simplificacion,chaikin:op.chaikin
+    };
+    if(trabajo)trabajo.terminate();
+    let procesado;
+    if(typeof Worker!=='undefined'){
+      procesado=await new Promise((resolver,rechazar)=>{
+        trabajo=new Worker('js/imagen_worker.js');
+        trabajo.onmessage=e=>e.data.error?rechazar(new Error(e.data.error)):resolver(e.data);
+        trabajo.onerror=e=>rechazar(new Error(e.message||'Error del procesador de imagen'));
+        trabajo.postMessage({datos,W,H,op:opcionesBorde});
+      });
+    }else{
+      const res=window.Bordes.detectar(datos,W,H,opcionesBorde);
+      procesado={polilineas:op.modo==='umbral'?window.Vectorizar.filas(res.pixeles,W,H,W/ancho):window.Vectorizar.convertir(res.pixeles,W,H,W/ancho,
+        {minLargoMm:op.minLargo,simplificacionMm:op.simplificacion,pasadas:op.chaikin}),quitados:res.quitados};
+    }
+    const original=c.toDataURL('image/jpeg',0.78);
+    return { polilineas:procesado.polilineas, alto, quitados:procesado.quitados, original };
   }
 
-  function convertir(img, op) {
-    if (op.modo === 'bordes' || op.modo === 'lineas') return convertirBordes(img, op);
-    const ancho = op.ancho, paso = op.paso;
-    const alto = ancho * img.naturalHeight / img.naturalWidth;
-    const cols = Math.max(1, Math.floor(ancho / paso) + 1);
-    const filas = Math.max(1, Math.floor(alto / paso) + 1);
-    const c = document.createElement('canvas');
-    c.width = cols; c.height = filas;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    g.fillStyle = '#fff';
-    g.fillRect(0, 0, cols, filas);
-    g.imageSmoothingEnabled = true;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(img, 0, 0, cols, filas);
-    const datos = g.getImageData(0, 0, cols, filas).data;
-    const oscuro = new Uint8Array(cols * filas);
-    for (let i = 0; i < cols * filas; i++) {
-      const lum = 0.299 * datos[i * 4] + 0.587 * datos[i * 4 + 1] + 0.114 * datos[i * 4 + 2];
-      let o = lum < op.umbral;
-      if (op.invertir) o = !o;
-      oscuro[i] = o ? 1 : 0;
-    }
-    const en = (x, y) => x >= 0 && y >= 0 && x < cols && y < filas && oscuro[y * cols + x] === 1;
-    const salida = [];
-    const r = v => Math.round(v * 1000) / 1000;
-    for (let y = 0; y < filas; y++) {
-      for (let x = 0; x < cols; x++) {
-        if (!en(x, y)) continue;
-        const borde = !en(x - 1, y) || !en(x + 1, y) || !en(x, y - 1) || !en(x, y + 1);
-        let poner = false;
-        if (op.modo === 'umbral') poner = true;
-        else if (op.modo === 'contornos') poner = borde;
-        else poner = borde || (x % 2 === 0 && y % 2 === (x % 4 === 0 ? 0 : 1)); // relleno ralo intercalado
-        if (poner) salida.push([r(op.x + x * paso), r(op.y + y * paso)]);
-      }
-    }
-    return { puntos: salida, alto };
+  async function convertir(img, op) {
+    return convertirBordes(img, op);
+
   }
 
   function opciones() {
@@ -92,47 +70,54 @@
       suavizado: Number($('img-suavizado').value),
       detalle: Math.max(0, Number($('img-detalle').value) || 0),
       sueltos: $('img-sueltos').checked,
-      texto: $('img-texto').checked
+      texto: $('img-texto').checked,
+      colores:Number($('img-colores').value),area:Number($('img-area').value),
+      simplificacion:Number($('img-simplificacion').value),chaikin:Number($('img-chaikin').value),
+      minLargo:Number($('img-min-largo').value)
     };
   }
 
   /** Muestra las opciones de bordes solo en los modos que las usan. */
   function mostrarOpciones() {
     const m = $('img-modo').value;
-    $('img-opciones-mapa').hidden = !(m === 'bordes' || m === 'lineas');
+    $('img-opciones-mapa').hidden = false;
+    $('img-regiones-opciones').hidden = m !== 'regiones';
   }
 
-  function actualizar() {
+  async function actualizar() {
+    const numero=++serie;
     const vista = $('img-vista');
     const g = vista.getContext('2d');
     g.fillStyle = '#fff';
     g.fillRect(0, 0, vista.width, vista.height);
+    const original=$('img-original'),go=original.getContext('2d');
+    go.fillStyle='#fff';go.fillRect(0,0,original.width,original.height);
     if (!imagen) { $('btn-img-agregar').disabled = true; return; }
     const op = opciones();
-    const res = convertir(imagen, op);
-    puntos = res.puntos;
+    $('img-estado').textContent='Procesando imagen…';$('btn-img-agregar').disabled=true;
+    let res;
+    try{res=await convertir(imagen,op);}catch(e){if(numero===serie)$('img-estado').textContent='No se pudo convertir: '+e.message;return;}
+    if(numero!==serie)return;
+    resultado=res;
     const esc = Math.min((vista.width - 10) / op.ancho, (vista.height - 10) / res.alto);
-    g.globalAlpha = 0.25;
-    g.drawImage(imagen, 5, 5, op.ancho * esc, res.alto * esc);
-    g.globalAlpha = 1;
-    g.fillStyle = '#000';
-    const rad = Math.max(1, 0.75 * esc);
+    go.drawImage(imagen,5,5,op.ancho*esc,res.alto*esc);
+    g.strokeStyle='#111';g.lineWidth=1.8;
     g.beginPath();
-    for (const p of puntos) {
-      const x = 5 + (p[0] - op.x) * esc, y = 5 + (p[1] - op.y) * esc;
-      g.moveTo(x + rad, y);
-      g.arc(x, y, rad, 0, Math.PI * 2);
-    }
-    g.fill();
+    for(const linea of res.polilineas)linea.forEach((p,i)=>i?g.lineTo(5+p[0]*esc,5+p[1]*esc):g.moveTo(5+p[0]*esc,5+p[1]*esc));
+    g.stroke();
+    const muestra=window.Objetos.crearObjeto('imagen',{x:op.x,y:op.y,ancho:op.ancho,alto:res.alto,
+      baseAncho:op.ancho,baseAlto:res.alto,polilineas:res.polilineas});
+    const total=window.Objetos.objetoAPuntos(muestra,App.medidas()).length;
     const pag = App.pagina();
     const fuera = op.x + op.ancho > pag.ancho || op.y + res.alto > pag.alto;
-    $('img-estado').textContent = `${puntos.length} puntos, ${op.ancho.toFixed(0)} × ${res.alto.toFixed(0)} mm.` +
+    $('img-estado').textContent = `${res.polilineas.length} líneas, aproximadamente ${total} puntos, ${op.ancho.toFixed(0)} × ${res.alto.toFixed(0)} mm.` +
       (res.quitados ? ` Se ignoraron ${res.quitados} detalles chicos (letras, manchas).` : '') +
       (fuera ? ' Atención: la imagen se sale de la hoja.' : '');
-    $('btn-img-agregar').disabled = puntos.length === 0;
+    $('btn-img-agregar').disabled = !res.polilineas.length;
   }
 
   $('btn-imagen').addEventListener('click', () => {
+    reconvertirId=null;
     $('img-paso').value = $('paso-dibujo').value;
     mostrarOpciones();
     actualizar();
@@ -154,7 +139,7 @@
       $('img-ancho').value = p.ancho;
       $('img-x').value = 0;
       $('img-y').value = 0;
-      if ($('img-modo').value !== 'lineas') $('img-modo').value = 'bordes';
+      if ($('img-modo').value !== 'lineas') $('img-modo').value = 'regiones';
       mostrarOpciones();
       actualizar();
     };
@@ -178,16 +163,35 @@
   }
   $('img-modo').addEventListener('change', mostrarOpciones);
   ['img-modo', 'img-umbral', 'img-invertir', 'img-ancho', 'img-x', 'img-y', 'img-paso',
-   'img-sens', 'img-suavizado', 'img-detalle', 'img-sueltos', 'img-texto'].forEach(id => {
+   'img-sens', 'img-suavizado', 'img-detalle', 'img-sueltos', 'img-texto',
+   'img-colores','img-area','img-simplificacion','img-chaikin','img-min-largo'].forEach(id => {
     $(id).addEventListener('input', actualizarPronto);
     $(id).addEventListener('change', actualizarPronto);
   });
   $('btn-img-agregar').addEventListener('click', () => {
-    if (!puntos.length) return;
-    App.registrar();
-    App.Dibujo.agregarTrazo('imagen', puntos, 'Imagen ' + (imagen.nombre || ''));
-    $('img-estado').textContent = `Se agregaron ${puntos.length} puntos al dibujo.`;
+    if (!resultado?.polilineas.length) return;
+    const op=opciones();
+    const datos={nombre:'Imagen '+(imagen.nombre||''),x:op.x,y:op.y,linea:'continua',
+      ancho:op.ancho,alto:resultado.alto,baseAncho:op.ancho,baseAlto:resultado.alto,
+      polilineas:resultado.polilineas,original:resultado.original,receta:op,
+      relleno:op.modo==='relleno'?'disperso':'ninguno'};
+    if(reconvertirId){const viejo=App.EditorObjetos.buscar(reconvertirId);if(!viejo)return;
+      App.registrar();App.EditorObjetos.reemplazar(reconvertirId,Object.assign({},viejo,datos,{nombre:viejo.nombre,linea:viejo.linea}));App.cambio('objetos');
+      $('img-estado').textContent=`Imagen reconvertida: ${resultado.polilineas.length} líneas.`;
+    }else{App.EditorObjetos.crear('imagen',datos);$('img-estado').textContent=`Se agregaron ${resultado.polilineas.length} líneas editables.`;}
   });
 
-  App.Imagen = { convertir, cargarImagen: img => { imagen = img; actualizar(); } };
+  function reconvertir(o){
+    reconvertirId=o.id;
+    for(const [campo,valor] of Object.entries(o.receta||{})){
+      const id={modo:'img-modo',umbral:'img-umbral',invertir:'img-invertir',ancho:'img-ancho',x:'img-x',y:'img-y',
+        paso:'img-paso',sens:'img-sens',suavizado:'img-suavizado',detalle:'img-detalle',sueltos:'img-sueltos',texto:'img-texto',
+        colores:'img-colores',area:'img-area',simplificacion:'img-simplificacion',chaikin:'img-chaikin',minLargo:'img-min-largo'}[campo];
+      if(id){const el=$(id);if(el.type==='checkbox')el.checked=!!valor;else el.value=valor;}
+    }
+    $('img-ancho').value=o.ancho;$('img-x').value=o.x;$('img-y').value=o.y;
+    const img=new Image();img.onload=()=>{imagen=img;mostrarOpciones();actualizar();};img.src=o.original;
+    $('dlg-imagen').showModal();
+  }
+  App.Imagen = { convertir, cargarImagen: img => { imagen = img; actualizar(); },reconvertir };
 })();

@@ -15,6 +15,11 @@
     App.anunciar(App.ui.seleccion.length?`${App.ui.seleccion.length} elemento(s) elegidos.`:'Nada elegido.');
   }
   function reemplazar(id,nuevo) { const a=objetos(),i=a.findIndex(o=>o.id===id); if(i>=0) a[i]=nuevo; }
+  function transformarSeleccion(tipo,valor){
+    const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado);if(!a.length)return;
+    App.registrar();a.forEach(o=>reemplazar(o.id,tipo==='escalar'?O.escalar(o,valor,valor):O.rotar(o,valor)));
+    App.cambio('objetos');App.anunciar(`${a.length} objeto(s): ${tipo==='escalar'?'tamaño '+Math.round(valor*100)+' %':'rotación '+valor+'°'}.`);
+  }
   function crear(tipo, datos) {
     App.registrar();
     const o=O.crearObjeto(tipo,Object.assign({id:App.nuevoId('o'), nombre:({linea:'Línea',polilinea:'Polilínea',poligono:'Polígono',rectangulo:'Rectángulo',elipse:'Elipse',punto:'Punto'})[tipo]||tipo,
@@ -101,6 +106,9 @@
     const vals={nombre:o?o.nombre:c.nombre||c.texto.split('\n')[0],x:b.x0,y:b.y0,ancho:b.ancho,alto:b.alto,rotacion:o?.rotacion||0,linea:o?.linea||'ninguna',relleno:o?.relleno||'ninguno',capa:o?.capa||'rotulos'};
     Object.entries(campos).forEach(([k,id])=>{if(document.activeElement!==$(id)) $(id).value=vals[k];});
     $('obj-ancho').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';$('obj-alto').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';
+    for(const id of ['obj-proporcion','obj-girar90','obj-voltear-h','obj-voltear-v','obj-restablecer','obj-reconvertir'])$(id).disabled=!!c;
+    $('obj-restablecer').disabled=!!c||o.tipo!=='imagen';
+    $('obj-reconvertir').disabled=!!c||o.tipo!=='imagen'||!o.original;
     for(const k of ['rotacion','linea','relleno','capa'])$(campos[k]).disabled=!!c;
   }
   Object.entries(campos).forEach(([k,id])=>$(id).addEventListener('change',()=>{
@@ -113,10 +121,24 @@
     if(typeof valor==='number'&&!Number.isFinite(valor))return;
     App.registrar();let n=O.crearObjeto(o.tipo,o),b=O.caja(o);
     if(k==='x'||k==='y')n=O.mover(n,k==='x'?valor-b.x0:0,k==='y'?valor-b.y0:0);
-    else if(k==='ancho'||k==='alto')n=O.escalar(n,k==='ancho'?(b.ancho?valor/b.ancho:1):1,k==='alto'?(b.alto?valor/b.alto:1):1,[b.x0,b.y0]);
+    else if(k==='ancho'||k==='alto'){
+      const factor=k==='ancho'?(b.ancho?valor/b.ancho:1):(b.alto?valor/b.alto:1);
+      n=O.escalar(n,k==='ancho'?factor:($('obj-proporcion').checked?factor:1),k==='alto'?factor:($('obj-proporcion').checked?factor:1),[b.x0,b.y0]);
+    }
     else n[k]=valor;
     reemplazar(o.id,n);App.cambio('objetos');App.anunciar(`${o.nombre}: ${k} actualizado.`);
   }));
+  $('obj-girar90').addEventListener('click',()=>transformarSeleccion('rotar',90));
+  for(const [id,eje] of [['obj-voltear-h','horizontal'],['obj-voltear-v','vertical']])$(id).addEventListener('click',()=>{
+    const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado);if(!a.length)return;
+    App.registrar();a.forEach(o=>reemplazar(o.id,O.voltear(o,eje)));App.cambio('objetos');App.anunciar(`Volteo ${eje} aplicado.`);
+  });
+  $('obj-restablecer').addEventListener('click',()=>{
+    const o=App.ui.sel&&buscar(App.ui.sel.id);if(!o||o.tipo!=='imagen'||o.bloqueado)return;
+    App.registrar();reemplazar(o.id,Object.assign({},o,{ancho:o.baseAncho,alto:o.baseAlto,rotacion:0,espejoX:false,espejoY:false}));
+    App.cambio('objetos');App.anunciar('Tamaño original restablecido.');
+  });
+  $('obj-reconvertir').addEventListener('click',()=>{const o=App.ui.sel&&buscar(App.ui.sel.id);if(o?.tipo==='imagen')App.Imagen.reconvertir(o);});
   function muestras() {
     const cont=$('muestras-patrones');
     for(const tipo of Object.keys(O.LINEAS).concat(Object.keys(O.RELLENOS).filter(x=>x!=='ninguno'))){
@@ -129,7 +151,7 @@
       ctx.fillStyle='#111';for(const p of pts){ctx.beginPath();ctx.arc(p[0],p[1],0.6,0,Math.PI*2);ctx.fill();}
     }
   }
-  App.EditorObjetos={crear,seleccionar,operar,alinear,buscar,reemplazar};
+  App.EditorObjetos={crear,seleccionar,operar,alinear,buscar,reemplazar,transformarSeleccion};
   document.addEventListener('keydown',ev=>{
     if(/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)||ev.target.id==='lienzo')return;
     if(ev.key==='Delete'){operar('borrar');ev.preventDefault();}

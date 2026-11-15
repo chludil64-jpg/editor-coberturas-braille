@@ -28,6 +28,7 @@
     return pagina;
   }
   function vertices(o) {
+    if (o.tipo === 'imagen') return [[o.x,o.y],[o.x+o.ancho,o.y],[o.x+o.ancho,o.y+o.alto],[o.x,o.y+o.alto]];
     if (o.tipo === 'puntos') return (o.puntos || []).map(par);
     if (o.tipo === 'punto') return [[o.x, o.y]];
     if (o.tipo === 'linea' || o.tipo === 'polilinea' || o.tipo === 'poligono') return (o.vertices || []).map(par);
@@ -84,6 +85,14 @@
     return n;
   }
   function rotar(o, grados) { const n=copiar(o); n.rotacion=red(((n.rotacion||0)+grados)%360); return n; }
+  function voltear(o, eje) {
+    const n=copiar(o);
+    if(n.tipo==='imagen') { n[eje==='horizontal'?'espejoX':'espejoY']=!n[eje==='horizontal'?'espejoX':'espejoY'];return n; }
+    const c=centro(o),k=n.tipo==='puntos'?'puntos':'vertices';
+    if(['puntos','linea','polilinea','poligono'].includes(n.tipo)) n[k]=(n[k]||[]).map(p=>eje==='horizontal'?[red(2*c[0]-p[0]),p[1]]:[p[0],red(2*c[1]-p[1])]);
+    else if(n.tipo!=='punto') n.rotacion=red(-(n.rotacion||0));
+    return n;
+  }
   function pasos(m) { return [m && m.grilla && m.grilla.px || m && m.entrePuntosX || m && m.entrePuntos || 2,
     m && m.grilla && m.grilla.py || m && m.entrePuntosY || m && m.entrePuntos || 2]; }
   function dentro(x,y,v) {
@@ -99,6 +108,35 @@
   }
   function objetoAPuntos(o,m) {
     if (!o || o.oculto) return [];
+    if(o.tipo==='imagen') {
+      const [px,py]=pasos(m),paso=Math.min(px,py),salida=[];
+      const baseW=o.baseAncho||o.ancho,baseH=o.baseAlto||o.alto;
+      if(!baseW||!baseH)return salida;
+      const ang=(o.rotacion||0)*Math.PI/180,cx=o.x+o.ancho/2,cy=o.y+o.alto/2;
+      const llevar=p=>{
+        let xx=p[0]/baseW,yy=p[1]/baseH;
+        if(o.espejoX)xx=1-xx;if(o.espejoY)yy=1-yy;
+        const x=o.x+xx*o.ancho-cx,y=o.y+yy*o.alto-cy;
+        return [red(cx+x*Math.cos(ang)-y*Math.sin(ang)),red(cy+x*Math.sin(ang)+y*Math.cos(ang))];
+      };
+      for(const linea of o.polilineas||[]){
+        const v=linea.map(llevar);let distancia=0,ciclo=LINEAS[o.linea]||LINEAS.continua;
+        for(let i=0;i<v.length-1;i++){
+          const a=v[i],b=v[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);
+          const n=Math.max(1,Math.ceil(l/paso));
+          for(let j=0;j<=n;j++)if(ciclo[Math.round((distancia+j*l/n)/paso)%ciclo.length])salida.push([red(a[0]+(b[0]-a[0])*j/n),red(a[1]+(b[1]-a[1])*j/n)]);
+          distancia+=l;
+        }
+        if(o.relleno&&o.relleno!=='ninguno'&&v.length>2&&Math.hypot(v[0][0]-v.at(-1)[0],v[0][1]-v.at(-1)[1])<paso){
+          const b={x0:Math.min(...v.map(p=>p[0])),x1:Math.max(...v.map(p=>p[0])),y0:Math.min(...v.map(p=>p[1])),y1:Math.max(...v.map(p=>p[1]))};
+          for(let iy=Math.ceil(b.y0/py);iy<=Math.floor(b.y1/py);iy++)for(let ix=Math.ceil(b.x0/px);ix<=Math.floor(b.x1/px);ix++){
+            const usar=o.relleno==='reticula'?ix%3===0&&iy%3===0:o.relleno==='horizontales'?iy%3===0:o.relleno==='diagonales'?(ix+iy)%3===0:ix%4===0&&iy%4===0;
+            if(usar&&dentro(ix*px,iy*py,v)&&!v.some((p,i)=>distanciaSegmento(ix*px,iy*py,p,v[(i+1)%v.length])<=paso))salida.push([red(ix*px),red(iy*py)]);
+          }
+        }
+      }
+      return salida;
+    }
     const v=geometria(o), [px,py]=pasos(m), paso=Math.min(px,py), salida=[];
     if (o.tipo==='puntos' || o.tipo==='punto') return v;
     const cerrado=o.tipo==='rectangulo'||o.tipo==='elipse'||o.tipo==='poligono'||!!o.cerrado;
@@ -131,6 +169,6 @@
     }
     return salida;
   }
-  const api={ LINEAS,RELLENOS,CAPAS,crearObjeto,migrarTrazos,mover,escalar,rotar,caja,centro,geometria,objetoAPuntos,pasos };
+  const api={ LINEAS,RELLENOS,CAPAS,crearObjeto,migrarTrazos,mover,escalar,rotar,voltear,caja,centro,geometria,objetoAPuntos,pasos };
   if(typeof module!=='undefined'&&module.exports) module.exports=api; else raiz.Objetos=api;
 })(typeof self!=='undefined'?self:this);

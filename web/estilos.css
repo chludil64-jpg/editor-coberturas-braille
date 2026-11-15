@@ -203,7 +203,10 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .ancho-dlg { min-width: min(90vw, 640px); }
 .confirmar { font-weight: 600; padding: 6px; border: 2px dashed var(--aviso); border-radius: 4px; }
 .pasos { padding-left: 1.2rem; margin: 4px 0; }
-#img-vista { border: 1px solid var(--borde); background: #fff; max-width: 100%; }
+#img-vista, #img-original { border: 1px solid var(--borde); background: #fff; max-width: 100%; height: auto; display: block; }
+.comparar-imagen { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.comparar-imagen > div { min-width: 0; }
+@media (max-width: 600px) { .comparar-imagen { grid-template-columns: 1fr; } }
 
 @media (max-width: 1100px) {
   .area { grid-template-columns: 1fr; grid-auto-rows: auto; }
