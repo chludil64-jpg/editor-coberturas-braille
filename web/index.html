@@ -14,33 +14,50 @@
 
 <header class="barra" role="banner">
   <h1>Editor de coberturas braille <span class="sub">Index Everest-D V4</span></h1>
-  <div class="herramientas" role="toolbar" aria-label="Archivo y salida">
-    <div class="grupo" role="group" aria-label="Archivo">
-      <button type="button" id="btn-abrir-pdf">Abrir PDF…</button>
-      <button type="button" id="btn-abrir-proyecto">Abrir proyecto…</button>
-      <button type="button" id="btn-guardar-proyecto">Guardar proyecto</button>
-      <button type="button" id="btn-abrir-ibe">Abrir .ibe…</button>
+  <div class="herramientas" role="group" aria-label="Acciones principales">
+    <div class="menu-desplegable">
+      <button type="button" class="menu-boton" id="menu-archivo-boton" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-archivo">Archivo ▾</button>
+      <div id="menu-archivo" class="menu-panel" role="menu" aria-labelledby="menu-archivo-boton" hidden>
+        <button type="button" role="menuitem" id="btn-abrir-pdf" tabindex="-1">Abrir PDF…</button>
+        <button type="button" role="menuitem" id="btn-abrir-proyecto" tabindex="-1">Abrir proyecto…</button>
+        <button type="button" role="menuitem" id="btn-guardar-proyecto" tabindex="-1">Guardar proyecto</button>
+        <button type="button" role="menuitem" id="btn-exportar-disposicion" tabindex="-1">Exportar disposición braille…</button>
+        <button type="button" role="menuitem" id="btn-importar-disposicion" tabindex="-1">Importar disposición braille…</button>
+        <button type="button" role="menuitem" id="btn-abrir-ibe" tabindex="-1">Abrir .ibe…</button>
+        <button type="button" role="menuitem" id="btn-nueva-horizontal" tabindex="-1">Nueva página A4 horizontal</button>
+        <button type="button" role="menuitem" id="btn-nueva-vertical" tabindex="-1">Nueva página A4 vertical</button>
+        <div role="separator" class="menu-separador"></div>
+        <button type="button" role="menuitem" id="btn-salir" tabindex="-1">Cerrar programa</button>
+      </div>
+    </div>
+    <div class="menu-desplegable">
+      <button type="button" class="menu-boton" id="menu-exportar-boton" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-exportar">Exportar ▾</button>
+      <div id="menu-exportar" class="menu-panel" role="menu" aria-labelledby="menu-exportar-boton" hidden>
+        <button type="button" role="menuitem" id="btn-exp-pdf" tabindex="-1">PDF de prueba 1:1</button>
+        <button type="button" role="menuitem" id="btn-exp-png" tabindex="-1">PNG</button>
+        <button type="button" role="menuitem" id="btn-exp-prn" tabindex="-1">Archivo .prn para la Everest</button>
+        <button type="button" role="menuitem" id="btn-exp-ibe" tabindex="-1">Archivo .ibe (Index V5)</button>
+      </div>
+    </div>
+    <div class="menu-desplegable">
+      <button type="button" class="menu-boton" id="menu-impresora-boton" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-impresora">Impresora ▾</button>
+      <div id="menu-impresora" class="menu-panel" role="menu" aria-labelledby="menu-impresora-boton" hidden>
+        <button type="button" role="menuitem" id="btn-perfil" tabindex="-1">Perfil de impresora…</button>
+        <button type="button" role="menuitem" id="btn-calibracion" tabindex="-1">Calibración…</button>
+      </div>
     </div>
     <div class="grupo" role="group" aria-label="Edición">
       <button type="button" id="btn-deshacer" aria-keyshortcuts="Control+Z">Deshacer</button>
       <button type="button" id="btn-rehacer" aria-keyshortcuts="Control+Y">Rehacer</button>
     </div>
-    <div class="grupo" role="group" aria-label="Exportar">
-      <button type="button" id="btn-exp-ibe">Exportar .ibe</button>
-      <button type="button" id="btn-exp-pdf">PDF de prueba 1:1</button>
-      <button type="button" id="btn-exp-png">PNG</button>
-      <button type="button" id="btn-exp-prn">Plan B .prn</button>
-    </div>
-    <div class="grupo" role="group" aria-label="Impresora">
+    <div class="grupo" role="group" aria-label="Revisar e imprimir">
       <button type="button" id="btn-comprobar">Comprobar</button>
       <button type="button" id="btn-imprimir" class="destacado">Imprimir…</button>
-      <button type="button" id="btn-perfil">Perfil de impresora…</button>
-      <button type="button" id="btn-calibracion">Calibración…</button>
-      <button type="button" id="btn-salir">Cerrar programa</button>
     </div>
   </div>
   <input type="file" id="archivo-pdf" accept="application/pdf,.pdf" hidden>
   <input type="file" id="archivo-proyecto" accept=".json,application/json" hidden>
+  <input type="file" id="archivo-disposicion" accept=".json,application/json" hidden>
   <input type="file" id="archivo-ibe" accept=".ibe,.txt" hidden>
 </header>
 
@@ -131,20 +148,24 @@
   <!-- Centro: lienzo -->
   <section class="centro" aria-labelledby="t-lienzo">
     <h2 id="t-lienzo" class="solo-lector">Lienzo</h2>
-    <div class="barra-lienzo" role="toolbar" aria-label="Vista">
-      <label>Página <select id="sel-pagina"></select></label>
+    <div class="barra-lienzo" role="group" aria-label="Controles de la página y la vista">
+      <div class="grupo-vista" role="group" aria-label="Página"><label>Página <select id="sel-pagina"></select></label></div>
+      <div class="grupo-vista" role="group" aria-label="Zoom">
       <button type="button" id="btn-zoom-menos" aria-label="Alejar">−</button>
       <output id="zoom-valor" aria-live="polite">100 %</output>
       <button type="button" id="btn-zoom-mas" aria-label="Acercar">+</button>
       <button type="button" id="btn-zoom-ajustar">Ajustar</button>
+      </div>
+      <div class="grupo-vista" role="group" aria-label="Fondo y marcas">
       <label>Opacidad del fondo <input type="range" id="opacidad" min="0" max="100" value="60"></label>
       <label>Vista
         <select id="vista">
-          <option value="boleta">Sobre la boleta</option>
+          <option value="boleta">Sobre el PDF</option>
           <option value="puntos">Solo puntos</option>
         </select>
       </label>
       <label><input type="checkbox" id="ver-tinta" checked> Marcar texto en tinta</label>
+      </div>
     </div>
     <div class="contenedor-lienzo" id="contenedor-lienzo">
       <canvas id="lienzo" tabindex="0" role="img"
@@ -497,6 +518,7 @@
 <script src="js/grilla.js"></script>
 <script src="js/proyecto.js"></script>
 <script src="js/editor_objetos.js"></script>
+<script src="js/disposicion.js"></script>
 <script src="js/lienzo.js"></script>
 <script src="js/cuadros.js"></script>
 <script src="js/dibujo.js"></script>

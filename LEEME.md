@@ -20,7 +20,7 @@ Funciona sin internet. Se usa en el navegador, pero todo corre en esta PC: el se
 
 Cada página puede tener objetos editables en milímetros: línea, polilínea, polígono, rectángulo, elipse y punto. En «Crear» elegí el estilo de línea y el relleno; la lista «Páginas y elementos» permite seleccionar, renombrar, ordenar, bloquear, ocultar y borrar. Con el lienzo enfocado, las flechas mueven un paso de grilla (Mayús: cinco), Supr borra, Ctrl+D duplica, Ctrl+G agrupa, Ctrl+Mayús+G desagrupa y Ctrl+A selecciona los objetos. Para polilíneas y polígonos, hacé clic en cada vértice y terminá con Enter o doble clic; Escape cancela. También podés editar posición, tamaño y rotación numéricamente en «Propiedades». «Comprobar» abre los avisos de legibilidad táctil; al imprimir, se muestra su resumen antes del envío. Los proyectos viejos convierten los trazos en objetos de puntos fijos al abrirlos.
 
-1. **Abrir PDF…**: se carga la boleta. El lienzo toma el tamaño de la página en mm reales, con el PDF de fondo (opacidad regulable), zoom y reglas en mm.
+1. En **Archivo → Abrir PDF…** se carga el documento. El lienzo toma el tamaño de cada página en mm reales, con el PDF de fondo (opacidad regulable), zoom y reglas en mm. Funcionan páginas A4 horizontales y verticales, incluso mezcladas en un mismo PDF. Desde **Archivo** también podés crear una **página A4 horizontal o vertical en blanco**, abrir un proyecto o un `.ibe`, guardar el proyecto y cerrar el programa.
 2. **Textos del PDF**: lista de los textos que se detectaron, con su posición. Con «Agrupar renglones vecinos» los renglones de un mismo bloque (por ejemplo «PARTIDO CHUBUT / SOMOS TODOS») van juntos. Marcá los que querés y tocá **Crear cuadros con los elegidos**. Si el PDF es un escaneo sin texto, usá **Nuevo cuadro vacío**.
 3. **Cuadros braille**: cada cuadro se transcribe a braille español grado 1 (integral). Se puede editar el texto (para abreviar), cambiar la alineación respecto de la tinta (centro, izquierda, derecha o libre), partir en renglones según un ancho máximo, duplicar y borrar.
    - Mayúsculas: signo 46 antes de la letra; palabra entera en mayúsculas con 46-46 (también «signo en cada letra» o «todo mayúsculas sin signo»).
@@ -33,17 +33,17 @@ Cada página puede tener objetos editables en milímetros: línea, polilínea, p
    - **Calcar vectores del PDF…**: pasa las líneas y recuadros del PDF (casilleros de marcado) a líneas de puntos.
    - **Ralear puntos**: quita puntos de dibujo a menos de la separación mínima (nunca toca el braille).
    - **Separar el dibujo del braille**: omite los puntos de dibujo que quedan a menos de X mm de un cuadro braille.
-7. **Vista**: «Sobre la boleta» o «Solo puntos».
+7. **Vista**: «Sobre el PDF» o «Solo puntos». En la barra del lienzo, los controles están agrupados por página, zoom y fondo. La página activa determina la orientación de cada salida.
 
 ## Salidas
 
 Todo sale de **una sola lista de puntos en mm**: la que se ve en pantalla es la misma que va al PDF de prueba y al archivo de impresión.
 
-- **Exportar .ibe** (formato principal, «punto libre» de Index): ver detalles abajo.
-- **PDF de prueba 1:1**: el diseño original con los puntos encima (en magenta). Imprimilo en tinta **al 100 % / tamaño real** (sin «ajustar a la página») y superponelo a la boleta para ver el calce antes de gastar acetato. Trae una barra de 100 mm para controlar la escala de la impresora común.
+- En el menú **Exportar**: **PDF de prueba 1:1**, **PNG**, **Archivo .prn para la Everest** y **Archivo .ibe (Index V5)**. El `.prn` usa la grilla calibrada de la Everest-D V4; el `.ibe` usa punto libre (ver detalles abajo).
+- **PDF de prueba 1:1**: el diseño original con los puntos encima (en magenta). Imprimilo en tinta **al 100 % / tamaño real** (sin «ajustar a la página») y superponelo al documento para ver el calce antes de gastar acetato. Trae una barra de 100 mm para controlar la escala de la impresora común.
 - **PNG**: la matriz de puntos a 10 píxeles por mm.
-- **Plan B .prn**: modo gráfico por grilla (ver abajo).
-- **Imprimir…**: envío directo a la Index por el spooler de Windows (modo RAW) o por red (IP y puerto 9100). Siempre pide marcar la casilla de confirmación antes de enviar.
+- **Archivo .prn**: modo gráfico por grilla calibrada para la Everest-D V4 (ver abajo).
+- **Imprimir…** queda como botón directo. Envía a la Index por el spooler de Windows (modo RAW) o por red (IP y puerto 9100). Siempre pide marcar la casilla de confirmación antes de enviar. **Perfil de impresora…** y **Calibración…** están en el menú **Impresora**.
 - **Guardar / Abrir proyecto**: archivo `.braille.json` con el PDF incluido, los cuadros, los dibujos y el perfil.
 - **Abrir .ibe…**: abre un archivo de Index (por ejemplo las muestras de `ejemplos/ibe/`) en una página nueva para verlo.
 
@@ -69,9 +69,9 @@ x:y;
 
 Todos esos valores se cambian en **Perfil de impresora…** (`perfiles/everest_v4.json`). Recomendación para la primera prueba: mandar primero `ejemplos/ibe/_everest_functions_graphs.ibe` tal cual, y recién después un archivo hecho con este programa.
 
-## Plan B: modo grilla (`.prn`)
+## Modo grilla (`.prn`)
 
-Si la Everest V4 no acepta `ESC F`, se usa el modo gráfico del driver libre de OpenPrinting (cups-filters) para Index V4:
+La Everest V4 usa el modo gráfico del driver libre de OpenPrinting (cups-filters) para Index V4:
 `ESC D TM0,BI0,CH<bloques por línea>,LP<líneas de bloques>,LS50,BT0;` + `ESC BEL` + por cada bloque de 2×4 puntos dos bytes (`0x40 | d1+2·d2+4·d3+8·d7` y `0x40 | d4+2·d5+4·d6+8·d8`) + CR al final de cada línea + `ESC ACK` + `SUB`. Los puntos se ajustan a una grilla (2,0 mm por defecto, configurable): la ubicación queda a pasos de 2 mm.
 
 ## Calibración
@@ -81,9 +81,9 @@ Si la Everest V4 no acepta `ESC F`, se usa el modo gráfico del driver libre de 
 3. **Calcular y guardar en el perfil**: corrige desplazamiento X/Y y escala X/Y. Volvé a imprimir la hoja para comprobar.
 4. Después: boleta en papel, superponer, y recién entonces acetato.
 
-En el perfil también se elige cómo entra la hoja: **apaisada** (A4 horizontal, 297 mm de ancho) o **parada** (el diseño se gira 90°, sentido horario o antihorario), y el **espejo**. Estos ajustes se aplican solo al archivo de impresión; la pantalla y el PDF de prueba muestran el diseño tal cual va sobre la boleta. La hoja de calibración se arma directamente en el sentido de la impresora (solo se le aplica escala y desplazamiento).
+En el perfil también se elige cómo entra la hoja: **apaisada** (A4 horizontal, 297 mm de ancho) o **parada**. Con el perfil real, la hoja entra parada: una página horizontal se gira 90° en sentido horario al imprimir; una vertical conserva su orientación. El espejo se aplica si está configurado. Estos ajustes se aplican solo al archivo de impresión; la pantalla y el PDF de prueba muestran el diseño tal cual va sobre el PDF. La franja de entrada de unos 5 mm aparece a la izquierda de la página horizontal y arriba de la vertical. La hoja de calibración se arma directamente en el sentido de la impresora (solo se le aplica escala y desplazamiento).
 
-Medidas: hoja **A4 como máximo** (297 × 210 mm). La Everest-D V4 admite hojas de 130 a 297 mm de ancho; papel de 120 a 180 g/m². El acetato hay que probarlo.
+Medidas: hoja **A4 como máximo** (297 × 210 mm horizontal o 210 × 297 mm vertical). Las páginas de PDF mayores que A4 muestran un aviso. La Everest-D V4 admite hojas de 130 a 297 mm de ancho; papel de 120 a 180 g/m². El acetato hay que probarlo.
 
 ## Archivos
 
@@ -106,7 +106,13 @@ node --test
 
 ## Límites conocidos
 
-- La impresión real no se probó: la Index no estaba instalada. La primera prueba con la impresora define si queda el formato punto libre o el plan B, y si hace falta ajustar el encabezado.
+- El perfil real de la Everest-D V4 usa la grilla `.prn` calibrada. La salida `.ibe` de punto libre queda disponible para compatibilidad con equipos que la acepten.
 - Si el firmware de la impresora es viejo, puede hacer falta actualizarlo.
 - El braille ocupa mucho más que la tinta (por ejemplo «LISTA 1005» ocupa 74,5 mm contra 38 mm impresos): conviene abreviar o partir en renglones.
 - Las exportaciones e impresión son de la página que se está viendo.
+
+## Disposición braille (sin el PDF)
+
+- **Archivo → Exportar disposición braille…** guarda solo los cuadros braille (texto, posición, alineación y opciones) y los dibujos de cada página, en un archivo liviano `.disposicion.json`, sin el PDF.
+- **Archivo → Importar disposición braille…** los vuelve a poner en el documento abierto. Útil cuando cambia el PDF (por ejemplo, una versión corregida de la plantilla): abrí el PDF nuevo e importá la disposición. Si ya hay cuadros, pregunta si reemplazarlos o agregarlos. Se puede deshacer con Ctrl+Z.
+- Las páginas se emparejan por número. Si una página mide distinto, avisa para revisar que los cuadros caigan bien.
