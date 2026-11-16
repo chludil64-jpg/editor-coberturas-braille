@@ -89,7 +89,8 @@
   }
   function manijas(b){const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;
     return {nw:[b.x0,b.y0],n:[cx,b.y0],ne:[b.x1,b.y0],e:[b.x1,cy],se:[b.x1,b.y1],s:[cx,b.y1],sw:[b.x0,b.y1],w:[b.x0,cy],rotar:[cx,b.y0-7]};}
-  function tocarManija(mm){const b=cajaSeleccion();if(!b)return null;
+  function hayDesbloqueado(){const ids=App.ui.seleccion||[];return (App.pagina().objetos||[]).some(o=>ids.includes(o.id)&&!o.oculto&&!o.bloqueado);}
+  function tocarManija(mm){const b=cajaSeleccion();if(!b||!hayDesbloqueado())return null;
     return Object.entries(manijas(b)).find(([,p])=>Math.hypot(mm[0]-p[0],mm[1]-p[1])<=Math.max(2,8/escala()))?.[0]||null;}
 
   function dibujar() {
@@ -189,9 +190,14 @@
     const bs=cajaSeleccion();if(bs){
       ctx.strokeStyle='#a32600';ctx.lineWidth=2;ctx.setLineDash([5,3]);
       ctx.strokeRect(aPx(bs.x0),aPx(bs.y0),(bs.x1-bs.x0)*e,(bs.y1-bs.y0)*e);ctx.setLineDash([]);
+      if(!hayDesbloqueado()){
+        // Bloqueado: sin manijas, con un candado de texto para que se entienda por qué no se mueve.
+        ctx.fillStyle='#a32600';ctx.font='bold 13px system-ui, sans-serif';ctx.fillText('🔒 Bloqueado (desbloquealo en Propiedades)',aPx(bs.x0),aPx(bs.y0)-6);
+      } else {
       const h=manijas(bs);ctx.beginPath();ctx.moveTo(aPx(h.n[0]),aPx(h.n[1]));ctx.lineTo(aPx(h.rotar[0]),aPx(h.rotar[1]));ctx.stroke();
       for(const [nombre,[x,y]] of Object.entries(h)){
         ctx.fillStyle=nombre==='rotar'?'#a32600':'#fff';ctx.beginPath();ctx.arc(aPx(x),aPx(y),5,0,Math.PI*2);ctx.fill();ctx.stroke();
+      }
       }
     }
     if(arrastre&&arrastre.tipo==='marco') {const a=arrastre.inicio,b=arrastre.ultimo;
@@ -304,7 +310,7 @@
       else if(!ev.shiftKey) App.EditorObjetos.seleccionar(null,false);
       if (t) {
         const o=t.tipo==='objeto'&&App.EditorObjetos.buscar(t.id);
-        if((o&&o.bloqueado)||(t.tipo==='cuadro'&&App.buscarSel()?.bloqueado)){App.anunciar('Elemento bloqueado.');return;}
+        if((o&&o.bloqueado)||(t.tipo==='cuadro'&&App.buscarSel()?.bloqueado)){App.anunciar('Elemento bloqueado: para moverlo o cambiarle el tamaño, usá «Bloquear o desbloquear» en el panel de elementos.');return;}
         arrastre = { tipo: 'mover', inicio: mm, ultimo: mm, registrado: false };
       } else arrastre={tipo:'marco',inicio:mm,ultimo:mm};
       return;
