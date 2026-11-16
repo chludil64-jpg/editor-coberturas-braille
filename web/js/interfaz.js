@@ -182,5 +182,55 @@
     }).observe(menu, { attributes: true, attributeFilter: ['hidden'] });
   }
 
+  // ------------------------------------------------------------ barra de estado (como en Fusion)
+  // Una sola línea fina abajo: mensaje, coordenadas, total de puntos y botón «Avisos (n)»
+  // que despliega la lista solo cuando se la pide.
+  const pie = document.querySelector('footer.pie-avisos');
+  const seccion = pie && pie.querySelector('section');
+  if (pie && seccion) {
+    const barra = document.createElement('div');
+    barra.className = 'barra-estado';
+    const izq = document.createElement('div');
+    izq.className = 'barra-estado-mensaje';
+    const medio = document.createElement('div');
+    medio.className = 'barra-estado-datos';
+    ['estado-lienzo'].forEach(id => $(id) && izq.append($(id)));
+    ['cursor-mm', 'total-puntos'].forEach(id => $(id) && medio.append($(id)));
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'btn-avisos';
+    btn.className = 'barra-estado-avisos';
+    btn.dataset.icono = 'triangle-alert';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', 'panel-avisos');
+    const txt = document.createElement('span');
+    txt.textContent = 'Avisos ';
+    btn.append(txt);
+    if ($('avisos-cuenta')) btn.append($('avisos-cuenta'));
+    seccion.id = 'panel-avisos';
+    seccion.classList.add('panel-avisos');
+    seccion.hidden = true;
+    const titulo = $('t-avisos');
+    if (titulo) titulo.textContent = 'Avisos';
+    barra.append(izq, medio, btn);
+    pie.append(barra);
+    const abrir = abrirlo => {
+      seccion.hidden = !abrirlo;
+      btn.setAttribute('aria-expanded', String(abrirlo));
+      if (abrirlo) { const f = seccion.querySelector('button, [tabindex]'); if (f) f.focus(); }
+    };
+    btn.addEventListener('click', () => abrir(seccion.hidden));
+    seccion.addEventListener('keydown', ev => { if (ev.key === 'Escape') { abrir(false); btn.focus(); } });
+    if ($('btn-comprobar')) $('btn-comprobar').addEventListener('click', () => abrir(true));
+    // El botón se pinta según haya avisos o errores.
+    const marcar = () => {
+      const c = ($('avisos-cuenta') && $('avisos-cuenta').textContent) || '';
+      const n = parseInt((c.match(/\d+/) || ['0'])[0], 10);
+      btn.dataset.estado = /error/.test(c) ? 'error' : n > 0 ? 'aviso' : 'ok';
+    };
+    if ($('avisos-cuenta')) new MutationObserver(marcar).observe($('avisos-cuenta'), { childList: true, characterData: true, subtree: true });
+    marcar();
+  }
+
   if (window.Iconos) window.Iconos.aplicar(document);
 })();

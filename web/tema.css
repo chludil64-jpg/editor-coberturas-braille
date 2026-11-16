@@ -90,6 +90,19 @@ input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color:
 .cinta [data-herramienta][aria-pressed="true"] svg.icono { color: var(--texto); }
 .cinta-grupo-nombre { color: var(--suave); font-size: .72rem; letter-spacing: .3px; }
 .cinta-campo { display: flex; flex-direction: column; font-size: .8rem; gap: .15rem; }
+/* Cinta compacta (estilo Fusion): título y pestañas en un renglón, íconos chicos */
+header.barra { padding: .2rem .7rem 0; }
+.cinta { margin-top: 0; }
+.cinta-cabecera { display: flex; align-items: flex-end; gap: 1.2rem; border-bottom: 1px solid var(--borde); }
+.cinta-cabecera h1 { margin: 0 0 .3rem !important; font-size: 1rem !important; white-space: nowrap; }
+.cinta-cabecera .cinta-pestanas { border-bottom: 0; }
+.cinta-pestanas [role="tab"] { padding: .3rem .8rem; font-size: .88rem; }
+.cinta-panel { padding: .25rem .1rem .15rem; }
+.cinta-grupo { padding: 0 .35rem; }
+.cinta-grupo-cuerpo { gap: .1rem; }
+.cinta-grupo-cuerpo > button { min-width: 3rem; max-width: 5.4rem; padding: .15rem .3rem; font-size: .7rem; line-height: 1.1; gap: .1rem; }
+.cinta-grupo-cuerpo > button svg.icono { width: 18px; height: 18px; }
+.cinta-grupo-nombre { font-size: .64rem; margin-top: .1rem; }
 .cinta-capas { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .85rem; align-items: center; max-width: 18rem; }
 .cinta-panel .grupo-vista { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: center; font-size: .85rem; }
 
@@ -119,3 +132,20 @@ details.plegable-chico > summary { cursor: pointer; color: var(--acento); font-w
 .menu-contextual button svg.icono { color: var(--acento); width: 16px; height: 16px; }
 .menu-contextual button:hover, .menu-contextual button:focus-visible { background: var(--lima-suave); outline-color: var(--texto); }
 .menu-contextual .menu-titulo { color: var(--suave); }
+
+/* Barra de estado fina (estilo Fusion) con avisos desplegables */
+footer.pie-avisos { position: relative; padding: 0; background: var(--panel); border-top: 1px solid var(--borde); overflow: visible; max-height: none; z-index: 30; }
+.barra-estado { display: flex; align-items: center; gap: 1rem; min-height: 28px; padding: 0 .7rem; font-size: .8rem; color: var(--suave); }
+.barra-estado .estado, .barra-estado .nota, .barra-estado p { margin: 0; font-size: .8rem; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra-estado-mensaje { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.barra-estado-datos { display: flex; gap: 1rem; flex: none; }
+.barra-estado-avisos { flex: none; padding: .1rem .55rem; font-size: .8rem; border-radius: 999px; gap: .3rem; }
+.barra-estado-avisos svg.icono { width: 14px; height: 14px; }
+.barra-estado-avisos[data-estado="ok"] { color: var(--suave); }
+.barra-estado-avisos[data-estado="aviso"] { background: var(--lima-suave); border-color: var(--texto); color: var(--texto); }
+.barra-estado-avisos[data-estado="error"] { background: var(--acento); border-color: var(--acento); color: var(--acento-texto); }
+.panel-avisos { position: absolute; right: .7rem; bottom: calc(100% + 4px); width: min(560px, 92vw); max-height: 45vh; overflow: auto;
+  background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 10px 30px rgba(0,0,0,.2); padding: .6rem .8rem; z-index: 40; }
+.panel-avisos h2 { font-size: .95rem; margin: 0 0 .4rem; }
+.panel-avisos .avisos { flex-direction: column; }
+.centro .estado { display: none; }

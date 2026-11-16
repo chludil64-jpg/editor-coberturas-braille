@@ -145,6 +145,30 @@
   const vieja = header.querySelector('.herramientas');
   if (vieja) vieja.hidden = true;
   header.append(cinta);
+  // Rótulos cortos en la cinta; el nombre completo queda para el lector de pantalla y la ayuda emergente.
+  const CORTOS = {
+    'btn-abrir-proyecto': 'Abrir', 'btn-guardar-proyecto': 'Guardar', 'btn-nueva-horizontal': 'Horizontal',
+    'btn-nueva-vertical': 'Vertical', 'btn-exportar-disposicion': 'Exportar', 'btn-importar-disposicion': 'Importar',
+    'btn-exp-pdf': 'PDF 1:1', 'btn-exp-prn': '.prn', 'btn-exp-ibe': '.ibe', 'btn-abrir-ibe': 'Abrir .ibe', 'btn-salir': 'Cerrar'
+  };
+  for (const [id, corto] of Object.entries(CORTOS)) {
+    const b = $(id);
+    if (!b) continue;
+    const completo = b.textContent.trim().replace(/\s+/g, ' ');
+    b.setAttribute('aria-label', completo);
+    b.title = completo;
+    const nodos = [...b.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
+    if (nodos.length) { nodos.forEach((n, i) => { n.textContent = i ? '' : corto; }); }
+    else { const s = b.querySelector('span:not(.icono)'); if (s) s.textContent = corto; }
+  }
+  // Título y pestañas en un mismo renglón, para ganar alto de pantalla.
+  const titulo = header.querySelector('h1');
+  if (titulo) {
+    const fila = document.createElement('div');
+    fila.className = 'cinta-cabecera';
+    cinta.insertBefore(fila, lista);
+    fila.append(titulo, lista);
+  }
   // Las herramientas ya están en la cinta: el grupo de radios del panel Crear queda oculto
   // (sigue existiendo: guarda qué herramienta está activa).
   const radios = document.querySelector('fieldset.herr-dibujo');
