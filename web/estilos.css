@@ -237,3 +237,19 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .menu-contextual .menu-separador { border-top: 1px solid #ccc; margin: .2rem 0; }
 @media (prefers-color-scheme: dark) { .menu-contextual { background: #1e1e1e; color: #eee; border-color: #888; }
   .menu-contextual button:hover, .menu-contextual button:focus-visible { background: #2c3a5a; } .menu-contextual .menu-titulo { color: #bbb; } }
+
+/* Cinta de opciones (pestañas al estilo Word) */
+.cinta { width: 100%; }
+.cinta-pestanas { display: flex; gap: 2px; border-bottom: 2px solid #1f4fbf; flex-wrap: wrap; }
+.cinta-pestanas [role="tab"] { border: 1px solid transparent; border-bottom: 0; background: transparent; padding: .35rem .9rem;
+  font: inherit; font-weight: 600; border-radius: 6px 6px 0 0; color: inherit; cursor: pointer; }
+.cinta-pestanas [role="tab"][aria-selected="true"] { background: #1f4fbf; color: #fff; }
+.cinta-pestanas [role="tab"]:focus-visible { outline: 3px solid #f2b400; outline-offset: 1px; }
+.cinta-panel { display: flex; flex-wrap: wrap; gap: .5rem; padding: .4rem .2rem; background: rgba(31,79,191,.06); }
+.cinta-panel[hidden] { display: none; }
+.cinta-grupo { display: flex; flex-direction: column; justify-content: space-between; padding: 0 .6rem; border-right: 1px solid #c5cbe0; }
+.cinta-grupo:last-child { border-right: 0; }
+.cinta-grupo-cuerpo { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.cinta-grupo-nombre { font-size: .75rem; text-align: center; color: #444; margin-top: .25rem; }
+.cinta [data-herramienta][aria-pressed="true"] { background: #1f4fbf; color: #fff; border-color: #1f4fbf; }
+@media (prefers-color-scheme: dark) { .cinta-panel { background: rgba(120,150,255,.08); } .cinta-grupo-nombre { color: #bbb; } .cinta-grupo { border-color: #555; } }

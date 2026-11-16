@@ -65,6 +65,13 @@
     });
   });
 
+  /** Cambia de herramienta desde el código (botones de la barra, Escape, nuevo cuadro). */
+  App.elegirHerramienta = nombre => {
+    const r = document.querySelector(`input[name="herramienta"][value="${nombre}"]`);
+    if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event('change')); }
+    document.querySelectorAll('[data-herramienta]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.herramienta === nombre)));
+  };
+
   // Forma por coordenadas (alternativa de teclado al mouse)
   $('btn-agregar-forma').addEventListener('click', () => {
     const tipo = $('forma-tipo').value;

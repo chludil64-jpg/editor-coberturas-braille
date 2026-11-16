@@ -481,6 +481,8 @@
   lienzo.addEventListener('keydown', ev => {
     const flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])<.5){terminarLazo();}else{agregarAncla(cursorLazo);}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
+    // Escape sin nada en curso: volver a «Elegir y mover» (para poder mover cuadros y formas).
+    if(ev.key==='Escape'&&!lazo&&App.ui.herramienta!=='seleccionar'&&App.elegirHerramienta){App.elegirHerramienta('seleccionar');ev.preventDefault();return;}
     if(ev.key==='Delete'&&verticeElegido&&App.ui.herramienta==='editar-vertices'){try{const v=verticeElegido,o=App.EditorObjetos.buscar(v.o.id);App.registrar();App.EditorObjetos.reemplazar(o.id,Objetos.quitarVertice(o,v.i));verticeElegido=null;App.cambio('objetos');App.anunciar('Vértice borrado.');}catch(e){App.anunciar(e.message);}ev.preventDefault();return;}
     if (flechas[ev.key]) {
       if (!App.buscarSel()) { App.anunciar('Elegí un elemento con Av Pág o desde la lista.'); ev.preventDefault(); return; }

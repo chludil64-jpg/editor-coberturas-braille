@@ -299,7 +299,11 @@
   }
 
   $('btn-crear-cuadros').addEventListener('click', crearDesdeElegidos);
-  $('btn-nuevo-cuadro').addEventListener('click', nuevoCuadro);
+  $('btn-nuevo-cuadro').addEventListener('click', () => {
+    // Un cuadro nuevo se acomoda arrastrándolo: se pasa a «Elegir y mover».
+    if (App.elegirHerramienta) App.elegirHerramienta('seleccionar');
+    nuevoCuadro();
+  });
   $('btn-elegir-todos').addEventListener('click', () => listaTextos.querySelectorAll('input').forEach(i => { i.checked = true; }));
   $('btn-elegir-ninguno').addEventListener('click', () => listaTextos.querySelectorAll('input').forEach(i => { i.checked = false; }));
   $('agrupar').addEventListener('change', mostrarTextos);
