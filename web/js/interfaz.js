@@ -1,7 +1,7 @@
 /* Reorganización de la interfaz (se ejecuta después de cinta.js):
    - Paneles laterales desplegables (se recuerda cuáles están abiertos).
    - «Crear» pasa a «Opciones de la herramienta»: muestra solo lo que usa la herramienta activa.
-   - Estilo de línea y relleno van a la pestaña Dibujar; las capas visibles, a la pestaña Ver.
+   - Estilo de línea y relleno van a la pestaña Formato; las capas visibles, a la pestaña Ver.
    - Íconos de Lucide en la cinta y en el menú contextual.
    - Menú contextual ampliado para cuadros braille (partir en renglones, ubicar sobre la tinta).
    No crea funciones nuevas: mueve y muestra/oculta los controles existentes. */
@@ -62,14 +62,13 @@
     if (ref) panel.insertBefore(g, ref); else panel.append(g);
     return g;
   }
-  // Dibujar → Estilo: contorno y relleno (como «Contorno de forma» y «Relleno» de Word).
+  // Formato → Estilo del dibujo: contorno y relleno (como «Contorno de forma» y «Relleno» de Word).
   const lineaLbl = contenedor($('estilo-linea')), rellenoLbl = contenedor($('estilo-relleno'));
   if (lineaLbl) lineaLbl.classList.add('cinta-campo');
   if (rellenoLbl) rellenoLbl.classList.add('cinta-campo');
-  grupoCinta('dibujar', 'Estilo', [lineaLbl, rellenoLbl], 'Mapas');
-  // Dibujar → Corregir: ralear puntos fijos.
-  const corregir = $('cinta-panel-dibujar') && $('cinta-panel-dibujar').querySelector('[aria-label="Corregir"] .cinta-grupo-cuerpo');
-  if (corregir && $('btn-ralear')) corregir.append($('btn-ralear'));
+  grupoCinta('formato', 'Estilo del dibujo', [lineaLbl, rellenoLbl]);
+  // Formato → Puntos: ralear puntos demasiado juntos.
+  grupoCinta('formato', 'Puntos', [$('btn-ralear')]);
   // Ver → Capas visibles.
   const capas = $('capas-controles');
   if (capas) { capas.classList.add('cinta-capas'); grupoCinta('ver', 'Capas visibles', [capas]); }

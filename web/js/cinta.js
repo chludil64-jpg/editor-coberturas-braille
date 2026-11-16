@@ -1,4 +1,4 @@
-/* Cinta de opciones al estilo Word: pestañas Archivo, Inicio, Insertar, Dibujar, Ver e Impresora.
+/* Cinta de opciones al estilo Word: pestañas Archivo, Inicio, Insertar, Formato, Dibujar, Ver e Impresora.
    No crea funciones nuevas: MUEVE los botones y controles que ya existen (con sus mismos ids y
    manejadores) a grupos dentro de cada pestaña. Las herramientas de dibujo se muestran como
    botones que activan los radios «herramienta» de siempre. */
@@ -19,7 +19,6 @@
   const PESTANAS = [
     ['archivo', 'Archivo', [
       ['Documento', ['btn-abrir-pdf', 'btn-abrir-proyecto', 'btn-guardar-proyecto']],
-      ['Páginas', ['btn-nueva-horizontal', 'btn-nueva-vertical']],
       ['Disposición braille', ['btn-exportar-disposicion', 'btn-importar-disposicion']],
       ['Exportar', ['btn-exp-pdf', 'btn-exp-png', 'btn-exp-prn', 'btn-exp-ibe', 'btn-abrir-ibe']],
       ['Programa', ['btn-salir']]
@@ -33,6 +32,9 @@
     ['insertar', 'Insertar', [
       ['Braille', ['btn-nuevo-cuadro']],
       ['Imágenes y mapas', ['btn-imagen', 'btn-svg', 'btn-calcar']]
+    ]],
+    ['formato', 'Formato', [
+      ['Página nueva', ['btn-nueva-horizontal', 'btn-nueva-vertical']]
     ]],
     ['dibujar', 'Dibujar', [
       ['Elegir', ['@seleccionar']],
