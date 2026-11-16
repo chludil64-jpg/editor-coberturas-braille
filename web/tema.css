@@ -1,44 +1,46 @@
 /* =====================================================================
-   Tema «Escuela N.º 511»: paleta tomada del logo (rojo, verde lima,
-   negro y blanco sobre crema), con contraste AA en los textos.
+   Tema «Península»: paleta tomada del logo (verde azulado profundo y
+   arena), con contraste AA en los textos. Los errores siguen en rojo.
    Se carga después de estilos.css y solo cambia la apariencia.
    ===================================================================== */
 :root {
-  --fondo: #f7f3e6;          /* crema cálido */
+  --fondo: #f4eee0;          /* arena muy clara */
   --panel: #ffffff;
-  --panel-2: #fbf9f1;
-  --texto: #1b1b1b;          /* negro del contorno del logo */
-  --suave: #4d4a40;
-  --borde: #ddd5bd;
-  --borde-fuerte: #1b1b1b;
-  --acento: #c62828;         /* rojo del logo (5,6:1 sobre blanco) */
-  --acento-hover: #a31f1f;
+  --panel-2: #faf6ec;
+  --texto: #142b2b;          /* verde azulado casi negro */
+  --suave: #4a5a58;
+  --borde: #e0d6bf;
+  --borde-fuerte: #142b2b;
+  --acento: #0f4c4c;         /* verde azulado del logo (9,8:1 sobre blanco) */
+  --acento-hover: #0a3a3a;
   --acento-texto: #ffffff;
-  --lima: #cddc39;           /* verde lima del logo: solo fondos, siempre con texto oscuro */
-  --lima-suave: #f2f6cf;
+  --lima: #e9d8b4;           /* arena del logo: solo fondos, siempre con texto oscuro */
+  --lima-suave: #e2efec;     /* verde agua muy suave para lo elegido */
   --peligro: #a3141c;
   --aviso: #7a4a00;
   --info: #1d4f7a;
-  --foco: #cddc39;
-  --sel: #f2f6cf;
-  --sombra: 0 1px 2px rgba(27,27,27,.08), 0 4px 12px rgba(27,27,27,.06);
+  --foco: #d99a2b;           /* ámbar: se distingue del verde y de la arena */
+  --sel: #e2efec;
+  --sombra: 0 1px 2px rgba(20,43,43,.08), 0 4px 12px rgba(20,43,43,.06);
   --radio: 10px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --fondo: #15140f;
-    --panel: #201e17;
-    --panel-2: #29261d;
-    --texto: #f4f1e6;
-    --suave: #cfc8b4;
-    --borde: #4a4636;
-    --borde-fuerte: #f4f1e6;
-    --acento: #ff6f61;
-    --acento-hover: #ff8a7f;
-    --acento-texto: #1b1b1b;
-    --lima: #dce775;
-    --lima-suave: #36391a;
-    --sel: #36391a;
+    --fondo: #0d1a1a;
+    --panel: #132424;
+    --panel-2: #1a2f2f;
+    --texto: #eef1ea;
+    --suave: #b8c6c2;
+    --borde: #2e4846;
+    --borde-fuerte: #eef1ea;
+    --acento: #7fcbc0;
+    --acento-hover: #a0dbd2;
+    --acento-texto: #0d1a1a;
+    --lima: #e9d8b4;
+    --lima-suave: #1f3d3a;
+    --peligro: #ff8a80;
+    --foco: #f0b545;
+    --sel: #1f3d3a;
     --sombra: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
   }
 }
@@ -48,7 +50,7 @@ body { font: 15px/1.45 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; 
 /* Encabezado */
 header.barra { background: var(--panel); border-bottom: 1px solid var(--borde); box-shadow: var(--sombra); padding: .5rem .9rem 0; display: block; }
 header.barra h1 { font-size: 1.15rem; margin: 0 0 .35rem; display: flex; align-items: center; gap: .5rem; letter-spacing: .2px; }
-header.barra h1::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 3px var(--lima); flex: none; }
+header.barra h1 img.logo { width: 26px; height: 26px; flex: none; display: block; }
 header.barra h1 .sub { font-weight: 500; color: var(--suave); font-size: .85rem; }
 
 /* Botones */
@@ -142,8 +144,8 @@ footer.pie-avisos { position: relative; padding: 0; background: var(--panel); bo
 .barra-estado-avisos { flex: none; padding: .1rem .55rem; font-size: .8rem; border-radius: 999px; gap: .3rem; }
 .barra-estado-avisos svg.icono { width: 14px; height: 14px; }
 .barra-estado-avisos[data-estado="ok"] { color: var(--suave); }
-.barra-estado-avisos[data-estado="aviso"] { background: var(--lima-suave); border-color: var(--texto); color: var(--texto); }
-.barra-estado-avisos[data-estado="error"] { background: var(--acento); border-color: var(--acento); color: var(--acento-texto); }
+.barra-estado-avisos[data-estado="aviso"] { background: var(--lima); border-color: var(--texto); color: var(--texto); }
+.barra-estado-avisos[data-estado="error"] { background: var(--peligro); border-color: var(--peligro); color: var(--acento-texto); }
 .panel-avisos { position: absolute; right: .7rem; bottom: calc(100% + 4px); width: min(560px, 92vw); max-height: 45vh; overflow: auto;
   background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 10px 30px rgba(0,0,0,.2); padding: .6rem .8rem; z-index: 40; }
 .panel-avisos h2 { font-size: .95rem; margin: 0 0 .4rem; }
