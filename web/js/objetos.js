@@ -114,6 +114,39 @@
   function cortarLinea(o,i,p){if(o.tipo!=='polilinea'&&o.tipo!=='linea')throw Error('Elegí una línea abierta');const a=agregarVertice(o,i,p),primero=copiar(a),segundo=copiar(a);primero.tipo=segundo.tipo='polilinea';primero.vertices=a.vertices.slice(0,i+2);segundo.vertices=a.vertices.slice(i+1);return [primero,segundo];}
   function borrarTramo(o,i){if(!['linea','polilinea'].includes(o.tipo)||i<0||i>=o.vertices.length-1)throw Error('Tramo inválido');const n=o.vertices,partes=[n.slice(0,i+1),n.slice(i+1)].filter(v=>v.length>=2);return partes.map(v=>crearObjeto('polilinea',{...o,vertices:v}));}
   function unirLineas(a,b,tolerancia=3){if(!['linea','polilinea'].includes(a.tipo)||!['linea','polilinea'].includes(b.tipo))throw Error('Elegí dos líneas abiertas');let av=a.vertices.slice(),bv=b.vertices.slice(),pares=[[0,0],[0,1],[1,0],[1,1]].map(([i,j])=>({i,j,d:Math.hypot(av[i?av.length-1:0][0]-bv[j?bv.length-1:0][0],av[i?av.length-1:0][1]-bv[j?bv.length-1:0][1])})).sort((x,y)=>x.d-y.d);const q=pares[0];if(q.d>tolerancia)throw Error('Los extremos están demasiado lejos');if(q.i===0)av.reverse();if(q.j===1)bv.reverse();return crearObjeto('polilinea',{...a,vertices:av.concat(bv.slice(1)),grupo:a.grupo===b.grupo?a.grupo:null});}
+  /* Con grilla de impresora: el contorno se traza celda por celda (Bresenham) en la misma grilla
+     donde se imprime, así sigue la forma sin escalones dobles ni huecos; el relleno deja libre
+     una celda alrededor del contorno para que la línea se siga leyendo al tacto. */
+  function aGrilla(o,v,cerrado,ciclo,px,py) {
+    const celdas=[], vistas=new Set(), clave=(i,j)=>i+','+j;
+    let k=0;
+    const poner=(i,j)=>{ const c=clave(i,j); if(!vistas.has(c)){ vistas.add(c); if(ciclo[k%ciclo.length]) celdas.push([i,j]); k++; } };
+    const tramos=v.length-(cerrado?0:1);
+    for(let t=0;t<tramos;t++) {
+      const a=v[t], b=v[(t+1)%v.length];
+      let x0=Math.round(a[0]/px), y0=Math.round(a[1]/py); const x1=Math.round(b[0]/px), y1=Math.round(b[1]/py);
+      const dx=Math.abs(x1-x0), dy=-Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1; let err=dx+dy;
+      for(;;) { poner(x0,y0); if(x0===x1&&y0===y1)break; const e2=2*err; if(e2>=dy){err+=dy;x0+=sx;} if(e2<=dx){err+=dx;y0+=sy;} }
+    }
+    // Las celdas del contorno (aunque la línea sea punteada) marcan el borde para el relleno.
+    const salida=celdas.map(([i,j])=>[red(i*px),red(j*py)]);
+    const relleno=RELLENOS[o.relleno]===undefined?'ninguno':o.relleno;
+    if (cerrado && relleno!=='ninguno' && v.length>=3) {
+      const b=caja(o);
+      for(let iy=Math.ceil(b.y0/py);iy<=Math.floor(b.y1/py);iy++) for(let ix=Math.ceil(b.x0/px);ix<=Math.floor(b.x1/px);ix++) {
+        let usar=false;
+        if(relleno==='reticula') usar=ix%3===0&&iy%3===0;
+        else if(relleno==='horizontales') usar=iy%3===0;
+        else if(relleno==='diagonales') usar=(ix+iy)%3===0;
+        else if(relleno==='disperso') usar=iy%4===0 ? ix%4===0 : iy%4===2&&ix%4===2;
+        if (!usar || !dentro(ix*px,iy*py,v)) continue;
+        let cerca=false;
+        for(let di=-1;di<=1&&!cerca;di++) for(let dj=-1;dj<=1;dj++) if(vistas.has(clave(ix+di,iy+dj))){cerca=true;break;}
+        if (!cerca) salida.push([red(ix*px),red(iy*py)]);
+      }
+    }
+    return (o.borrados||[]).length?salida.filter(p=>!o.borrados.some(q=>Math.hypot(p[0]-q[0],p[1]-q[1])<=q[2])):salida;
+  }
   function objetoAPuntos(o,m) {
     if (!o || o.oculto) return [];
     if(o.tipo==='referencia')return [];
@@ -171,6 +204,7 @@
     if (o.tipo==='puntos' || o.tipo==='punto') return v;
     const cerrado=o.tipo==='rectangulo'||o.tipo==='elipse'||o.tipo==='poligono'||!!o.cerrado;
     const ciclo=LINEAS[o.linea]||LINEAS.continua;
+    if (m && m.grilla) return aGrilla(o,v,cerrado,ciclo,px,py);
     let distancia=0;
     for(let i=0;i<v.length-(cerrado?0:1);i++) {
       const a=v[i],b=v[(i+1)%v.length],l=Math.hypot(b[0]-a[0],b[1]-a[1]);
