@@ -440,6 +440,11 @@
     const enCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName);
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
       const k = ev.key.toLowerCase();
+      // Mientras se traza con el lazo, Ctrl+Z / Ctrl+Y actúan solo sobre los puntos del trazo,
+      // no sobre lo hecho antes (por ejemplo, mover el mapa de fondo).
+      if ((k === 'z' || k === 'y') && !enCampo && App.Lienzo && App.Lienzo.lazoActivo && App.Lienzo.lazoActivo()) {
+        ev.preventDefault(); (k === 'y' || ev.shiftKey) ? App.Lienzo.rehacerLazo() : App.Lienzo.deshacerLazo(); return;
+      }
       if (k === 'z' && !enCampo) { ev.preventDefault(); ev.shiftKey ? App.rehacer() : App.deshacer(); }
       else if (k === 'y' && !enCampo) { ev.preventDefault(); App.rehacer(); }
       else if (k === 's') { ev.preventDefault(); App.guardarProyecto(); }

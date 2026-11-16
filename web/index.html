@@ -68,17 +68,7 @@
     <section aria-labelledby="t-elementos"><h2 id="t-elementos">Páginas y elementos</h2>
       <div id="capas-controles" role="group" aria-label="Capas visibles"></div>
       <ul id="lista-elementos" class="lista-elementos" aria-label="Elementos de la página" tabindex="-1"></ul>
-      <div class="fila botones" role="group" aria-label="Organizar elementos">
-        <button type="button" data-accion="frente">Traer al frente</button><button type="button" data-accion="atras">Enviar atrás</button>
-        <button type="button" data-accion="bloquear">Bloquear o desbloquear</button><button type="button" data-accion="ocultar">Ocultar o mostrar</button>
-        <button type="button" data-accion="agrupar">Agrupar</button><button type="button" data-accion="desagrupar">Desagrupar</button>
-        <button type="button" data-accion="duplicar">Duplicar</button><button type="button" data-accion="borrar">Borrar</button>
-      </div>
-      <div class="fila botones" role="group" aria-label="Alinear selección">
-        <button type="button" data-alinear="izquierda">Izquierda</button><button type="button" data-alinear="centro">Centro</button><button type="button" data-alinear="derecha">Derecha</button>
-        <button type="button" data-alinear="arriba">Arriba</button><button type="button" data-alinear="medio">Medio</button><button type="button" data-alinear="abajo">Abajo</button>
-        <button type="button" data-alinear="distribuir-h">Distribuir horizontal</button><button type="button" data-alinear="distribuir-v">Distribuir vertical</button>
-      </div>
+      <p class="nota">Para ordenar, bloquear, agrupar, duplicar, borrar o alinear: <strong>clic derecho</strong> sobre el elemento en la hoja o en esta lista (con teclado: tecla de menú o Mayús+F10).</p>
     </section>
     <section aria-labelledby="t-textos">
       <h2 id="t-textos">Textos del PDF</h2>
@@ -506,11 +496,35 @@
   </form>
 </dialog>
 
+<div id="menu-contextual" class="menu-contextual" role="menu" aria-label="Acciones del elemento" hidden>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="frente">Traer al frente</button>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="atras">Enviar atrás</button>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="bloquear">Bloquear o desbloquear</button>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="ocultar">Ocultar o mostrar</button>
+  <div role="separator" class="menu-separador"></div>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="agrupar">Agrupar</button>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="desagrupar">Desagrupar</button>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="duplicar">Duplicar</button>
+  <button type="button" role="menuitem" tabindex="-1" data-accion="borrar">Borrar</button>
+  <div role="separator" class="menu-separador"></div>
+  <div class="menu-sub" role="group" aria-label="Alinear">
+    <span class="menu-titulo" aria-hidden="true">Alinear</span>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="izquierda">Izquierda</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="centro">Centro</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="derecha">Derecha</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="arriba">Arriba</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="medio">Medio</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="abajo">Abajo</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="distribuir-h">Distribuir horizontal</button>
+    <button type="button" role="menuitem" tabindex="-1" data-alinear="distribuir-v">Distribuir vertical</button>
+  </div>
+</div>
 <script src="js/braille_es.js"></script>
 <script src="js/objetos.js"></script>
 <script src="js/grilla.js"></script>
 <script src="js/proyecto.js"></script>
 <script src="js/editor_objetos.js"></script>
+<script src="js/menu_contextual.js"></script>
 <script src="js/disposicion.js"></script>
 <script src="js/lienzo.js"></script>
 <script src="js/cuadros.js"></script>

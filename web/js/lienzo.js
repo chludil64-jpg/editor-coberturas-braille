@@ -185,7 +185,9 @@
       }
       ctx.fill();
     }
-    if(lazo?.puntos.length){const pts=lazo.puntos.concat(lazo.preview||[]);ctx.strokeStyle='#9b2d00';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();pts.forEach((q,i)=>i?ctx.lineTo(aPx(q[0]),aPx(q[1])):ctx.moveTo(aPx(q[0]),aPx(q[1])));ctx.stroke();}
+    if(lazo?.anclas.length){const pts=puntosLazo().concat(lazo.preview||[]);ctx.strokeStyle='#9b2d00';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();pts.forEach((q,i)=>i?ctx.lineTo(aPx(q[0]),aPx(q[1])):ctx.moveTo(aPx(q[0]),aPx(q[1])));ctx.stroke();
+      // Anclajes: cada clic queda marcado y se puede arrastrar. El primero es cuadrado (clic ahí cierra la forma).
+      lazo.anclas.forEach((q,i)=>{ctx.fillStyle=i===lazo.anclas.length-1?'#9b2d00':'#fff';ctx.strokeStyle='#9b2d00';ctx.lineWidth=2;ctx.beginPath();if(i===0)ctx.rect(aPx(q[0])-6,aPx(q[1])-6,12,12);else ctx.arc(aPx(q[0]),aPx(q[1]),6,0,Math.PI*2);ctx.fill();ctx.stroke();});}
     if(verticeElegido){ctx.fillStyle='#a32600';ctx.beginPath();ctx.arc(aPx(verticeElegido.p[0]),aPx(verticeElegido.p[1]),7,0,Math.PI*2);ctx.fill();}
     const bs=cajaSeleccion();if(bs){
       ctx.strokeStyle='#a32600';ctx.lineWidth=2;ctx.setLineDash([5,3]);
@@ -284,7 +286,18 @@
   function fuenteLazo(){const p=App.pagina(),o=(p.objetos||[]).find(q=>q.tipo==='referencia'&&!q.oculto),img=o?referencias.get(o.src):imagenFondo();if(!img||!img.naturalWidth)return null;return {img,o,x:o?.x||0,y:o?.y||0,w:o?.ancho||p.ancho,h:o?.alto||p.alto,clave:o?.src||`${App.pdf.id}:${p.pdfPagina}`};}
   function prepararLazo(){const f=fuenteLazo();if(!f)return null;if(claveLazo!==f.clave){const c=document.createElement('canvas'),s=Math.min(1,700/Math.max(f.img.naturalWidth,f.img.naturalHeight));c.width=Math.max(1,Math.round(f.img.naturalWidth*s));c.height=Math.max(1,Math.round(f.img.naturalHeight*s));const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(f.img,0,0,c.width,c.height);mapaLazo=window.Lazo.costos(g.getImageData(0,0,c.width,c.height).data,c.width,c.height);claveLazo=f.clave;}return f;}
   function tramoLazo(a,b){const f=prepararLazo();if(!f||!document.getElementById('lazo-iman').checked)return [a,b];const px=q=>[(q[0]-f.x)/f.w*mapaLazo.W,(q[1]-f.y)/f.h*mapaLazo.H],mm=q=>[f.x+q[0]/mapaLazo.W*f.w,f.y+q[1]/mapaLazo.H*f.h];const radio=Number(document.getElementById('lazo-radio').value)||8,inten=Number(document.getElementById('lazo-intensidad').value)/5;return window.Lazo.camino(mapaLazo,px(a),px(b),Math.ceil(radio*mapaLazo.W/f.w),inten).map(mm);}
-  function terminarLazo(cerrar=false){if(!lazo)return;const puntos=lazo.puntos;const minimo=cerrar?3:2;if(puntos.length>=minimo){const tipo=cerrar?'poligono':'polilinea',tol=Number(document.getElementById('lazo-simplificar').value)||0,v=window.Lazo.simplificar(puntos,tol);const sig=document.getElementById('lazo-significado').value;App.EditorObjetos.crear(tipo,{nombre:sig[0].toUpperCase()+sig.slice(1),vertices:v,cerrado:cerrar});App.anunciar(`${sig}: ${v.length} vértices. ${cerrar?'Forma cerrada.':'Trazo terminado.'}`);}lazo=null;dibujar();}
+  /** Puntos del trazo: primer anclaje y, después, cada tramo sin repetir su inicio. */
+  function puntosLazo(){if(!lazo||!lazo.anclas.length)return [];return [lazo.anclas[0]].concat(...lazo.tramos.map(s=>s.slice(1)));}
+  function iniciarLazo(mm){lazo={anclas:[mm],tramos:[],quitadas:[],preview:[]};App.anunciar('Lazo iniciado. Cada clic fija un punto; arrastrá un punto para corregirlo; Ctrl+Z o Retroceso borra el último; Enter o doble clic termina.');}
+  function agregarAncla(mm){const ant=lazo.anclas.at(-1);lazo.tramos.push(tramoLazo(ant,mm));lazo.anclas.push(mm);lazo.quitadas=[];App.anunciar(`Punto ${lazo.anclas.length} fijado.`);}
+  /** Saca el último punto del lazo (Ctrl+Z / Retroceso). Devuelve false si no había lazo. */
+  function deshacerLazo(){if(!lazo)return false;if(lazo.anclas.length<=1){lazo=null;App.anunciar('Lazo cancelado.');dibujar();return true;}lazo.quitadas.push({ancla:lazo.anclas.pop(),tramo:lazo.tramos.pop()});lazo.preview=[];App.anunciar(`Punto borrado. Quedan ${lazo.anclas.length}.`);dibujar();return true;}
+  /** Vuelve a poner el último punto quitado (Ctrl+Y). */
+  function rehacerLazo(){if(!lazo||!lazo.quitadas.length)return !!lazo;const q=lazo.quitadas.pop();lazo.anclas.push(q.ancla);lazo.tramos.push(q.tramo);App.anunciar(`Punto ${lazo.anclas.length} repuesto.`);dibujar();return true;}
+  /** Mueve un anclaje y recalcula los dos tramos que lo tocan. */
+  function moverAncla(i,mm){lazo.anclas[i]=mm;if(i>0)lazo.tramos[i-1]=tramoLazo(lazo.anclas[i-1],mm);if(i<lazo.anclas.length-1)lazo.tramos[i]=tramoLazo(mm,lazo.anclas[i+1]);}
+  function anclaCercana(mm){if(!lazo)return -1;const tol=Math.max(2,8/escala());let mejor=-1,dmin=Infinity;lazo.anclas.forEach((q,i)=>{const d=Math.hypot(q[0]-mm[0],q[1]-mm[1]);if(d<tol&&d<dmin){dmin=d;mejor=i;}});return mejor;}
+  function terminarLazo(cerrar=false){if(!lazo)return;if(cerrar&&lazo.anclas.length>=3){lazo.tramos.push(tramoLazo(lazo.anclas.at(-1),lazo.anclas[0]));}const puntos=puntosLazo();const minimo=cerrar?3:2;if(puntos.length>=minimo){const tipo=cerrar?'poligono':'polilinea',tol=Number(document.getElementById('lazo-simplificar').value)||0,v=window.Lazo.simplificar(puntos,tol);const sig=document.getElementById('lazo-significado').value;App.EditorObjetos.crear(tipo,{nombre:sig[0].toUpperCase()+sig.slice(1),vertices:v,cerrado:cerrar});App.anunciar(`${sig}: ${v.length} vértices. ${cerrar?'Forma cerrada.':'Trazo terminado.'}`);}lazo=null;dibujar();}
   function lineaCercana(mm){const tol=Math.max(2,7/escala());let mejor=null;for(const o of App.pagina().objetos||[]){if(o.bloqueado||o.oculto||!['linea','polilinea','poligono'].includes(o.tipo))continue;const v=Objetos.geometria(o);for(let i=0;i<v.length-(o.tipo==='poligono'?0:1);i++){const d=Objetos.distanciaSegmento(mm[0],mm[1],v[i],v[(i+1)%v.length]);if(d<tol&&(!mejor||d<mejor.d))mejor={o,i,d};}}return mejor;}
   function verticeCercano(mm){const o=App.ui.sel?.tipo==='objeto'&&App.EditorObjetos.buscar(App.ui.sel.id);if(!o||o.bloqueado||!['linea','polilinea','poligono'].includes(o.tipo))return null;const v=Objetos.geometria(o),i=v.findIndex(p=>Math.hypot(mm[0]-p[0],mm[1]-p[1])<Math.max(2,8/escala()));return i<0?null:{o,i,p:v[i]};}
 
@@ -294,7 +307,7 @@
     const mm = posicion(ev);
     const h = App.ui.herramienta;
     lienzo.setPointerCapture(ev.pointerId);
-    if(h==='lazo'){if(!lazo){lazo={puntos:[mm],tramos:[],preview:[]};App.anunciar('Lazo iniciado. Hacé clic para fijar tramos; Enter termina.');}else if(lazo.puntos.length>2&&Math.hypot(mm[0]-lazo.puntos[0][0],mm[1]-lazo.puntos[0][1])<2.5){const seg=tramoLazo(lazo.puntos.at(-1),lazo.puntos[0]);lazo.puntos.push(...seg.slice(1,-1));terminarLazo(true);return;}else{const seg=tramoLazo(lazo.puntos.at(-1),mm);lazo.tramos.push(seg);lazo.puntos.push(...seg.slice(1));App.anunciar(`Tramo ${lazo.tramos.length} fijado.`);}dibujar();return;}
+    if(h==='lazo'){if(!lazo){iniciarLazo(mm);dibujar();return;}const i=anclaCercana(mm);if(i>=0){arrastre={tipo:'ancla',i,inicio:mm,movido:false};return;}agregarAncla(mm);lazo.preview=[];dibujar();return;}
     if(h==='editar-vertices'){const v=verticeCercano(mm);if(v){verticeElegido=v;arrastre={tipo:'vertice',id:v.o.id,i:v.i,registrado:false};dibujar();}else{const hit=lineaCercana(mm);if(hit)App.EditorObjetos.seleccionar(hit.o.id,false);}return;}
     if(h==='borrar-linea'||h==='tijera'){const hit=lineaCercana(mm);if(!hit)return;App.registrar();if(h==='borrar-linea'){if(ev.altKey){const partes=Objetos.borrarTramo(hit.o,hit.i);App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);for(const parte of partes){parte.id=App.nuevoId('o');parte.grupo=null;App.pagina().objetos.push(parte);}App.anunciar('Tramo borrado.');}else{App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);App.anunciar('Línea borrada.');}App.EditorObjetos.seleccionar(null,false);}else{try{const partes=Objetos.cortarLinea(hit.o,hit.i,mm);partes[0].id=hit.o.id;partes[1].id=App.nuevoId('o');partes[0].grupo=partes[1].grupo=null;App.EditorObjetos.reemplazar(hit.o.id,partes[0]);App.pagina().objetos.push(partes[1]);App.anunciar('Línea cortada en dos.');}catch(e){App.anunciar(e.message);}}App.cambio('objetos');return;}
     if (h === 'seleccionar') {
@@ -346,7 +359,8 @@
     const mm = posicion(ev);
     document.getElementById('cursor-mm').textContent = `x ${mm[0].toFixed(1)} mm · y ${mm[1].toFixed(1)} mm`;
     cursorLazo=mm;
-    if(lazo&&!arrastre&&App.ui.herramienta==='lazo'){const now=performance.now();if(!lazo.ultimaVista||now-lazo.ultimaVista>80){lazo.preview=tramoLazo(lazo.puntos.at(-1),mm).slice(1);lazo.ultimaVista=now;dibujar();}}
+    if(lazo&&arrastre&&arrastre.tipo==='ancla'){if(Math.hypot(mm[0]-arrastre.inicio[0],mm[1]-arrastre.inicio[1])>0.8)arrastre.movido=true;if(arrastre.movido){const now=performance.now();if(!arrastre.ultima||now-arrastre.ultima>60){moverAncla(arrastre.i,mm);arrastre.ultima=now;dibujar();}}return;}
+    if(lazo&&!arrastre&&App.ui.herramienta==='lazo'){const now=performance.now();if(!lazo.ultimaVista||now-lazo.ultimaVista>80){lazo.preview=tramoLazo(lazo.anclas.at(-1),mm).slice(1);lazo.ultimaVista=now;dibujar();}}
     if(!arrastre&&App.ui.herramienta==='seleccionar'){
       const h=tocarManija(mm);lienzo.style.cursor=h==='rotar'?'grab':h?({n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',nw:'nwse-resize',se:'nwse-resize',ne:'nesw-resize',sw:'nesw-resize'}[h]):tocar(mm)?'move':'default';}
     if (!arrastre) return;
@@ -396,6 +410,14 @@
     const a = arrastre;
     arrastre = null;
     const mm = ev ? posicion(ev) : null;
+    if (a.tipo === 'ancla') {
+      // Soltar un anclaje del lazo: si se arrastró, queda en su lugar nuevo; si fue un clic
+      // sobre el PRIMER punto y hay al menos 3, se cierra la forma.
+      if (!lazo) return;
+      if (a.movido) { if (mm) moverAncla(a.i, mm); App.anunciar(`Punto ${a.i + 1} movido.`); dibujar(); return; }
+      if (a.i === 0 && lazo.anclas.length >= 3) { terminarLazo(true); return; }
+      return;
+    }
     if (a.tipo === 'forma') {
       vistaPrevia = null;
       const b=mm||a.inicio,datos=a.forma==='linea'?{vertices:[a.inicio,b]}:
@@ -458,7 +480,7 @@
 
   lienzo.addEventListener('keydown', ev => {
     const flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-    if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){lazo={puntos:[cursorLazo],tramos:[],preview:[]};App.anunciar('Lazo iniciado.');}else if(Math.hypot(cursorLazo[0]-lazo.puntos.at(-1)[0],cursorLazo[1]-lazo.puntos.at(-1)[1])<.5){terminarLazo();}else{const seg=tramoLazo(lazo.puntos.at(-1),cursorLazo);lazo.puntos.push(...seg.slice(1));lazo.tramos.push(seg);App.anunciar('Tramo fijado.');}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){lazo.tramos.pop();lazo.puntos=lazo.tramos.length?lazo.tramos.flatMap((s,i)=>i?s.slice(1):s):[lazo.puntos[0]];App.anunciar('Último tramo borrado.');ev.preventDefault();dibujar();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
+    if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])<.5){terminarLazo();}else{agregarAncla(cursorLazo);}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
     if(ev.key==='Delete'&&verticeElegido&&App.ui.herramienta==='editar-vertices'){try{const v=verticeElegido,o=App.EditorObjetos.buscar(v.o.id);App.registrar();App.EditorObjetos.reemplazar(o.id,Objetos.quitarVertice(o,v.i));verticeElegido=null;App.cambio('objetos');App.anunciar('Vértice borrado.');}catch(e){App.anunciar(e.message);}ev.preventDefault();return;}
     if (flechas[ev.key]) {
       if (!App.buscarSel()) { App.anunciar('Elegí un elemento con Av Pág o desde la lista.'); ev.preventDefault(); return; }
@@ -499,6 +521,16 @@
   });
   function terminarVertices(){if(!verticesPendientes)return;const v=verticesPendientes;verticesPendientes=null;vistaPrevia=null;
     if(v.puntos.length>=(v.tipo==='poligono'?3:2))App.EditorObjetos.crear(v.tipo,{vertices:v.puntos,cerrado:v.tipo==='poligono'});else dibujar();}
+  // Clic derecho sobre un elemento: lo elige (si no estaba elegido) y abre el menú de acciones.
+  lienzo.addEventListener('contextmenu', ev => {
+    ev.preventDefault();
+    if (lazo) return;
+    const mm = posicion(ev), t = tocar(mm);
+    if (t && t.tipo === 'objeto' && !(App.ui.seleccion || []).includes(t.id)) App.EditorObjetos.seleccionar(t.id, false);
+    else if (t && t.tipo !== 'objeto') App.seleccionar(t.tipo, t.id);
+    if (!t && !(App.ui.seleccion || []).length) { App.anunciar('No hay ningún elemento ahí.'); return; }
+    if (App.MenuContextual) App.MenuContextual.abrir(ev.clientX, ev.clientY, lienzo);
+  });
   lienzo.addEventListener('dblclick',ev=>{if(App.ui.herramienta==='lazo'){terminarLazo();return;}if(App.ui.herramienta==='editar-vertices'){const mm=posicion(ev),hit=lineaCercana(mm);if(hit){App.registrar();App.EditorObjetos.reemplazar(hit.o.id,Objetos.agregarVertice(hit.o,hit.i,mm));App.cambio('objetos');App.anunciar('Vértice agregado.');}return;}terminarVertices();});
 
   window.addEventListener('pointerup', () => { if (arrastre) terminar(null); });
@@ -516,7 +548,7 @@
     dibujar();
   }
 
-  App.Lienzo = { dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
+  App.Lienzo = { lazoActivo: () => !!lazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
   App.alCambiar(() => dibujar());
   window.addEventListener('resize', () => dibujar());
 })();
