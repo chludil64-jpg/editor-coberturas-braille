@@ -63,6 +63,66 @@ def completar(perfil):
     return _fusionar(DEFECTO, perfil or {})
 
 
+def _num(valor, nombre, minimo, maximo):
+    if isinstance(valor, bool) or not isinstance(valor, (int, float)) or valor != valor:
+        raise ValueError(f"Perfil inválido: «{nombre}» debe ser un número.")
+    if not minimo <= valor <= maximo:
+        raise ValueError(f"Perfil inválido: «{nombre}» debe estar entre {minimo} y {maximo}.")
+
+
+def _bloque(perfil, clave):
+    b = perfil.get(clave)
+    if not isinstance(b, dict):
+        raise ValueError(f"Perfil inválido: «{clave}» debe ser un objeto.")
+    return b
+
+
+def validar(perfil):
+    """Comprueba tipos y rangos de un perfil ya completado. Lanza ValueError."""
+    if not isinstance(perfil, dict):
+        raise ValueError("Perfil inválido: debe ser un objeto.")
+    if not isinstance(perfil.get("nombre", ""), str) or len(perfil.get("nombre", "")) > 120:
+        raise ValueError("Perfil inválido: «nombre» debe ser un texto corto.")
+    if perfil.get("codificador") not in ("grilla", "punto_libre"):
+        raise ValueError("Perfil inválido: «codificador» debe ser «grilla» o «punto_libre».")
+    hoja = _bloque(perfil, "hoja")
+    _num(hoja.get("ancho_max_mm"), "hoja.ancho_max_mm", 10, 400)
+    _num(hoja.get("alto_max_mm"), "hoja.alto_max_mm", 10, 400)
+    carga = _bloque(perfil, "carga")
+    if carga.get("orientacion") not in ("horizontal", "vertical"):
+        raise ValueError("Perfil inválido: «carga.orientacion» no es válida.")
+    if carga.get("sentido_giro") not in ("horario", "antihorario"):
+        raise ValueError("Perfil inválido: «carga.sentido_giro» no es válido.")
+    if carga.get("espejo") not in ("no", "horizontal", "vertical"):
+        raise ValueError("Perfil inválido: «carga.espejo» no es válido.")
+    _num(carga.get("desplazamiento_x_mm"), "carga.desplazamiento_x_mm", -50, 50)
+    _num(carga.get("desplazamiento_y_mm"), "carga.desplazamiento_y_mm", -50, 50)
+    _num(carga.get("escala_x"), "carga.escala_x", 0.5, 2)
+    _num(carga.get("escala_y"), "carga.escala_y", 0.5, 2)
+    _num(carga.get("copias"), "carga.copias", 1, 50)
+    mg = _bloque(perfil, "margenes_mm")
+    for lado in ("izquierdo", "derecho", "superior", "inferior"):
+        _num(mg.get(lado), f"margenes_mm.{lado}", 0, 100)
+    br = _bloque(perfil, "braille")
+    _num(br.get("entre_puntos_mm"), "braille.entre_puntos_mm", 1, 10)
+    _num(br.get("entre_celdas_mm"), "braille.entre_celdas_mm", 2, 20)
+    _num(br.get("entre_renglones_mm"), "braille.entre_renglones_mm", 4, 40)
+    _num(perfil.get("separacion_minima_mm"), "separacion_minima_mm", 0, 10)
+    _num(perfil.get("paso_dibujo_mm"), "paso_dibujo_mm", 1, 5)
+    _num(perfil.get("separacion_dibujo_braille_mm"), "separacion_dibujo_braille_mm", 0, 30)
+    g = _bloque(perfil, "grilla")
+    for k in ("paso_mm", "paso_x_mm", "paso_y_mm"):
+        if g.get(k) not in (None, ""):
+            _num(g[k], f"grilla.{k}", 1, 5)
+    red = _bloque(perfil, "red")
+    if not isinstance(red.get("ip", ""), str) or len(red.get("ip", "")) > 64:
+        raise ValueError("Perfil inválido: «red.ip» no es válida.")
+    _num(red.get("puerto"), "red.puerto", 1, 65535)
+    if not isinstance(perfil.get("impresora_windows", ""), str) or len(perfil.get("impresora_windows", "")) > 260:
+        raise ValueError("Perfil inválido: «impresora_windows» no es válida.")
+    return perfil
+
+
 def cargar(ruta):
     if os.path.exists(ruta):
         with open(ruta, "r", encoding="utf-8") as f:
@@ -71,7 +131,7 @@ def cargar(ruta):
 
 
 def guardar(ruta, perfil):
-    perfil = completar(perfil)
+    perfil = validar(completar(perfil))
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     tmp = ruta + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:

@@ -7,6 +7,7 @@ Escucha solo en 127.0.0.1. Sirve la interfaz de ``web/`` y una API JSON.
 
 import argparse
 import base64
+import ipaddress
 import json
 import mimetypes
 import os
@@ -26,7 +27,15 @@ from motor import impresion, index_v4, pdf_io, perfil as perfil_mod  # noqa: E40
 
 WEB = os.path.join(BASE, "web")
 RUTA_PERFIL = os.path.join(BASE, "perfiles", "everest_v4.json")
-MAX_SUBIDA = 80 * 1024 * 1024
+MAX_SUBIDA = 40 * 1024 * 1024     # tope de cualquier cuerpo recibido (PDF incluido)
+MAX_PDFS_RETENIDOS = 3            # documentos PDF abiertos en memoria
+MAX_DPI = 200
+MAX_HOJA_MM = 300.0               # A4 + margen
+MAX_PUNTOS = 200000
+MAX_PX_POR_MM = 12
+CSP = ("default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; "
+       "script-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; "
+       "object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 CABECERA_PROPIA = "X-Editor-Braille"
 
 _pdfs = {}          # id -> (bytes, documento)
@@ -40,10 +49,21 @@ def _guardar_pdf(datos):
     with _candado:
         _pdfs[ident] = (datos, doc)
         _orden_pdfs.append(ident)
-        while len(_orden_pdfs) > 6:
+        while len(_orden_pdfs) > MAX_PDFS_RETENIDOS:
             viejo = _orden_pdfs.pop(0)
-            _pdfs.pop(viejo, None)
+            item = _pdfs.pop(viejo, None)
+            if item:
+                try:
+                    item[1].close()
+                except Exception:  # noqa: BLE001
+                    pass
     return ident, doc
+
+
+def carpeta_datos():
+    """Carpeta de datos locales: %LOCALAPPDATA%\\EditorBraille (en otros sistemas, ~/.local/share)."""
+    base = os.environ.get("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), ".local", "share")
+    return os.path.join(base, "EditorBraille")
 
 
 def _doc(ident):
@@ -56,7 +76,43 @@ def _doc(ident):
 
 def _puntos(cuerpo):
     pts = cuerpo.get("puntos") or []
+    if not isinstance(pts, list):
+        raise ValueError("«puntos» debe ser una lista.")
+    if len(pts) > MAX_PUNTOS:
+        raise ValueError(f"Demasiados puntos ({len(pts)}); el máximo es {MAX_PUNTOS}.")
     return [(float(p[0]), float(p[1])) for p in pts]
+
+
+def _hoja(cuerpo):
+    """Ancho y alto de la hoja en mm, validados."""
+    try:
+        w, h = float(cuerpo["ancho"]), float(cuerpo["alto"])
+    except (TypeError, ValueError):
+        raise ValueError("El tamaño de la hoja no es válido.") from None
+    if not (0 < w <= MAX_HOJA_MM and 0 < h <= MAX_HOJA_MM):
+        raise ValueError(f"La hoja debe medir entre 0 y {MAX_HOJA_MM:.0f} mm por lado.")
+    return w, h
+
+
+def validar_ip(texto):
+    """Devuelve la IP como texto o lanza ValueError."""
+    try:
+        ip = ipaddress.ip_address((texto or "").strip())
+    except ValueError:
+        raise ValueError("La dirección IP de la impresora no es válida.") from None
+    if ip.is_unspecified or ip.is_multicast:
+        raise ValueError("La dirección IP de la impresora no es válida.")
+    return str(ip)
+
+
+def validar_puerto(valor):
+    try:
+        puerto = int(valor if valor not in (None, "") else 9100)
+    except (TypeError, ValueError):
+        raise ValueError("El puerto no es válido.") from None
+    if not 1 <= puerto <= 65535:
+        raise ValueError("El puerto debe estar entre 1 y 65535.")
+    return puerto
 
 
 def _perfil_de(cuerpo):
@@ -65,10 +121,11 @@ def _perfil_de(cuerpo):
 
 def generar_archivo(cuerpo):
     """Arma el archivo de impresión (.ibe o .prn). Devuelve (bytes, extension, avisos, info)."""
-    perfil = _perfil_de(cuerpo)
+    perfil = perfil_mod.validar(_perfil_de(cuerpo))
     formato = cuerpo.get("formato") or perfil["codificador"]
+    ancho, alto = _hoja(cuerpo)
     pts, w, h, avisos = perfil_mod.transformar(
-        _puntos(cuerpo), cuerpo["ancho"], cuerpo["alto"], perfil,
+        _puntos(cuerpo), ancho, alto, perfil,
         solo_ajuste=bool(cuerpo.get("solo_ajuste")))
     info = {"ancho_hoja": round(w, 2), "alto_hoja": round(h, 2), "puntos": len(pts)}
     if formato == "grilla":
@@ -110,6 +167,9 @@ class Manejador(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(datos)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Content-Security-Policy", CSP)
+        self.send_header("Referrer-Policy", "no-referrer")
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()
@@ -119,10 +179,18 @@ class Manejador(BaseHTTPRequestHandler):
         self._responder(codigo, {"error": mensaje})
 
     def _leer_cuerpo(self):
-        largo = int(self.headers.get("Content-Length") or 0)
+        bruto = self.headers.get("Content-Length")
+        if bruto is None or not bruto.strip().isdigit():
+            raise ValueError("Content-Length ausente o no válido.")
+        largo = int(bruto)
         if largo > MAX_SUBIDA:
-            raise ValueError("El archivo es demasiado grande.")
+            raise ValueError("El archivo es demasiado grande (máximo 40 MB).")
         return self.rfile.read(largo) if largo else b""
+
+    def _error_interno(self, e):
+        import traceback
+        sys.stderr.write("Error interno:\n" + traceback.format_exc())
+        return self._error(500, "Error interno del servidor. El detalle está en la ventana del programa.")
 
     def _json(self):
         datos = self._leer_cuerpo()
@@ -150,7 +218,9 @@ class Manejador(BaseHTTPRequestHandler):
                 if len(partes) == 6 and partes[4] == "pagina" and partes[5].endswith(".png"):
                     doc = _doc(partes[3])
                     n = int(partes[5][:-4])
-                    dpi = int(parse_qs(url.query).get("dpi", ["110"])[0])
+                    if not 0 <= n < len(doc):
+                        return self._error(400, "Página inexistente.")
+                    dpi = max(36, min(int(parse_qs(url.query).get("dpi", ["110"])[0]), MAX_DPI))
                     return self._responder(200, pdf_io.render_png(doc, n, dpi), "image/png")
                 if len(partes) == 6 and partes[4] == "vectores":
                     doc = _doc(partes[3])
@@ -161,8 +231,10 @@ class Manejador(BaseHTTPRequestHandler):
             return self._estatico(ruta)
         except KeyError as e:
             return self._error(410, str(e.args[0]))
+        except (ValueError, IndexError):
+            return self._error(400, "Pedido no válido.")
         except Exception as e:  # noqa: BLE001
-            return self._error(500, f"Error interno: {e}")
+            return self._error_interno(e)
 
     def _estatico(self, ruta):
         if ruta in ("", "/"):
@@ -195,7 +267,10 @@ class Manejador(BaseHTTPRequestHandler):
                 ident, doc = _guardar_pdf(datos)
                 return self._responder(200, {"id": ident, "paginas": pdf_io.info(doc)})
             if ruta == "/api/perfil":
-                return self._responder(200, perfil_mod.guardar(RUTA_PERFIL, self._json()))
+                cuerpo = self._json()
+                if not isinstance(cuerpo, dict):
+                    return self._error(400, "Perfil inválido: debe ser un objeto.")
+                return self._responder(200, perfil_mod.guardar(RUTA_PERFIL, cuerpo))
             if ruta == "/api/ibe/abrir":
                 leido = index_v4.leer_ibe(self._leer_cuerpo())
                 return self._responder(200, {
@@ -210,15 +285,17 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._archivo_json(nombre, datos, avisos, info)
             if ruta == "/api/exportar/pdf":
                 cuerpo = self._json()
+                ancho, alto = _hoja(cuerpo)
                 doc = _doc(cuerpo["pdf_id"]) if cuerpo.get("pdf_id") and cuerpo.get("fondo", True) else None
-                datos = pdf_io.pdf_prueba(float(cuerpo["ancho"]), float(cuerpo["alto"]), _puntos(cuerpo),
+                datos = pdf_io.pdf_prueba(ancho, alto, _puntos(cuerpo),
                                           doc, int(cuerpo.get("pagina", 0)), True,
                                           cuerpo.get("titulo", ""))
                 return self._archivo_json((cuerpo.get("nombre") or "braille") + "_prueba.pdf", datos)
             if ruta == "/api/exportar/png":
                 cuerpo = self._json()
-                datos = pdf_io.png_puntos(float(cuerpo["ancho"]), float(cuerpo["alto"]), _puntos(cuerpo),
-                                          int(cuerpo.get("px_por_mm", 10)))
+                ancho, alto = _hoja(cuerpo)
+                ppm = max(1, min(int(cuerpo.get("px_por_mm", 10)), MAX_PX_POR_MM))
+                datos = pdf_io.png_puntos(ancho, alto, _puntos(cuerpo), ppm)
                 return self._archivo_json((cuerpo.get("nombre") or "braille") + ".png", datos)
             if ruta == "/api/imprimir":
                 return self._imprimir(self._json())
@@ -232,7 +309,7 @@ class Manejador(BaseHTTPRequestHandler):
         except (ValueError, OSError) as e:
             return self._error(400, str(e))
         except Exception as e:  # noqa: BLE001
-            return self._error(500, f"Error interno: {e}")
+            return self._error_interno(e)
 
     def _imprimir(self, cuerpo):
         if cuerpo.get("confirmado") is not True:
@@ -244,9 +321,11 @@ class Manejador(BaseHTTPRequestHandler):
             return self._error(400, "La Everest-D V4 no acepta el formato punto libre (.ibe, da error 202). "
                                     "Elegí el formato «Grilla ESC BEL» en el diálogo de impresión.")
         # Copia del último trabajo enviado, para diagnóstico (se sobrescribe en cada envío).
+        # Va a %LOCALAPPDATA%, fuera de la carpeta del proyecto (que puede estar en OneDrive).
         try:
-            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   "ultimo_trabajo." + ext), "wb") as f:
+            carpeta = carpeta_datos()
+            os.makedirs(carpeta, exist_ok=True)
+            with open(os.path.join(carpeta, "ultimo_trabajo." + ext), "wb") as f:
                 f.write(datos)
         except OSError:
             pass
@@ -255,9 +334,11 @@ class Manejador(BaseHTTPRequestHandler):
             ip = (destino.get("ip") or "").strip()
             if not ip:
                 return self._error(400, "Falta la dirección IP de la impresora.")
+            ip = validar_ip(ip)
+            puerto = validar_puerto(destino.get("puerto"))
             for _ in range(copias):
-                impresion.enviar_red(ip, int(destino.get("puerto") or 9100), datos)
-            lugar = f"{ip}:{destino.get('puerto') or 9100}"
+                impresion.enviar_red(ip, puerto, datos)
+            lugar = f"{ip}:{puerto}"
         elif destino.get("tipo") == "windows":
             nombre = destino.get("nombre") or ""
             if nombre not in impresion.listar_impresoras():
