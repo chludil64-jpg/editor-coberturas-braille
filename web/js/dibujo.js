@@ -128,7 +128,6 @@
   $('btn-calcar').addEventListener('click', () => {
     const p = App.pagina();
     if (!App.pdf.id || p.pdfPagina == null) { App.anunciar('Esta página no viene de un PDF.'); return; }
-    $('calcar-paso').value = $('paso-dibujo').value;
     $('calcar-estado').textContent = '';
     $('dlg-calcar').showModal();
   });
@@ -138,26 +137,20 @@
     try {
       est.textContent = 'Leyendo los vectores…';
       const r = await App.api(`/api/pdf/${App.pdf.id}/vectores/${p.pdfPagina}`);
-      const paso = Math.max(0.5, Number($('calcar-paso').value) || 2);
       const minimo = Number($('calcar-min').value) || 0;
-      const rellenos = $('calcar-rellenos').checked;
-      let pts = [];
-      let usados = 0;
-      for (const v of r.vectores) {
-        if (v.tipo === 'relleno' && !rellenos) continue;
-        const xs = v.puntos.map(q => q[0]), ys = v.puntos.map(q => q[1]);
-        const tam = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
-        if (tam < minimo) continue;
-        usados++;
-        pts = pts.concat(v.puntos.length <= 8
-          ? Grilla.muestrearPoligono(v.puntos, paso, v.cerrado)
-          : Grilla.muestrearTrayecto(v.puntos, paso, v.cerrado));
-      }
-      pts = Grilla.ralear(pts, paso * 0.75);
-      if (!pts.length) { est.textContent = 'No se encontraron vectores con esas opciones.'; return; }
-      App.registrar();
-      agregarTrazo('calco', pts, 'Calco del PDF');
-      est.textContent = `Se calcaron ${usados} formas: ${pts.length} puntos.`;
+      const specs = Calco.trazadosAObjetos(r.vectores, { rellenos: $('calcar-rellenos').checked, minimo });
+      if (!specs.length) { est.textContent = 'No se encontraron vectores con esas opciones.'; return; }
+      App.registrar('Calcar vectores del PDF');
+      const objs = p.objetos = p.objetos || [];
+      const nuevos = specs.map((s, i) => Objetos.crearObjeto(s.tipo, Object.assign({
+        id: App.nuevoId('o'), nombre: s.nombre, capa: 'dibujo', linea: 'continua', orden: objs.length + i }, s.datos)));
+      objs.push(...nuevos);
+      App.ui.seleccion = nuevos.map(o => o.id);
+      App.ui.sel = { tipo: 'objeto', id: nuevos[nuevos.length - 1].id };
+      App.cambio('dibujo');
+      est.textContent = `Se calcaron ${nuevos.length} objetos sueltos y quedaron elegidos.`;
+      App.anunciar(`Se calcaron ${nuevos.length} objetos del PDF, todos elegidos. Movelos juntos o agrupalos con el menú de clic derecho; Control+Z los deshace de una vez.`);
+      $('dlg-calcar').close();
     } catch (e) {
       est.textContent = 'Error: ' + e.message;
     }

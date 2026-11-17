@@ -570,12 +570,9 @@
 <dialog id="dlg-calcar" aria-labelledby="t-calcar">
   <form method="dialog" class="editor">
     <h2 id="t-calcar">Calcar vectores del PDF</h2>
-    <p class="nota">Convierte las líneas y recuadros del PDF (por ejemplo, los casilleros de marcado) en líneas de puntos.</p>
+    <p class="nota">Convierte cada línea, recuadro o forma del PDF en un objeto suelto que podés mover, escalar, editar o agrupar. Al terminar quedan todos elegidos.</p>
     <label><input type="checkbox" id="calcar-rellenos"> Incluir el borde de las formas rellenas</label>
-    <div class="fila dos">
-      <label>Largo mínimo (mm) <input type="number" id="calcar-min" value="5" min="0" step="0.5"></label>
-      <label>Paso (mm) <input type="number" id="calcar-paso" value="2" min="1" step="0.1"></label>
-    </div>
+    <label>Largo mínimo (mm) <input type="number" id="calcar-min" value="5" min="0" step="0.5"></label>
     <p id="calcar-estado" class="estado" aria-live="polite"></p>
     <div class="fila botones">
       <button type="button" id="btn-calcar-ok" class="destacado">Calcar</button>
@@ -623,6 +620,7 @@
 <script src="js/disposicion.js"></script>
 <script src="js/lienzo.js"></script>
 <script src="js/cuadros.js"></script>
+<script src="js/calco.js"></script>
 <script src="js/dibujo.js"></script>
 <script src="js/capas_color.js"></script>
 <script src="js/svg_importar.js"></script>
