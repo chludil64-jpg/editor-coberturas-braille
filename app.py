@@ -316,6 +316,7 @@ def ya_esta_abierto(puerto):
 def main():
     mimetypes.add_type("text/javascript", ".js")
     mimetypes.add_type("text/css", ".css")
+    mimetypes.add_type("application/manifest+json", ".webmanifest")
     ap = argparse.ArgumentParser(description="Editor de coberturas braille (servidor local)")
     ap.add_argument("--puerto", type=int, default=8777)
     ap.add_argument("--sin-navegador", action="store_true")

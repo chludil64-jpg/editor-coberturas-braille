@@ -14,6 +14,11 @@ Funciona sin internet. Se usa en el navegador, pero todo corre en esta PC: el se
 1. Doble clic en **`iniciar.bat`**. Se abre una ventana negra (el servidor) y el navegador en `http://127.0.0.1:8777/`.
 2. Para salir, usá el botón **Cerrar programa** o cerrá la ventana negra.
 
+## Instalar como aplicación
+- Con el servidor abierto (`iniciar.bat`), en Chrome o Edge aparece un ícono de instalar en la barra de direcciones (o menú ⋮ > «Instalar Editor Braille»).
+- Se abre en su propia ventana, con el logo, como una aplicación más.
+- El servidor tiene que estar prendido: la app instalada sigue usando `iniciar.bat`.
+
 ## Uso básico
 
 ### Editor de gráficos táctiles (fase 1)
