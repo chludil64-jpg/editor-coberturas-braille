@@ -18,6 +18,9 @@
   let arrastre = null;      // estado del gesto en curso
   let vistaPrevia = null;   // puntos de la forma que se está dibujando
   let verticesPendientes = null;
+  let medicion = null;      // etiqueta con medidas junto al cursor: {texto, accesible, en:[x,y], a, b}
+  let textoCursor = '';
+  let cursorMedir = [10, 10], anclaMedir = null, medirConTeclado = false;
 
   function escala() { return PX_POR_MM * App.ui.zoom; }
   function aPx(mm) { return MARGEN + mm * escala(); }
@@ -92,6 +95,38 @@
   function hayDesbloqueado(){const ids=App.ui.seleccion||[];return (App.pagina().objetos||[]).some(o=>ids.includes(o.id)&&!o.oculto&&!o.bloqueado);}
   function tocarManija(mm){const b=cajaSeleccion();if(!b||!hayDesbloqueado())return null;
     return Object.entries(manijas(b)).find(([,p])=>Math.hypot(mm[0]-p[0],mm[1]-p[1])<=Math.max(2,8/escala()))?.[0]||null;}
+
+  /** Muestra una medida (en mm) junto al cursor y en la barra de estado. Si hay `a` y `b`, dibuja el segmento medido. */
+  function ponerMedicion(m, en, a, b) {
+    medicion = { texto: m.corto, accesible: m.largo, en, a, b };
+    const c = document.getElementById('cursor-mm');
+    if (c) c.textContent = textoCursor + ' · ' + m.corto;
+  }
+  function limpiarMedicion() { medicion = null; anclaMedir = null; }
+  function dibujarMedicion() {
+    if (medirConTeclado && App.ui.herramienta === 'medir') {
+      ctx.strokeStyle = '#a32600'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(aPx(cursorMedir[0]), aPx(cursorMedir[1]), 6, 0, Math.PI * 2); ctx.stroke();
+      if (anclaMedir) { ctx.beginPath(); ctx.arc(aPx(anclaMedir[0]), aPx(anclaMedir[1]), 4, 0, Math.PI * 2); ctx.fillStyle = '#a32600'; ctx.fill(); }
+    }
+    if (!medicion) return;
+    if (medicion.a && medicion.b) {
+      ctx.strokeStyle = '#a32600'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(aPx(medicion.a[0]), aPx(medicion.a[1])); ctx.lineTo(aPx(medicion.b[0]), aPx(medicion.b[1])); ctx.stroke();
+      ctx.setLineDash([]);
+      for (const q of [medicion.a, medicion.b]) { ctx.fillStyle = '#a32600'; ctx.beginPath(); ctx.arc(aPx(q[0]), aPx(q[1]), 3.5, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    const w = ctx.measureText(medicion.texto).width + 12, h = 20;
+    let x = aPx(medicion.en[0]) + 14, y = aPx(medicion.en[1]) - h - 8;
+    const maxX = parseFloat(lienzo.style.width) - w - 4;
+    if (x > maxX) x = aPx(medicion.en[0]) - w - 14;
+    if (y < 2) y = aPx(medicion.en[1]) + 14;
+    ctx.fillStyle = '#1e3d2f'; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.fillStyle = '#ffffff'; ctx.textBaseline = 'middle'; ctx.fillText(medicion.texto, x + 6, y + h / 2 + 0.5);
+    ctx.textBaseline = 'alphabetic';
+  }
 
   function dibujar() {
     const p = App.pagina();
@@ -211,6 +246,7 @@
       ctx.arc(aPx(arrastre.ultimo[0]), aPx(arrastre.ultimo[1]), radioGoma() * e, 0, Math.PI * 2);
       ctx.stroke();
     }
+    dibujarMedicion();
     dibujarReglas(p);
   }
 
@@ -307,6 +343,12 @@
     const mm = posicion(ev);
     const h = App.ui.herramienta;
     lienzo.setPointerCapture(ev.pointerId);
+    medicion = null; anclaMedir = null; medirConTeclado = false;
+    if (h === 'medir') {
+      arrastre = { tipo: 'medir', inicio: mm, ultimo: mm };
+      ponerMedicion(Medir.describir('linea', { a: mm, b: mm }), mm, mm, mm);
+      dibujar(); return;
+    }
     if(h==='lazo'){if(!lazo){iniciarLazo(mm);dibujar();return;}const i=anclaCercana(mm);if(i>=0){arrastre={tipo:'ancla',i,inicio:mm,movido:false};return;}agregarAncla(mm);lazo.preview=[];dibujar();return;}
     if(h==='editar-vertices'){const v=verticeCercano(mm);if(v){verticeElegido=v;arrastre={tipo:'vertice',id:v.o.id,i:v.i,registrado:false};dibujar();}else{const hit=lineaCercana(mm);if(hit)App.EditorObjetos.seleccionar(hit.o.id,false);}return;}
     if(h==='borrar-linea'||h==='tijera'){const hit=lineaCercana(mm);if(!hit)return;App.registrar();if(h==='borrar-linea'){if(ev.altKey){const partes=Objetos.borrarTramo(hit.o,hit.i);App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);for(const parte of partes){parte.id=App.nuevoId('o');parte.grupo=null;App.pagina().objetos.push(parte);}App.anunciar('Tramo borrado.');}else{App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);App.anunciar('Línea borrada.');}App.EditorObjetos.seleccionar(null,false);}else{try{const partes=Objetos.cortarLinea(hit.o,hit.i,mm);partes[0].id=hit.o.id;partes[1].id=App.nuevoId('o');partes[0].grupo=partes[1].grupo=null;App.EditorObjetos.reemplazar(hit.o.id,partes[0]);App.pagina().objetos.push(partes[1]);App.anunciar('Línea cortada en dos.');}catch(e){App.anunciar(e.message);}}App.cambio('objetos');return;}
@@ -357,17 +399,28 @@
 
   lienzo.addEventListener('pointermove', ev => {
     const mm = posicion(ev);
-    document.getElementById('cursor-mm').textContent = `x ${mm[0].toFixed(1)} mm · y ${mm[1].toFixed(1)} mm`;
+    textoCursor = `x ${mm[0].toFixed(1)} mm · y ${mm[1].toFixed(1)} mm`;
+    document.getElementById('cursor-mm').textContent = textoCursor;
     cursorLazo=mm;
     if(lazo&&arrastre&&arrastre.tipo==='ancla'){if(Math.hypot(mm[0]-arrastre.inicio[0],mm[1]-arrastre.inicio[1])>0.8)arrastre.movido=true;if(arrastre.movido){const now=performance.now();if(!arrastre.ultima||now-arrastre.ultima>60){moverAncla(arrastre.i,mm);arrastre.ultima=now;dibujar();}}return;}
     if(lazo&&!arrastre&&App.ui.herramienta==='lazo'){const now=performance.now();if(!lazo.ultimaVista||now-lazo.ultimaVista>80){lazo.preview=tramoLazo(lazo.anclas.at(-1),mm).slice(1);lazo.ultimaVista=now;dibujar();}}
     if(!arrastre&&App.ui.herramienta==='seleccionar'){
       const h=tocarManija(mm);lienzo.style.cursor=h==='rotar'?'grab':h?({n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',nw:'nwse-resize',se:'nwse-resize',ne:'nesw-resize',sw:'nesw-resize'}[h]):tocar(mm)?'move':'default';}
+    if (!arrastre && verticesPendientes && verticesPendientes.puntos.length) {
+      const u = verticesPendientes.puntos.at(-1);
+      ponerMedicion(Medir.describir('linea', { a: u, b: mm }), mm, u, mm);
+      dibujar();
+    }
     if (!arrastre) return;
-    if (arrastre.tipo === 'mover') {
+    if (arrastre.tipo === 'medir') {
+      arrastre.ultimo = mm;
+      ponerMedicion(Medir.describir('linea', { a: arrastre.inicio, b: mm }), mm, arrastre.inicio, mm);
+      dibujar();
+    } else if (arrastre.tipo === 'mover') {
       const dx = mm[0] - arrastre.ultimo[0], dy = mm[1] - arrastre.ultimo[1];
       if (!dx && !dy) return;
       if (!arrastre.registrado) { App.registrar(); arrastre.registrado = true; }
+      ponerMedicion(Medir.describir('mover', { dx: mm[0] - arrastre.inicio[0], dy: mm[1] - arrastre.inicio[1] }), mm);
       mover(dx, dy, true);
       arrastre.ultimo = mm;
     } else if(arrastre.tipo==='vertice'){const o=App.EditorObjetos.buscar(arrastre.id);if(!arrastre.registrado){App.registrar();arrastre.registrado=true;}App.EditorObjetos.reemplazar(o.id,Objetos.editarVertice(o,arrastre.i,mm));verticeElegido={o,i:arrastre.i,p:mm};App.cambio('arrastre');
@@ -381,6 +434,7 @@
       sx=Math.max(.01,sx);sy=Math.max(.01,sy);
       const proporcional=ev.shiftKey||(!ev.altKey&&a.originales.length===1&&a.originales[0].tipo==='imagen'&&h.length===2);
       if(proporcional){const s=Math.abs(sx-1)>Math.abs(sy-1)?sx:sy;sx=s;sy=s;}
+      ponerMedicion(Medir.describir('caja',{ancho:(b.x1-b.x0)*sx,alto:(b.y1-b.y0)*sy}),mm);
       a.originales.forEach(o=>App.EditorObjetos.reemplazar(o.id,Objetos.escalar(o,sx,sy,[ox,oy])));App.cambio('arrastre');
     } else if(arrastre.tipo==='rotar') {
       if(!arrastre.registrado){App.registrar();arrastre.registrado=true;}
@@ -388,6 +442,7 @@
       let ang=(Math.atan2(mm[1]-c[1],mm[0]-c[0])-Math.atan2(a.inicio[1]-c[1],a.inicio[0]-c[0]))*180/Math.PI;
       if(ev.shiftKey)ang=Math.round(ang/15)*15;
       const rad=ang*Math.PI/180;
+      ponerMedicion(Medir.describir('rotar',{grados:ang}),mm);
       a.originales.forEach(o=>{let n=Objetos.rotar(o,ang),p=Objetos.centro(o),dx=p[0]-c[0],dy=p[1]-c[1];
         n=Objetos.mover(n,dx*Math.cos(rad)-dy*Math.sin(rad)-dx,dx*Math.sin(rad)+dy*Math.cos(rad)-dy);App.EditorObjetos.reemplazar(o.id,n);});App.cambio('arrastre');
     } else if (arrastre.tipo === 'goma') {
@@ -401,6 +456,9 @@
       dibujar();
     } else if (arrastre.tipo === 'forma') {
       vistaPrevia = puntosForma(arrastre.forma, arrastre.inicio, mm);
+      const ini = arrastre.inicio;
+      ponerMedicion(arrastre.forma === 'linea' ? Medir.describir('linea', { a: ini, b: mm }) : Medir.describir('caja', { ancho: mm[0] - ini[0], alto: mm[1] - ini[1] }),
+        mm, arrastre.forma === 'linea' ? ini : null, arrastre.forma === 'linea' ? mm : null);
       dibujar();
     }
   });
@@ -410,6 +468,15 @@
     const a = arrastre;
     arrastre = null;
     const mm = ev ? posicion(ev) : null;
+    const medidaFinal = medicion && medicion.accesible;
+    if (a.tipo === 'medir') {
+      const b = mm || a.ultimo;
+      ponerMedicion(Medir.describir('linea', { a: a.inicio, b }), b, a.inicio, b);
+      App.anunciar('Medida: ' + medicion.accesible);
+      dibujar();
+      return;
+    }
+    medicion = null;
     if (a.tipo === 'ancla') {
       // Soltar un anclaje del lazo: si se arrastró, queda en su lugar nuevo; si fue un clic
       // sobre el PRIMER punto y hay al menos 3, se cierra la forma.
@@ -422,7 +489,8 @@
       vistaPrevia = null;
       const b=mm||a.inicio,datos=a.forma==='linea'?{vertices:[a.inicio,b]}:
         {x:Math.min(a.inicio[0],b[0]),y:Math.min(a.inicio[1],b[1]),ancho:Math.abs(b[0]-a.inicio[0]),alto:Math.abs(b[1]-a.inicio[1])};
-      App.EditorObjetos.crear(a.forma,datos);
+      const nuevo = App.EditorObjetos.crear(a.forma,datos);
+      if (medidaFinal && nuevo) App.anunciar(`${nuevo.nombre} creado. ${medidaFinal}`);
     } else if (a.tipo === 'mano') {
       const pts = Grilla.muestrearTrayecto(a.camino, pasoDibujo(), false);
       vistaPrevia = null;
@@ -433,18 +501,19 @@
       App.cambio('dibujo');
     } else if (a.tipo === 'mover' && a.registrado) {
       const el = App.buscarSel();
-      if (el && App.ui.sel.tipo === 'cuadro') App.anunciar(`Cuadro en x ${el.x.toFixed(1)}, y ${el.y.toFixed(1)} mm.`);
+      if (el && App.ui.sel.tipo === 'cuadro') App.anunciar(`Cuadro en x ${el.x.toFixed(1)}, y ${el.y.toFixed(1)} mm. ${medidaFinal || ''}`);
+      else if (medidaFinal) App.anunciar(medidaFinal);
       App.cambio('mover');
     } else if(a.tipo==='marco') {
       const b=a.ultimo||a.inicio,x0=Math.min(a.inicio[0],b[0]),x1=Math.max(a.inicio[0],b[0]),y0=Math.min(a.inicio[1],b[1]),y1=Math.max(a.inicio[1],b[1]);
       const ids=App.pagina().objetos.filter(o=>{const r=Objetos.caja(o);return r.x0>=x0&&r.x1<=x1&&r.y0>=y0&&r.y1<=y1;}).map(o=>o.id);
       App.ui.seleccion=ids;App.ui.sel=ids.length?{tipo:'objeto',id:ids.at(-1)}:null;App.cambio('seleccion');
     } else if(a.tipo==='vertice'&&a.registrado){App.cambio('objetos');App.anunciar('Vértice movido.');
-    } else if((a.tipo==='escalar'||a.tipo==='rotar')&&a.registrado){App.cambio('objetos');App.anunciar('Forma transformada.');
+    } else if((a.tipo==='escalar'||a.tipo==='rotar')&&a.registrado){App.cambio('objetos');App.anunciar('Forma transformada. '+(medidaFinal||''));
     }
   }
   lienzo.addEventListener('pointerup', terminar);
-  lienzo.addEventListener('pointercancel', () => { arrastre = null; vistaPrevia = null; dibujar(); });
+  lienzo.addEventListener('pointercancel', () => { arrastre = null; vistaPrevia = null; medicion = null; dibujar(); });
 
   /** Mueve el elemento elegido. `silencioso` evita anunciar en cada paso del arrastre. */
   function mover(dx, dy, silencioso) {
@@ -480,6 +549,28 @@
 
   lienzo.addEventListener('keydown', ev => {
     const flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (App.ui.herramienta === 'medir') {
+      const paso = Objetos.pasos(App.medidas());
+      if (flechas[ev.key]) {
+        const k = ev.shiftKey ? 5 : 1;
+        medirConTeclado = true;
+        cursorMedir = [cursorMedir[0] + flechas[ev.key][0] * k * paso[0], cursorMedir[1] + flechas[ev.key][1] * k * paso[1]];
+        textoCursor = `x ${cursorMedir[0].toFixed(1)} mm · y ${cursorMedir[1].toFixed(1)} mm`;
+        document.getElementById('cursor-mm').textContent = textoCursor;
+        if (anclaMedir) {
+          ponerMedicion(Medir.describir('linea', { a: anclaMedir, b: cursorMedir }), cursorMedir, anclaMedir, cursorMedir);
+          App.anunciar(medicion.accesible);
+        } else App.anunciar(`Cursor de medición en x ${cursorMedir[0].toFixed(1)}, y ${cursorMedir[1].toFixed(1)} mm. Enter fija el primer punto.`);
+        ev.preventDefault(); dibujar(); return;
+      }
+      if (ev.key === 'Enter') {
+        medirConTeclado = true;
+        if (!anclaMedir) { anclaMedir = cursorMedir.slice(); medicion = null; App.anunciar('Primer punto fijado. Mové con las flechas y Enter para fijar el segundo.'); }
+        else { ponerMedicion(Medir.describir('linea', { a: anclaMedir, b: cursorMedir }), cursorMedir, anclaMedir, cursorMedir); App.anunciar('Medida: ' + medicion.accesible); anclaMedir = null; }
+        ev.preventDefault(); dibujar(); return;
+      }
+      if (ev.key === 'Escape') { limpiarMedicion(); medirConTeclado = false; App.anunciar('Medición cancelada.'); ev.preventDefault(); dibujar(); return; }
+    }
     if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])<.5){terminarLazo();}else{agregarAncla(cursorLazo);}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
     // Escape sin nada en curso: volver a «Elegir y mover» (para poder mover cuadros y formas).
     if(ev.key==='Escape'&&!lazo&&App.ui.herramienta!=='seleccionar'&&App.elegirHerramienta){App.elegirHerramienta('seleccionar');ev.preventDefault();return;}
@@ -513,7 +604,7 @@
         ev.preventDefault();
       }
     } else if (ev.key === 'Escape') {
-      verticesPendientes=null;vistaPrevia=null;App.seleccionar(null);
+      verticesPendientes=null;vistaPrevia=null;medicion=null;App.seleccionar(null);
       App.anunciar('Nada elegido.');
     } else if(ev.key==='Enter'&&verticesPendientes){terminarVertices();ev.preventDefault();
     } else if(ev.ctrlKey&&ev.key.toLowerCase()==='d'){App.EditorObjetos.operar('duplicar');ev.preventDefault();
@@ -521,7 +612,7 @@
     } else if(ev.ctrlKey&&ev.key.toLowerCase()==='a'){App.ui.seleccion=App.pagina().objetos.map(o=>o.id);App.ui.sel=App.ui.seleccion.length?{tipo:'objeto',id:App.ui.seleccion.at(-1)}:null;App.cambio('seleccion');ev.preventDefault();
     }
   });
-  function terminarVertices(){if(!verticesPendientes)return;const v=verticesPendientes;verticesPendientes=null;vistaPrevia=null;
+  function terminarVertices(){if(!verticesPendientes)return;const v=verticesPendientes;verticesPendientes=null;vistaPrevia=null;medicion=null;
     if(v.puntos.length>=(v.tipo==='poligono'?3:2))App.EditorObjetos.crear(v.tipo,{vertices:v.puntos,cerrado:v.tipo==='poligono'});else dibujar();}
   // Clic derecho sobre un elemento: lo elige (si no estaba elegido) y abre el menú de acciones.
   lienzo.addEventListener('contextmenu', ev => {
@@ -550,7 +641,7 @@
     dibujar();
   }
 
-  App.Lienzo = { lazoActivo: () => !!lazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
+  App.Lienzo = { limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, lazoActivo: () => !!lazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
   App.alCambiar(() => dibujar());
   window.addEventListener('resize', () => dibujar());
 })();

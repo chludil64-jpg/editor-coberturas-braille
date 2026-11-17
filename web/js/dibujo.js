@@ -5,7 +5,7 @@
   const $ = id => document.getElementById(id);
   const nombresHerr = {
     seleccionar: 'Elegir y mover', punto: 'Punto', linea: 'Línea', polilinea: 'Polilínea', poligono: 'Polígono', rectangulo: 'Rectángulo',
-    elipse: 'Elipse', mano: 'Mano alzada', goma: 'Goma',lazo:'Lazo magnético','editar-vertices':'Editar vértices','borrar-linea':'Borrar línea',tijera:'Tijera'
+    elipse: 'Elipse', mano: 'Mano alzada', goma: 'Goma',lazo:'Lazo magnético','editar-vertices':'Editar vértices','borrar-linea':'Borrar línea',tijera:'Tijera',medir:'Medir'
   };
 
   function agregarTrazo(tipo, puntos, nombre) {
@@ -60,6 +60,7 @@
   document.querySelectorAll('input[name="herramienta"]').forEach(r => {
     r.addEventListener('change', () => {
       App.ui.herramienta = r.value;
+      if (App.Lienzo && App.Lienzo.limpiarMedicion) App.Lienzo.limpiarMedicion();
       $('lienzo').style.cursor = r.value === 'seleccionar' ? 'default' : 'crosshair';
       App.anunciar(`Herramienta: ${nombresHerr[r.value]}.`);
     });

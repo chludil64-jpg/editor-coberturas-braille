@@ -12,7 +12,7 @@
     ['seleccionar', 'Elegir y mover', 'V'], ['linea', 'Línea'], ['polilinea', 'Polilínea'], ['poligono', 'Polígono'],
     ['rectangulo', 'Rectángulo'], ['elipse', 'Elipse'], ['punto', 'Punto'], ['mano', 'Mano alzada'],
     ['lazo', 'Lazo magnético', 'L'], ['editar-vertices', 'Editar vértices'], ['borrar-linea', 'Borrar línea'],
-    ['tijera', 'Tijera'], ['goma', 'Goma']
+    ['tijera', 'Tijera'], ['goma', 'Goma'], ['medir', 'Medir', 'M']
   ];
 
   // Pestañas: [id, título, grupos]; cada grupo: [nombre, [ids de elementos existentes o marcadores]]
@@ -25,7 +25,7 @@
     ]],
     ['inicio', 'Inicio', [
       ['Edición', ['btn-deshacer', 'btn-rehacer']],
-      ['Herramienta', ['@seleccionar', '@lazo']],
+      ['Herramienta', ['@seleccionar', '@lazo', '@medir']],
       ['Revisar', ['btn-comprobar']],
       ['Imprimir', ['btn-imprimir']]
     ]],
@@ -40,6 +40,7 @@
       ['Elegir', ['@seleccionar']],
       ['Formas', ['@linea', '@polilinea', '@poligono', '@rectangulo', '@elipse', '@punto', '@mano']],
       ['Mapas', ['@lazo']],
+      ['Medir', ['@medir']],
       ['Corregir', ['@editar-vertices', '@borrar-linea', '@tijera', '@goma', 'btn-unir-lineas']]
     ]],
     ['ver', 'Ver', [
@@ -189,5 +190,6 @@
     if (ev.ctrlKey || ev.metaKey || ev.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) return;
     if (ev.key === 'v' || ev.key === 'V') { App.elegirHerramienta('seleccionar'); }
     else if (ev.key === 'l' || ev.key === 'L') { App.elegirHerramienta('lazo'); }
+    else if (ev.key === 'm' || ev.key === 'M') { App.elegirHerramienta('medir'); }
   });
 })();

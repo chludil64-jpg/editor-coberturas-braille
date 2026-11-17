@@ -27,7 +27,7 @@
   const ICONOS_HERR = {
     seleccionar: 'mouse-pointer-2', linea: 'minus', polilinea: 'spline', poligono: 'pentagon', rectangulo: 'square',
     elipse: 'circle', punto: 'dot', mano: 'pencil', lazo: 'lasso', 'editar-vertices': 'pen-tool',
-    'borrar-linea': 'trash-2', tijera: 'scissors', goma: 'eraser'
+    'borrar-linea': 'trash-2', tijera: 'scissors', goma: 'eraser', medir: 'ruler'
   };
   const ICONOS_MENU = {
     frente: 'arrow-up-to-line', atras: 'arrow-down-to-line', bloquear: 'lock', ocultar: 'eye-off', agrupar: 'group',
@@ -119,12 +119,13 @@
     ayuda.id = 'ayuda-herramienta';
     crear.querySelector('h2').after(ayuda);
     const TEXTOS = {
-      seleccionar: 'Hacé clic en un elemento para elegirlo; arrastralo para moverlo. Clic derecho: más acciones. Atajos: V elegir y mover, L lazo, Escape vuelve acá.',
+      seleccionar: 'Hacé clic en un elemento para elegirlo; arrastralo para moverlo. Clic derecho: más acciones. Atajos: V elegir y mover, L lazo, M medir, Escape vuelve acá.',
       lazo: 'Hacé clic sobre el mapa de fondo: la línea se pega al borde. Arrastrá un punto para corregirlo; Ctrl+Z borra el último; Enter o doble clic termina.',
       'editar-vertices': 'Arrastrá un vértice para moverlo; doble clic en un tramo agrega uno; Suprimir borra el elegido.',
       'borrar-linea': 'Clic sobre una línea para borrarla (Alt+clic borra solo ese tramo).',
       tijera: 'Clic sobre una línea para cortarla en dos en ese punto.',
-      goma: 'Arrastrá sobre los puntos para borrarlos.'
+      goma: 'Arrastrá sobre los puntos para borrarlos.',
+      medir: 'Arrastrá sobre la hoja: se muestran la distancia (mm) y el ángulo. No crea nada. Con teclado: flechas mueven el cursor, Enter fija el primer y el segundo punto. M activa esta herramienta.'
     };
     function actualizar() {
       const h = App.ui.herramienta;
