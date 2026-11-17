@@ -14,3 +14,6 @@ pruebas_impresora/
 # Sistema
 Thumbs.db
 desktop.ini
+
+# Grafo de conocimiento (graphify)
+graphify-out/

@@ -99,25 +99,22 @@
   $('separar-dibujo').addEventListener('change', leerSeparacion);
   $('separacion-dibujo').addEventListener('change', leerSeparacion);
 
-  // Ralear: deja los puntos de dibujo a la separación mínima entre sí y del braille.
+  // Ralear: quita los puntos de dibujo (vectores y puntos fijos) a menos de la separación mínima
+  // del braille o de otro punto, midiendo sobre lo que realmente se imprime (ya sobre la grilla).
   $('btn-ralear').addEventListener('click', () => {
     const p = App.pagina();
     const minimo = Number(App.perfil && App.perfil.separacion_minima_mm) || 2;
     const calc = App.calculo();
-    const braille = calc.puntos.filter(q => q.origen === 'braille').map(q => [q.x, q.y]);
-    const fijos=p.objetos.filter(o=>o.tipo==='puntos');
-    const antes = fijos.reduce((s, t) => s + t.puntos.length, 0);
-    if (!antes) { App.anunciar('No hay puntos de dibujo para ralear.'); return; }
+    const hay = calc.puntos.filter(q => q.origen !== 'braille').length;
+    if (!hay) { App.anunciar('No hay puntos de dibujo para ralear.'); return; }
     App.registrar();
-    let ocupados = braille;
-    for (const t of fijos) {
-      t.puntos = Grilla.ralear(t.puntos, minimo, ocupados);
-      ocupados = ocupados.concat(t.puntos);
+    const quitados = Grilla.quitarJuntos(p, calc, minimo, App.medidas());
+    if (!quitados) {
+      App.anunciar(`Raleo: no se quitó ningún punto; ninguno de los ${hay} puntos de dibujo está a menos de ${minimo} mm de otro ni del braille.`);
+      return;
     }
-    p.objetos = p.objetos.filter(t => t.tipo!=='puntos'||t.puntos.length);
-    const despues = fijos.reduce((s, t) => s + t.puntos.length, 0);
     App.cambio('dibujo');
-    App.anunciar(`Raleo: se quitaron ${antes - despues} puntos a menos de ${minimo} mm.`);
+    App.anunciar(`Raleo: se quitaron ${quitados} de ${hay} puntos de dibujo a menos de ${minimo} mm.`);
   });
 
   // Calcar vectores del PDF

@@ -68,3 +68,18 @@ test('verificador detecta separación, tamaño, margen y texturas excesivas',()=
   assert.ok(a.some(x=>x.mensaje.includes('6 rellenos')));
   assert.ok(a.some(x=>x.mensaje.includes('7 tipos de línea')));
 });
+test('quitarJuntos ralea objetos vectoriales y puntos fijos contra el braille',()=>{
+  const mm={entrePuntos:2,grilla:{px:2,py:2}};
+  const p={ancho:100,alto:100,cuadros:[],trazos:[],objetos:[
+    obj('linea',{id:'l',vertices:[[0,50],[20,50]]}),obj('puntos',{id:'f',puntos:[[60,60],[61,60.2],[80,80]]})]};
+  // Con minimo 3 mm sobre grilla de 2 mm, los puntos contiguos de la línea se raelan.
+  const calc=G.calcularPagina(p,{medidas:mm});
+  const antes=calc.puntos.length;
+  const q=G.quitarJuntos(p,calc,3,mm);
+  const despues=G.calcularPagina(p,{medidas:mm}).puntos;
+  assert.ok(q>0);assert.equal(despues.length,antes-q);
+  for(let i=0;i<despues.length;i++)for(let j=i+1;j<despues.length;j++)
+    assert.ok(Math.hypot(despues[i].x-despues[j].x,despues[i].y-despues[j].y)>=3-1e-6);
+  // Con la separación mínima de la grilla no hay nada que quitar.
+  assert.equal(G.quitarJuntos(p,G.calcularPagina(p,{medidas:mm}),2,mm),0);
+});

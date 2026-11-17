@@ -278,6 +278,30 @@
     return salida;
   }
 
+  /**
+   * Ralea la página tal como se va a imprimir (puntos ya ajustados a la grilla): quita los puntos
+   * de dibujo a menos de `minimo` mm del braille o de otro punto ya aceptado. Actúa sobre objetos
+   * vectoriales (con la «goma» `borrados`) y sobre puntos fijos. Devuelve cuántos puntos quitó.
+   */
+  function quitarJuntos(pagina, calculo, minimo, medidas) {
+    const g = medidas && medidas.grilla;
+    const llave = (x, y) => { const q = g ? ajustarAGrilla(x, y, g) : [x, y]; return redondear(q[0]) + ',' + redondear(q[1]); };
+    const braille = calculo.puntos.filter(q => q.origen === 'braille').map(q => [q.x, q.y]);
+    const dibujo = calculo.puntos.filter(q => q.origen !== 'braille').map(q => [q.x, q.y]);
+    const quedan = new Set(ralear(dibujo, minimo, braille).map(q => llave(q[0], q[1])));
+    const sobran = new Set(dibujo.map(q => llave(q[0], q[1])).filter(k => !quedan.has(k)));
+    if (!sobran.size) return 0;
+    for (const o of pagina.objetos || []) {
+      if (o.tipo === 'referencia') continue;
+      if (o.tipo === 'puntos') { o.puntos = (o.puntos || []).filter(q => !sobran.has(llave(q[0], q[1]))); continue; }
+      for (const q of Objetos.objetoAPuntos(o, medidas)) {
+        if (sobran.has(llave(q[0], q[1]))) (o.borrados = o.borrados || []).push([q[0], q[1], 0.01]);
+      }
+    }
+    for (const t of pagina.trazos || []) t.puntos = t.puntos.filter(q => !sobran.has(llave(q[0], q[1])));
+    return sobran.size;
+  }
+
   /** Rectángulo ocupado por un cuadro (con su cálculo). */
   function rectCuadro(cuadro, calc) {
     return { x0: cuadro.x, y0: cuadro.y, x1: cuadro.x + calc.ancho, y1: cuadro.y + calc.alto };
@@ -491,7 +515,7 @@
   const api = {
     MEDIDAS, medidasDePerfil, ajustarAGrilla, calcularCuadro, ubicarSegunTinta, partirEnRenglones,
     muestrearLinea, muestrearPoligono, muestrearRectangulo, muestrearTrayecto, muestrearElipse,
-    quitarDuplicados, ralear, calcularPagina, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
+    quitarDuplicados, ralear, quitarJuntos, calcularPagina, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else raiz.Grilla = api;
