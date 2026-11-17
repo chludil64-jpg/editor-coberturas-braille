@@ -1,46 +1,47 @@
 /* =====================================================================
-   Tema «Península»: paleta tomada del logo (verde azulado profundo y
-   arena), con contraste AA en los textos. Los errores siguen en rojo.
+   Tema «Península»: paleta tomada del logo (verde bosque #1E3D2F y
+   salvia #E4E8D3), con contraste AA en los textos. Los errores siguen
+   en rojo y el foco en ámbar.
    Se carga después de estilos.css y solo cambia la apariencia.
    ===================================================================== */
 :root {
-  --fondo: #f4eee0;          /* arena muy clara */
+  --fondo: #eef0e1;          /* salvia muy clara */
   --panel: #ffffff;
-  --panel-2: #faf6ec;
-  --texto: #142b2b;          /* verde azulado casi negro */
-  --suave: #4a5a58;
-  --borde: #e0d6bf;
-  --borde-fuerte: #142b2b;
-  --acento: #0f4c4c;         /* verde azulado del logo (9,8:1 sobre blanco) */
-  --acento-hover: #0a3a3a;
+  --panel-2: #f4f6ea;
+  --texto: #14271d;          /* verde bosque casi negro */
+  --suave: #46564b;
+  --borde: #cdd4b6;
+  --borde-fuerte: #14271d;
+  --acento: #1e3d2f;         /* verde bosque del logo */
+  --acento-hover: #142b20;
   --acento-texto: #ffffff;
-  --lima: #e9d8b4;           /* arena del logo: solo fondos, siempre con texto oscuro */
-  --lima-suave: #e2efec;     /* verde agua muy suave para lo elegido */
+  --lima: #e4e8d3;           /* salvia del logo: solo fondos, siempre con texto oscuro */
+  --lima-suave: #dfe8d0;     /* verde salvia suave para lo elegido */
   --peligro: #a3141c;
   --aviso: #7a4a00;
   --info: #1d4f7a;
   --foco: #d99a2b;           /* ámbar: se distingue del verde y de la arena */
-  --sel: #e2efec;
-  --sombra: 0 1px 2px rgba(20,43,43,.08), 0 4px 12px rgba(20,43,43,.06);
+  --sel: #dfe8d0;
+  --sombra: 0 1px 2px rgba(20,39,29,.08), 0 4px 12px rgba(20,39,29,.06);
   --radio: 10px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --fondo: #0d1a1a;
-    --panel: #132424;
-    --panel-2: #1a2f2f;
-    --texto: #eef1ea;
-    --suave: #b8c6c2;
-    --borde: #2e4846;
-    --borde-fuerte: #eef1ea;
-    --acento: #7fcbc0;
-    --acento-hover: #a0dbd2;
-    --acento-texto: #0d1a1a;
-    --lima: #e9d8b4;
-    --lima-suave: #1f3d3a;
+    --fondo: #0e1a13;
+    --panel: #15271d;
+    --panel-2: #1c3427;
+    --texto: #eef1e0;
+    --suave: #b9c6b8;
+    --borde: #355240;
+    --borde-fuerte: #eef1e0;
+    --acento: #9fd0ab;
+    --acento-hover: #bfe3c7;
+    --acento-texto: #0e1a13;
+    --lima: #e4e8d3;
+    --lima-suave: #244433;
     --peligro: #ff8a80;
     --foco: #f0b545;
-    --sel: #1f3d3a;
+    --sel: #244433;
     --sombra: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
   }
 }
