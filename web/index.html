@@ -492,6 +492,30 @@
   </form>
 </dialog>
 
+<!-- Diálogo: plantillas de hoja -->
+<dialog id="dlg-plantillas" aria-labelledby="t-plantillas">
+  <form method="dialog" class="editor ancho-dlg" onsubmit="return false">
+    <h2 id="t-plantillas">Plantillas de hoja</h2>
+    <p class="nota">Una plantilla guarda lo que hay en la página actual (encabezado, cuadros braille, marcos, símbolos…) para crear páginas nuevas con eso ya puesto. Se guarda en este navegador; con «Exportar .json» la llevás a otra computadora.</p>
+    <fieldset>
+      <legend>Guardar la página actual</legend>
+      <label>Nombre de la plantilla <input type="text" id="plantilla-nombre" autocomplete="off"></label>
+      <div class="fila botones">
+        <button type="button" id="btn-plantilla-guardar" class="destacado">Guardar plantilla</button>
+        <button type="button" id="btn-plantilla-exportar-actual">Exportar página como .json</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Plantillas guardadas</legend>
+      <ul id="plantillas-lista" class="lista-plantillas" aria-label="Plantillas guardadas"></ul>
+      <div class="fila botones"><button type="button" id="btn-plantilla-importar">Importar plantilla .json…</button></div>
+    </fieldset>
+    <input type="file" id="archivo-plantilla" accept=".json,application/json" hidden>
+    <p id="plantillas-estado" class="estado" aria-live="polite"></p>
+    <div class="fila botones"><button value="cancelar">Cerrar</button></div>
+  </form>
+</dialog>
+
 <dialog id="dlg-svg" aria-labelledby="t-svg"><div class="editor ancho-dlg"><h2 id="t-svg">Importar SVG</h2>
   <label>Archivo SVG <input id="svg-archivo" type="file" accept="image/svg+xml,.svg"></label>
   <div class="fila dos"><label>Ancho (mm) <input id="svg-ancho" type="number" min="5" value="100"></label><label>X (mm) <input id="svg-x" type="number" value="10"></label><label>Y (mm) <input id="svg-y" type="number" value="10"></label></div>
@@ -568,5 +592,6 @@
 <script src="js/portapapeles.js"></script>
 <script src="js/simbolos.js"></script>
 <script src="js/numerados.js"></script>
+<script src="js/plantillas.js"></script>
 </body>
 </html>

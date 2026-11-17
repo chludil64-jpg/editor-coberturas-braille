@@ -156,3 +156,8 @@ footer.pie-avisos { position: relative; padding: 0; background: var(--panel); bo
 /* Cinta: grupo de símbolos táctiles */
 .cinta-grupo-simbolos .cinta-grupo-cuerpo { max-width: 52rem; }
 .cinta-grupo-simbolos .cinta-campo input { width: 4.2rem; }
+
+/* Plantillas de hoja */
+.lista-plantillas { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.lista-plantillas li { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .3rem .4rem; border: 1px solid var(--borde); border-radius: var(--radio); }
+.lista-plantillas .plantilla-nombre { flex: 1 1 14rem; }
