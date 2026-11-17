@@ -201,10 +201,26 @@
       $('cuadro-ancho-max').value = el.tinta ? Math.max(10, Math.round(el.tinta.x1 - el.tinta.x0)) : 100;
     }
     $('cuadro-braille').textContent = calc ? calc.unicode : '';
+    $('cuadro-braille-texto').textContent = calc ? textoAlternativo(el, calc) : '';
     let info = calc ? `${calc.celdas} celdas, ${calc.renglones.length} renglón(es): ${calc.ancho.toFixed(1)} × ${calc.alto.toFixed(1)} mm.` : '';
     if (el.tinta) info += ` Texto impreso: ${(el.tinta.x1 - el.tinta.x0).toFixed(1)} mm de ancho.`;
     $('cuadro-info').textContent = info;
     $('btn-ubicar').disabled = !el.tinta;
+  }
+
+  /** Descripción para lector de pantalla de la vista braille: el texto en tinta y los puntos de cada celda. */
+  function textoAlternativo(el, calc) {
+    const MAX = 120;
+    let n = 0;
+    const renglones = calc.renglones.map((r, i) => {
+      const celdas = [];
+      for (const c of r) {
+        if (n++ >= MAX) break;
+        celdas.push(c.length ? 'puntos ' + c.slice().sort((a, b) => a - b).join('-') : 'celda vacía');
+      }
+      return `Renglón ${i + 1}: ${celdas.join(', ')}.`;
+    });
+    return `Vista braille del texto «${String(el.texto).replace(/\n/g, ' / ')}».${renglones.join(' ')}${n > MAX ? ' (lista abreviada)' : ''}`;
   }
 
   function cuadroElegido() {

@@ -83,7 +83,7 @@ input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color:
 .cinta-panel { background: var(--panel); padding: .5rem .2rem .35rem; gap: 0; align-items: stretch; }
 .cinta-grupo { border-right: 1px solid var(--borde); padding: 0 .5rem; }
 .cinta-grupo-cuerpo { gap: .25rem; }
-.cinta-grupo-cuerpo > button { flex-direction: column; gap: .2rem; min-width: 3.6rem; max-width: 6.2rem; padding: .3rem .35rem; font-size: .78rem;
+.cinta-grupo-cuerpo > button { flex-direction: column; gap: .2rem; min-width: 3.6rem; max-width: 6.2rem; padding: .3rem .35rem; font-size: .85rem;
   text-align: center; border-color: transparent; background: transparent; white-space: normal; }
 .cinta-grupo-cuerpo > button svg.icono { width: 22px; height: 22px; color: var(--acento); }
 .cinta-grupo-cuerpo > button:hover:not(:disabled) { background: var(--panel-2); border-color: var(--borde); }
@@ -91,8 +91,8 @@ input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color:
 .cinta-grupo-cuerpo > button.destacado svg.icono { color: var(--acento-texto); }
 .cinta [data-herramienta][aria-pressed="true"] { background: var(--lima-suave); border-color: var(--texto); color: var(--texto); font-weight: 600; }
 .cinta [data-herramienta][aria-pressed="true"] svg.icono { color: var(--texto); }
-.cinta-grupo-nombre { color: var(--suave); font-size: .72rem; letter-spacing: .3px; }
-.cinta-campo { display: flex; flex-direction: column; font-size: .8rem; gap: .15rem; }
+.cinta-grupo-nombre { color: var(--suave); font-size: .85rem; letter-spacing: .3px; }
+.cinta-campo { display: flex; flex-direction: column; font-size: .85rem; gap: .15rem; }
 /* Cinta compacta (estilo Fusion): título y pestañas en un renglón, íconos chicos */
 header.barra { padding: .2rem .7rem 0; }
 .cinta { margin-top: 0; }
@@ -103,9 +103,9 @@ header.barra { padding: .2rem .7rem 0; }
 .cinta-panel { padding: .25rem .1rem .15rem; }
 .cinta-grupo { padding: 0 .35rem; }
 .cinta-grupo-cuerpo { gap: .1rem; }
-.cinta-grupo-cuerpo > button { min-width: 3rem; max-width: 5.4rem; padding: .15rem .3rem; font-size: .7rem; line-height: 1.1; gap: .1rem; }
+.cinta-grupo-cuerpo > button { min-width: 3rem; max-width: 6.2rem; padding: .15rem .3rem; font-size: .85rem; line-height: 1.1; gap: .1rem; }
 .cinta-grupo-cuerpo > button svg.icono { width: 18px; height: 18px; }
-.cinta-grupo-nombre { font-size: .76rem; font-weight: 600; color: var(--texto); opacity: .8; margin-top: .15rem; letter-spacing: .2px; }
+.cinta-grupo-nombre { font-size: .85rem; font-weight: 600; color: var(--texto); opacity: .8; margin-top: .15rem; letter-spacing: .2px; }
 .cinta-capas { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .85rem; align-items: center; max-width: 18rem; }
 .cinta-panel .grupo-vista { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: center; font-size: .85rem; }
 
@@ -138,11 +138,11 @@ details.plegable-chico > summary { cursor: pointer; color: var(--acento); font-w
 
 /* Barra de estado fina (estilo Fusion) con avisos desplegables */
 footer.pie-avisos { position: relative; padding: 0; background: var(--panel); border-top: 1px solid var(--borde); overflow: visible; max-height: none; z-index: 30; }
-.barra-estado { display: flex; align-items: center; gap: 1rem; min-height: 28px; padding: 0 .7rem; font-size: .8rem; color: var(--suave); }
-.barra-estado .estado, .barra-estado .nota, .barra-estado p { margin: 0; font-size: .8rem; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra-estado { display: flex; align-items: center; gap: 1rem; min-height: 28px; padding: 0 .7rem; font-size: .85rem; color: var(--suave); }
+.barra-estado .estado, .barra-estado .nota, .barra-estado p { margin: 0; font-size: .85rem; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .barra-estado-mensaje { flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .barra-estado-datos { display: flex; gap: 1rem; flex: none; }
-.barra-estado-avisos { flex: none; padding: .1rem .55rem; font-size: .8rem; border-radius: 999px; gap: .3rem; }
+.barra-estado-avisos { flex: none; padding: .1rem .55rem; font-size: .85rem; border-radius: 999px; gap: .3rem; }
 .barra-estado-avisos svg.icono { width: 14px; height: 14px; }
 .barra-estado-avisos[data-estado="ok"] { color: var(--suave); }
 .barra-estado-avisos[data-estado="aviso"] { background: var(--lima); border-color: var(--texto); color: var(--texto); }
@@ -166,4 +166,10 @@ footer.pie-avisos { position: relative; padding: 0; background: var(--panel); bo
 .lista-historial { max-height: 50vh; overflow: auto; margin: 0 0 .5rem; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: .25rem; }
 .lista-historial button { width: 100%; text-align: left; justify-content: flex-start; }
 .lista-historial button[aria-current="step"] { background: var(--lima); border-color: var(--texto); font-weight: 700; }
-.lista-historial .historial-futuro { opacity: .65; font-style: italic; }
+.lista-historial .historial-futuro { opacity: .85; font-style: italic; }
+
+/* Textos mínimos de 13 px (.85rem) y contraste AA */
+small, .nota, .estado, .lista-textos small, .lista-cuadros small, .lista-elementos small { font-size: .85rem; }
+.tabla-atajos { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.tabla-atajos th, .tabla-atajos td { text-align: left; padding: .25rem .5rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+.tabla-atajos th[scope="row"] { white-space: nowrap; font-weight: 600; }

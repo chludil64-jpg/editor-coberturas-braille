@@ -161,7 +161,7 @@ label.corto { display: inline-flex; gap: 4px; align-items: center; }
 .lista-textos label:hover { background: var(--sel); }
 .lista-textos .lineas { white-space: pre-line; }
 .lista-textos small, .lista-cuadros small { color: var(--suave); display: block; }
-.lista-textos .ya { color: var(--acento); font-size: .8rem; }
+.lista-textos .ya { color: var(--acento); font-size: .85rem; }
 
 .lista-cuadros { max-height: 28vh; overflow: auto; margin: 4px 0; }
 .lista-cuadros li { display: flex; gap: 4px; margin: 2px 0; }
@@ -232,7 +232,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .menu-contextual[hidden] { display: none; }
 .menu-contextual button { text-align: left; border: 0; background: transparent; padding: .35rem .6rem; border-radius: 4px; font: inherit; color: inherit; }
 .menu-contextual button:hover, .menu-contextual button:focus-visible { background: var(--sel); outline: 2px solid var(--acento); outline-offset: -2px; }
-.menu-contextual .menu-titulo { font-size: .8rem; font-weight: 700; padding: .2rem .6rem; color: #444; }
+.menu-contextual .menu-titulo { font-size: .85rem; font-weight: 700; padding: .2rem .6rem; color: #444; }
 .menu-contextual .menu-sub { display: flex; flex-direction: column; gap: 2px; }
 .menu-contextual .menu-separador { border-top: 1px solid #ccc; margin: .2rem 0; }
 @media (prefers-color-scheme: dark) { .menu-contextual { background: #1e1e1e; color: #eee; border-color: #888; }
@@ -250,6 +250,6 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .cinta-grupo { display: flex; flex-direction: column; justify-content: space-between; padding: 0 .6rem; border-right: 1px solid var(--borde); }
 .cinta-grupo:last-child { border-right: 0; }
 .cinta-grupo-cuerpo { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
-.cinta-grupo-nombre { font-size: .75rem; text-align: center; color: #444; margin-top: .25rem; }
+.cinta-grupo-nombre { font-size: .85rem; text-align: center; color: #444; margin-top: .25rem; }
 .cinta [data-herramienta][aria-pressed="true"] { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); }
 @media (prefers-color-scheme: dark) { .cinta-panel { background: transparent; } .cinta-grupo-nombre { color: #bbb; } .cinta-grupo { border-color: #555; } }
