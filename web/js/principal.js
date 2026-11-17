@@ -365,7 +365,8 @@
   $('btn-imprimir').addEventListener('click', () => abrirImprimir(null));
   $('btn-comprobar').addEventListener('click',()=>{const n=mostrarAvisos(true);$('t-avisos').scrollIntoView({behavior:'instant'});$('lista-avisos').setAttribute('tabindex','-1');$('lista-avisos').focus();App.anunciar(`${n} avisos.`);});
   $('btn-salir').addEventListener('click', async () => {
-    if (App.sucio && !confirm('Hay cambios sin guardar. ¿Cerrar el programa igual?')) return;
+    // Siempre se pide confirmación (con aviso extra si hay cambios sin guardar).
+    if (!confirm(App.sucio ? 'Hay cambios sin guardar. ¿Cerrar el programa igual?' : '¿Cerrar el programa?')) return;
     try { await App.api('/api/apagar', { method: 'POST', json: {} }); } catch (e) { /* ya cerrado */ }
     App.sucio = false;
     document.body.innerHTML = '<main style="padding:2rem"><h1>El programa se cerró.</h1><p>Ya podés cerrar esta pestaña. Para volver a usarlo, abrí <strong>iniciar.bat</strong>.</p></main>';
@@ -449,9 +450,9 @@
       if ((k === 'z' || k === 'y') && !enCampo && App.Lienzo && App.Lienzo.lazoActivo && App.Lienzo.lazoActivo()) {
         ev.preventDefault(); (k === 'y' || ev.shiftKey) ? App.Lienzo.rehacerLazo() : App.Lienzo.deshacerLazo(); return;
       }
+      if (document.querySelector('dialog[open]')) return;
       if (k === 'z' && !enCampo) { ev.preventDefault(); ev.shiftKey ? App.rehacer() : App.deshacer(); }
       else if (k === 'y' && !enCampo) { ev.preventDefault(); App.rehacer(); }
-      else if (k === 's') { ev.preventDefault(); App.guardarProyecto(); }
     }
   });
 

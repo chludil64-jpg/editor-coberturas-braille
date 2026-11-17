@@ -236,16 +236,44 @@
       return r;
     },
 
-    guardarProyecto() {
-      const datos = {
+    /** Datos del proyecto como texto JSON. */
+    _textoProyecto() {
+      return JSON.stringify({
         formato: 'editor-coberturas-braille', version: 1,
         guardado: new Date().toISOString(),
         doc: this.doc,
         pdf: this.pdf.base64 ? { nombre: this.pdf.nombre, base64: this.pdf.base64 } : null,
         perfil: this.perfil
-      };
+      });
+    },
+
+    /**
+     * Guarda el proyecto. Con File System Access API (Chrome/Edge): la primera vez pregunta dónde y después
+     * reescribe el mismo archivo. Sin ella (o si falla), descarga el archivo como antes.
+     */
+    async guardarProyecto() {
       const nombre = (this.pdf.nombre || 'proyecto').replace(/\.[^.]+$/, '') + '.braille.json';
-      this.descargarBlob(nombre, new Blob([JSON.stringify(datos)], { type: 'application/json' }));
+      const texto = this._textoProyecto();
+      if (typeof window.showSaveFilePicker === 'function') {
+        try {
+          if (!this._archivo) {
+            this._archivo = await window.showSaveFilePicker({
+              suggestedName: nombre, id: 'editor-braille',
+              types: [{ description: 'Proyecto de Editor Braille', accept: { 'application/json': ['.json'] } }]
+            });
+          }
+          const w = await this._archivo.createWritable();
+          await w.write(texto);
+          await w.close();
+          this.sucio = false;
+          this.anunciar(`Proyecto guardado en ${this._archivo.name}.`);
+          return;
+        } catch (e) {
+          if (e && e.name === 'AbortError') { this.anunciar('Guardado cancelado.'); return; }
+          this._archivo = null;   // el permiso se perdió o falló: se cae a la descarga
+        }
+      }
+      this.descargarBlob(nombre, new Blob([texto], { type: 'application/json' }));
       this.sucio = false;
       this.anunciar(`Proyecto guardado como ${nombre} (en la carpeta de descargas).`);
     },
@@ -266,6 +294,7 @@
       this.doc = datos.doc;
       this.doc.opciones = Object.assign({ separarDibujo: true, separacionDibujo: 3 }, this.doc.opciones || {});
       this.doc.paginas.forEach(p => { Objetos.migrarTrazos(p); p.capasVisibles = p.capasVisibles || {}; });
+      this._archivo = null;   // otro proyecto: el próximo Ctrl+S vuelve a preguntar dónde guardar
       this.ui.pagina = 0;
       this.ui.sel = null;
       this.ui.seleccion = [];

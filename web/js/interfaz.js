@@ -145,7 +145,8 @@
     const det = document.createElement('details');
     det.className = 'plegable';
     const guardado = leer(clave);
-    det.open = guardado === null ? !/t-textos/.test(sec.getAttribute('aria-labelledby') || '') : guardado === '1';
+    // Abierto por defecto la primera vez (después se recuerda lo que elija la persona).
+    det.open = guardado === null ? true : guardado === '1';
     const sum = document.createElement('summary');
     sum.append(h);
     sec.before(det);

@@ -493,6 +493,37 @@
   </form>
 </dialog>
 
+<!-- Diálogo: ayuda de atajos -->
+<dialog id="dlg-atajos" aria-labelledby="t-atajos">
+  <div class="editor ancho-dlg">
+    <h2 id="t-atajos">Atajos de teclado</h2>
+    <table class="tabla-atajos">
+      <caption class="solo-lector">Atajos de teclado</caption>
+      <thead><tr><th scope="col">Atajo</th><th scope="col">Acción</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Ctrl+S</th><td>Guardar el proyecto (la primera vez pregunta dónde; después reescribe el mismo archivo)</td></tr>
+        <tr><th scope="row">Ctrl+O</th><td>Abrir un PDF</td></tr>
+        <tr><th scope="row">Ctrl+P</th><td>Imprimir</td></tr>
+        <tr><th scope="row">Ctrl+Z / Ctrl+Y</th><td>Deshacer / Rehacer</td></tr>
+        <tr><th scope="row">Ctrl+C / X / V</th><td>Copiar, cortar y pegar elementos</td></tr>
+        <tr><th scope="row">Ctrl+D</th><td>Duplicar el elemento</td></tr>
+        <tr><th scope="row">Ctrl+G / Ctrl+Mayús+G</th><td>Agrupar / Desagrupar</td></tr>
+        <tr><th scope="row">Ctrl+A</th><td>Elegir todos los elementos</td></tr>
+        <tr><th scope="row">V, L, M, N</th><td>Herramientas: Elegir y mover, Lazo, Medir, Numerar (fuera de campos de texto)</td></tr>
+        <tr><th scope="row">Flechas / Mayús+flechas</th><td>En el lienzo: mover un paso de grilla / cinco pasos</td></tr>
+        <tr><th scope="row">Av Pág / Re Pág</th><td>En el lienzo: elegir el elemento siguiente o anterior</td></tr>
+        <tr><th scope="row">Tab / Mayús+Tab</th><td>Con Editar vértices: elegir el vértice siguiente o anterior</td></tr>
+        <tr><th scope="row">Insertar o +</th><td>Con Editar vértices: agregar un vértice después del elegido</td></tr>
+        <tr><th scope="row">Supr</th><td>Borrar el elemento o el vértice elegido</td></tr>
+        <tr><th scope="row">Escape</th><td>Soltar el elemento o volver a Elegir y mover</td></tr>
+        <tr><th scope="row">Tecla de menú o Mayús+F10</th><td>Menú de acciones del elemento</td></tr>
+        <tr><th scope="row">F1 o ?</th><td>Esta ayuda</td></tr>
+      </tbody>
+    </table>
+    <div class="fila botones"><button type="button" data-cerrar class="destacado">Cerrar</button></div>
+  </div>
+</dialog>
+
 <!-- Diálogo: historial de cambios -->
 <dialog id="dlg-historial" aria-labelledby="t-historial">
   <form method="dialog" class="editor ancho-dlg" data-sin-envio>
@@ -607,5 +638,6 @@
 <script src="js/numerados.js"></script>
 <script src="js/plantillas.js"></script>
 <script src="js/historial_ui.js"></script>
+<script src="js/atajos.js"></script>
 </body>
 </html>
