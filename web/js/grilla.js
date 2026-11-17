@@ -436,9 +436,71 @@
    * Avisos de una página: desbordes, fuera de hoja, zona no imprimible,
    * choques entre cuadros, puntos demasiado juntos y caracteres sin transcribir.
    */
+  /** Distancia mínima entre dos segmentos (0 si se cruzan). */
+  function distSegmentos(a, b, c, d) {
+    const cruza = (p, q, r, s) => {
+      const o = (u, v, w) => (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
+      return o(p, q, r) * o(p, q, s) < 0 && o(r, s, p) * o(r, s, q) < 0;
+    };
+    if (cruza(a, b, c, d)) return 0;
+    const f = Objetos.distanciaSegmento;
+    return Math.min(f(a[0], a[1], c, d), f(b[0], b[1], c, d), f(c[0], c[1], a, b), f(d[0], d[1], a, b));
+  }
+
+  /** Segmentos (ya ajustados a la grilla) del contorno de un objeto con línea. */
+  function segmentosAjustados(o, grilla) {
+    if (!['linea', 'polilinea', 'poligono', 'rectangulo', 'elipse'].includes(o.tipo)) return [];
+    if (!o.linea || o.linea === 'ninguna') return [];
+    const v = Objetos.geometria(o).map(q => ajustarAGrilla(q[0], q[1], grilla));
+    const cerrado = o.tipo === 'poligono' || o.tipo === 'rectangulo' || o.tipo === 'elipse' || !!o.cerrado;
+    const segs = [];
+    for (let i = 0; i < v.length - (cerrado ? 0 : 1); i++) {
+      const a = v[i], b = v[(i + 1) % v.length];
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) > 1e-6) segs.push([a, b]);
+    }
+    return segs;
+  }
+
+  /** Pares de objetos distintos con tramos casi paralelos a menos de `maximo` mm (costoso: solo al comprobar). */
+  function paralelasCercanas(objetos, grilla, minimo, maximo) {
+    const items = objetos.map(o => {
+      const segs = segmentosAjustados(o, grilla);
+      if (!segs.length) return null;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const [a, b] of segs) for (const q of [a, b]) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); }
+      return { o, segs, x0, y0, x1, y1 };
+    }).filter(Boolean);
+    const pares = [];
+    let presupuesto = 400000;
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const A = items[i], B = items[j];
+      if (A.x0 > B.x1 + maximo || B.x0 > A.x1 + maximo || A.y0 > B.y1 + maximo || B.y0 > A.y1 + maximo) continue;
+      let hallado = null;
+      buscar: for (const [a, b] of A.segs) {
+        const la = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        for (const [c, d] of B.segs) {
+          if (--presupuesto < 0) return pares;
+          const lb = Math.hypot(d[0] - c[0], d[1] - c[1]);
+          const seno = Math.abs((b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0])) / (la * lb);
+          if (seno > 0.26) continue; // más de ~15 grados: no son paralelas
+          const dist = distSegmentos(a, b, c, d);
+          if (dist < minimo || dist >= maximo - 1e-6) continue;
+          // que realmente corran lado a lado: proyección común de al menos 4 mm
+          const ux = (b[0] - a[0]) / la, uy = (b[1] - a[1]) / la;
+          const t = q => (q[0] - a[0]) * ux + (q[1] - a[1]) * uy;
+          const comun = Math.min(la, Math.max(t(c), t(d))) - Math.max(0, Math.min(t(c), t(d)));
+          if (comun < 4) continue;
+          hallado = dist; break buscar;
+        }
+      }
+      if (hallado !== null) pares.push({ a: A.o, b: B.o, dist: hallado });
+    }
+    return pares;
+  }
+
   function despejeAviso(o) { return o && o.mapaTactil ? 6 : 3; }
 
-  function avisos(pagina, calculo, perfil, opciones) {
+  function avisos(pagina, calculo, perfil, opciones) {  // opciones: { mapaTactil, completo }
     const despeje = despejeAviso(opciones);
     const lista = [];
     const minimo = (perfil && Number(perfil.separacion_minima_mm)) || 2.0;
@@ -507,10 +569,18 @@
       if (o.tipo !== 'puntos') { if (o.linea && o.linea !== 'ninguna') lineas.add(o.linea); if (o.relleno && o.relleno !== 'ninguno') rellenos.add(o.relleno); }
       const b = Objetos.caja(o);
       const cerrado = ['rectangulo','elipse','poligono'].includes(o.tipo) || o.cerrado;
-      if (cerrado && (b.ancho < 6 || b.alto < 6)) lista.push({ nivel:'aviso', id:o.id, mensaje:`${o.nombre}: forma cerrada menor a 6 mm.` });
+      if (cerrado) {
+        const aj = Objetos.geometria(o).map(q => ajustarAGrilla(q[0], q[1], medidas.grilla));
+        const xs = aj.map(q => q[0]), ys = aj.map(q => q[1]);
+        const ancho = Math.max(...xs) - Math.min(...xs), alto = Math.max(...ys) - Math.min(...ys);
+        if (Math.min(ancho, alto) < 6 - 1e-6) lista.push({ nivel:'aviso', id:o.id, mensaje:`${o.nombre}: forma cerrada o símbolo de ${Math.min(ancho, alto).toFixed(1)} mm de diámetro sobre la grilla; se recomienda al menos 6 mm para que se reconozca al tacto.` });
+      }
       if (b.x0 < 0 || b.y0 < 0 || b.x1 > W || b.y1 > H) lista.push({ nivel:'error', id:o.id, mensaje:`${o.nombre}: queda fuera de la hoja.` });
       else if (b.x0 < mg.izquierdo || b.y0 < mg.superior || b.x1 > W-mg.derecho || b.y1 > H-mg.inferior)
         lista.push({ nivel:'aviso', id:o.id, mensaje:`${o.nombre}: invade la zona no imprimible.` });
+    }
+    if (lineas.size + rellenos.size > 5 && lineas.size <= 5 && rellenos.size <= 5) {
+      lista.push({ nivel:'aviso', mensaje:`La página combina ${lineas.size} estilos de línea y ${rellenos.size} texturas (${lineas.size + rellenos.size} distintos); conviene no pasar de 5 para que se distingan.` });
     }
     if (lineas.size > 5) lista.push({ nivel:'aviso', mensaje:`La página usa ${lineas.size} tipos de línea; conviene usar hasta 5.` });
     if (rellenos.size > 5) lista.push({ nivel:'aviso', mensaje:`La página usa ${rellenos.size} rellenos; conviene usar hasta 5.` });
@@ -528,6 +598,23 @@
     for (const p of ptsBraille) for (const j of idxObjetos.vecinos(p.x,p.y)) {
       const q=ptsObjetos[j];if(Math.hypot(p.x-q.x,p.y-q.y)<despeje-1e-6)brailleCerca.add(p.id);
     }
+    // Tramos de línea de 1 o 2 celdas: se confunden con puntos sueltos.
+    const gx = grilla ? grilla.px : paso, gy = grilla ? grilla.py : paso;
+    const porObjeto = new Map();
+    for (const p of ptsObjetos) { if (!porObjeto.has(p.id)) porObjeto.set(p.id, new Set()); porObjeto.get(p.id).add(Math.round(p.x / gx) + ',' + Math.round(p.y / gy)); }
+    for (const o of objetos) {
+      if (!['linea', 'polilinea'].includes(o.tipo) || !o.linea || o.linea === 'ninguna') continue;
+      const n = porObjeto.get(o.id) ? porObjeto.get(o.id).size : 0;
+      if (n >= 1 && n <= 2) lista.push({ nivel:'aviso', id:o.id, mensaje:`${o.nombre}: la línea ocupa solo ${n} celda${n > 1 ? 's' : ''} de la grilla y se confunde con puntos sueltos.` });
+    }
+    // Líneas casi paralelas de objetos distintos a menos de 5 mm (costoso: solo al apretar «Comprobar»).
+    if (opciones && opciones.completo) {
+      for (const par of paralelasCercanas(objetos, grilla, 1.0, 5)) {
+        lista.push({ nivel:'aviso', id:par.a.id, mensaje:`${par.a.nombre} y ${par.b.nombre}: líneas casi paralelas a ${par.dist.toFixed(1)} mm; conviene separarlas al menos 5 mm para distinguirlas.` });
+      }
+    } else if (objetos.filter(o => segmentosAjustados(o, grilla).length).length > 1) {
+      lista.push({ nivel:'info', mensaje:'Apretá «Comprobar» para revisar también líneas casi paralelas a menos de 5 mm.' });
+    }
     for (const id of cercanos) lista.push({ nivel:'aviso', id, mensaje:`Puntos de objetos distintos a menos de dos pasos de grilla.` });
     for (const id of brailleCerca) lista.push({ nivel:'aviso', id, mensaje:`Braille a menos de ${despeje} mm de un objeto.` });
     return lista;
@@ -536,7 +623,7 @@
   const api = {
     MEDIDAS, medidasDePerfil, ajustarAGrilla, calcularCuadro, ubicarSegunTinta, partirEnRenglones,
     muestrearLinea, muestrearPoligono, muestrearRectangulo, muestrearTrayecto, muestrearElipse,
-    quitarDuplicados, ralear, quitarJuntos, calcularPagina, despejeEfectivo, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
+    paralelasCercanas, quitarDuplicados, ralear, quitarJuntos, calcularPagina, despejeEfectivo, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else raiz.Grilla = api;

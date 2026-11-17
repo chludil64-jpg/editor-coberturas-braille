@@ -102,7 +102,7 @@
   async function abrirImprimir(carga, titulo) {
     cargaImpresion = carga || null;
     const d = carga || paraExportar();
-    const advertencias = carga ? [] : Grilla.avisos(App.pagina(),App.calculo(),App.perfil,App.doc.opciones);
+    const advertencias = carga ? [] : Grilla.avisos(App.pagina(),App.calculo(),App.perfil,Object.assign({},App.doc.opciones,{completo:true}));
     $('imprimir-resumen').textContent = `${titulo || 'Página ' + (App.ui.pagina + 1)}: ${d.puntos.length} puntos, diseño de ${d.ancho} × ${d.alto} mm. ${advertencias.length ? advertencias.length + ' avisos antes de imprimir: ' + advertencias.map(a=>a.mensaje).join(' ') : 'Sin avisos.'}`;
     $('imp-confirmo').checked = false;
     $('imprimir-estado').textContent = 'Buscando impresoras…';
@@ -360,7 +360,7 @@
   $('btn-exp-pdf').addEventListener('click', () => exportar('pdf'));
   $('btn-exp-png').addEventListener('click', () => exportar('png'));
   $('btn-imprimir').addEventListener('click', () => abrirImprimir(null));
-  $('btn-comprobar').addEventListener('click',()=>{mostrarAvisos();$('t-avisos').scrollIntoView({behavior:'instant'});$('lista-avisos').setAttribute('tabindex','-1');$('lista-avisos').focus();App.anunciar(`${Grilla.avisos(App.pagina(),App.calculo(),App.perfil,App.doc.opciones).length} avisos.`);});
+  $('btn-comprobar').addEventListener('click',()=>{const n=mostrarAvisos(true);$('t-avisos').scrollIntoView({behavior:'instant'});$('lista-avisos').setAttribute('tabindex','-1');$('lista-avisos').focus();App.anunciar(`${n} avisos.`);});
   $('btn-salir').addEventListener('click', async () => {
     if (App.sucio && !confirm('Hay cambios sin guardar. ¿Cerrar el programa igual?')) return;
     try { await App.api('/api/apagar', { method: 'POST', json: {} }); } catch (e) { /* ya cerrado */ }
@@ -394,9 +394,9 @@
     sel.value = App.ui.pagina;
   }
 
-  function mostrarAvisos() {
+  function mostrarAvisos(completo) {
     const calc = App.calculo();
-    const lista = Grilla.avisos(App.pagina(), calc, App.perfil, App.doc.opciones);
+    const lista = Grilla.avisos(App.pagina(), calc, App.perfil, Object.assign({}, App.doc.opciones, { completo: !!completo }));
     const ul = $('lista-avisos');
     ul.innerHTML = '';
     for (const a of lista) {
@@ -427,6 +427,7 @@
     $('avisos-cuenta').textContent = `(${lista.length}${errores ? `, ${errores} errores` : ''})`;
     const nb = calc.puntos.filter(p => p.origen === 'braille').length;
     $('total-puntos').textContent = `Total: ${calc.puntos.length} puntos (${nb} de braille, ${calc.puntos.length - nb} de dibujo).`;
+    return lista.length;
   }
 
   App.alCambiar(motivo => {

@@ -101,3 +101,30 @@ test('despeje braille-dibujo se mide sobre puntos ajustados a la grilla y el map
   assert.ok(!r7.puntos.some(p=>p.id==='p'));
   assert.equal(r7.quitados,1);
 });
+
+test('avisos: paralelas cercanas, formas chicas, tramos de 1-2 celdas y exceso de estilos',()=>{
+  const perfil={codificador:'grilla',grilla:{paso_x_mm:2,paso_y_mm:2},carga:{orientacion:'horizontal'}};
+  const pag=objetos=>({ancho:297,alto:210,cuadros:[],trazos:[],capasVisibles:{},objetos});
+  const L=(id,y,extra)=>O.crearObjeto('linea',Object.assign({id,nombre:id,vertices:[[30,y],[90,y]]},extra));
+  const medidas=G.medidasDePerfil(perfil,297,210);
+  const av=(p,op)=>G.avisos(p,G.calcularPagina(p,{medidas}),perfil,op).map(a=>a.mensaje);
+  // dos líneas a 4 mm: aviso solo en la comprobación completa
+  let p=pag([L('a',50),L('b',54)]);
+  assert.ok(av(p,{completo:true}).some(m=>/casi paralelas a \d/.test(m)));
+  assert.ok(!av(p,{}).some(m=>/casi paralelas a \d/.test(m)));
+  // a 8 mm: no avisa
+  p=pag([L('a',50),L('b',58)]);
+  assert.ok(!av(p,{completo:true}).some(m=>/casi paralelas a \d/.test(m)));
+  // forma cerrada de 4 mm
+  p=pag([O.crearObjeto('rectangulo',{id:'r',nombre:'cuadradito',x:100,y:100,ancho:4,alto:20})]);
+  assert.ok(av(p,{}).some(m=>/cuadradito.*diámetro/.test(m)));
+  // línea de 1-2 celdas
+  p=pag([O.crearObjeto('linea',{id:'c',nombre:'corta',vertices:[[100,100],[102,100]]})]);
+  assert.ok(av(p,{}).some(m=>/corta.*celda/.test(m)));
+  // 6 estilos entre líneas y rellenos
+  p=pag([L('a',20,{linea:'continua'}),L('b',40,{linea:'punteada'}),L('c',60,{linea:'rayada'}),
+    O.crearObjeto('rectangulo',{id:'r1',x:100,y:100,ancho:20,alto:20,relleno:'reticula'}),
+    O.crearObjeto('rectangulo',{id:'r2',x:130,y:100,ancho:20,alto:20,relleno:'diagonales'}),
+    O.crearObjeto('rectangulo',{id:'r3',x:160,y:100,ancho:20,alto:20,relleno:'disperso'})]);
+  assert.ok(av(p,{}).some(m=>/combina 3 estilos de línea y 3 texturas/.test(m)));
+});
