@@ -175,11 +175,11 @@
       });
     menu.prepend(...items, sep);
     // Al abrir: las opciones de cuadro solo se muestran si lo elegido es un cuadro braille.
-    new MutationObserver(() => {
-      if (menu.hidden) return;
+    const ajustarCuadro = () => {
       const esCuadro = App.ui.sel && App.ui.sel.tipo === 'cuadro';
       menu.querySelectorAll('.solo-cuadro').forEach(el => { el.hidden = !esCuadro; });
-    }).observe(menu, { attributes: true, attributeFilter: ['hidden'] });
+    };
+    if (App.MenuContextual) App.MenuContextual.alAbrir.push(ajustarCuadro);
   }
 
   // ------------------------------------------------------------ barra de estado (como en Fusion)

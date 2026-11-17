@@ -181,6 +181,39 @@
   try { const g = localStorage.getItem('cinta-pestana'); const k = paneles.findIndex(p => p.id === g); if (k >= 0) inicial = k; } catch (e) { /* nada */ }
   activar(inicial, false);
 
+  // Ayudas para que otros módulos agreguen grupos y botones a la cinta (Portapapeles, Símbolos, Plantillas...).
+  App.botonCinta = function (o) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    if (o.id) b.id = o.id;
+    b.textContent = o.texto;
+    if (o.icono) b.dataset.icono = o.icono;
+    if (o.titulo) b.title = o.titulo;
+    if (o.atajo) b.setAttribute('aria-keyshortcuts', o.atajo);
+    if (o.alClic) b.addEventListener('click', o.alClic);
+    return b;
+  };
+  App.grupoCinta = function (pestana, nombre, elementos, antesDe) {
+    const panel = $(`cinta-panel-${pestana}`);
+    if (!panel) return null;
+    const g = document.createElement('div');
+    g.className = 'cinta-grupo';
+    g.setAttribute('role', 'group');
+    g.setAttribute('aria-label', nombre);
+    const cuerpo = document.createElement('div');
+    cuerpo.className = 'cinta-grupo-cuerpo';
+    elementos.filter(Boolean).forEach(el => cuerpo.append(el));
+    const et = document.createElement('div');
+    et.className = 'cinta-grupo-nombre';
+    et.setAttribute('aria-hidden', 'true');
+    et.textContent = nombre;
+    g.append(cuerpo, et);
+    const ref = antesDe ? panel.querySelector(`.cinta-grupo[aria-label="${antesDe}"]`) : null;
+    if (ref) panel.insertBefore(g, ref); else panel.append(g);
+    if (window.Iconos) window.Iconos.aplicar(g);
+    return g;
+  };
+
   // Mantener marcado el botón de la herramienta activa (aunque se cambie con el teclado o Escape).
   document.querySelectorAll('input[name="herramienta"]').forEach(r => r.addEventListener('change', () => {
     document.querySelectorAll('[data-herramienta]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.herramienta === r.value)));

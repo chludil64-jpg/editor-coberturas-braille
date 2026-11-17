@@ -6,11 +6,13 @@
   const App = window.App, menu = document.getElementById('menu-contextual');
   if (!menu) return;
   let origen = null;
-  const items = () => [...menu.querySelectorAll('[role="menuitem"]')];
+  const alAbrir = [];   // funciones que ajustan qué ítems se muestran, antes de enfocar el primero
+  const items = () => [...menu.querySelectorAll('[role="menuitem"]')].filter(b => !b.hidden && !b.closest('[hidden]:not(#menu-contextual)'));
 
   function abrir(x, y, desde) {
     origen = desde || document.activeElement;
     menu.hidden = false;
+    for (const f of alAbrir) { try { f(); } catch (e) { console.error(e); } }
     // Que no se salga de la ventana.
     const r = menu.getBoundingClientRect();
     menu.style.left = Math.max(4, Math.min(x, window.innerWidth - r.width - 4)) + 'px';
@@ -60,5 +62,5 @@
     abrir(r.left + 20, r.top + 20, en);
   });
 
-  App.MenuContextual = { abrir, cerrar };
+  App.MenuContextual = { abrir, cerrar, alAbrir };
 })();

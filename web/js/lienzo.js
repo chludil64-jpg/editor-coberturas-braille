@@ -621,7 +621,10 @@
     const mm = posicion(ev), t = tocar(mm);
     if (t && t.tipo === 'objeto' && !(App.ui.seleccion || []).includes(t.id)) App.EditorObjetos.seleccionar(t.id, false);
     else if (t && t.tipo !== 'objeto') App.seleccionar(t.tipo, t.id);
-    if (!t && !(App.ui.seleccion || []).length) { App.anunciar('No hay ningún elemento ahí.'); return; }
+    if (!t && !(App.ui.seleccion || []).length) {
+      if (App.Portapapeles && App.Portapapeles.hayContenido()) { App.MenuContextual.abrir(ev.clientX, ev.clientY, lienzo); return; }
+      App.anunciar('No hay ningún elemento ahí.'); return;
+    }
     if (App.MenuContextual) App.MenuContextual.abrir(ev.clientX, ev.clientY, lienzo);
   });
   lienzo.addEventListener('dblclick',ev=>{if(App.ui.herramienta==='lazo'){terminarLazo();return;}if(App.ui.herramienta==='editar-vertices'){const mm=posicion(ev),hit=lineaCercana(mm);if(hit){App.registrar();App.EditorObjetos.reemplazar(hit.o.id,Objetos.agregarVertice(hit.o,hit.i,mm));App.cambio('objetos');App.anunciar('Vértice agregado.');}return;}terminarVertices();});
