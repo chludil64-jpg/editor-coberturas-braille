@@ -37,7 +37,7 @@ Cada página puede tener objetos editables en milímetros: línea, polilínea, p
    - **Calcar vectores del PDF…**: pasa las líneas y recuadros del PDF (casilleros de marcado) a líneas de puntos.
    - **Ralear puntos**: quita puntos de dibujo a menos de la separación mínima (nunca toca el braille).
    - **Separar el dibujo del braille**: omite los puntos de dibujo que quedan a menos de X mm de un cuadro braille.
-7. **Vista**: «Sobre el PDF» o «Solo puntos». En la barra del lienzo, los controles están agrupados por página, zoom y fondo. La página activa determina la orientación de cada salida.
+7. **Vista**: «Puntos sobre el fondo» (PDF o imagen) o «Solo puntos». En la barra del lienzo, los controles están agrupados por página, zoom y fondo. La página activa determina la orientación de cada salida.
 
 ## Salidas
 

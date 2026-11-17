@@ -104,7 +104,7 @@ header.barra { padding: .2rem .7rem 0; }
 .cinta-grupo-cuerpo { gap: .1rem; }
 .cinta-grupo-cuerpo > button { min-width: 3rem; max-width: 5.4rem; padding: .15rem .3rem; font-size: .7rem; line-height: 1.1; gap: .1rem; }
 .cinta-grupo-cuerpo > button svg.icono { width: 18px; height: 18px; }
-.cinta-grupo-nombre { font-size: .64rem; margin-top: .1rem; }
+.cinta-grupo-nombre { font-size: .76rem; font-weight: 600; color: var(--texto); opacity: .8; margin-top: .15rem; letter-spacing: .2px; }
 .cinta-capas { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .85rem; align-items: center; max-width: 18rem; }
 .cinta-panel .grupo-vista { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: center; font-size: .85rem; }
 
