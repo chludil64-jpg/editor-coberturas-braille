@@ -10,8 +10,9 @@ test('ciclos de los cuatro estilos de línea',()=>{
   const base={vertices:[[0,0],[20,0]]};
   const xs=estilo=>O.objetoAPuntos(obj('linea',Object.assign({linea:estilo},base)),m).map(p=>p[0]);
   assert.deepEqual(xs('continua'),[0,2,4,6,8,10,12,14,16,18,20]);
-  assert.deepEqual(xs('punteada'),[0,6,12,18]);
-  assert.deepEqual(xs('rayada'),[0,2,4,10,12,14,20]);
+  assert.deepEqual(xs('punteada'),[0,8,16]);
+  assert.deepEqual(xs('rayada'),[0,2,4,6,12,14,16,18]);
+  assert.deepEqual(xs('puntoraya'),[0,2,4,6,12,18,20]);
   assert.deepEqual(xs('ninguna'),[]);
 });
 test('rectángulo y elipse son contornos cerrados',()=>{
@@ -183,4 +184,15 @@ test('hoja de prueba: 18 líneas, 4 rellenos, rótulos braille y todo dentro de 
   // los rótulos de prueba quedan a 1, 2 y 3 pasos de la línea
   const lineaRot=r.objetos.filter(o=>/con rótulo/.test(o.nombre));
   assert.equal(lineaRot.length,3);
+});
+
+test('las líneas punteada, rayada y punto y raya se distinguen y las rutas importadas no comparten estilo con la costa',()=>{
+  const S=require('../web/js/svg_importar.js');
+  const base={vertices:[[0,0],[60,0]]};
+  const patron=e=>O.objetoAPuntos(obj('linea',Object.assign({linea:e},base)),m).map(p=>p[0]/2).join(',');
+  const pats=['continua','punteada','rayada','puntoraya'].map(patron);
+  assert.equal(new Set(pats).size,4);
+  assert.notEqual(S.estiloInicial('ruta','stroke'),S.estiloInicial('costa','stroke'));
+  assert.ok(Object.hasOwn(O.LINEAS,S.estiloInicial('ruta','stroke')));
+  assert.equal(new Set(['costa','río','límite','ruta'].map(s=>S.estiloInicial(s,'stroke'))).size,4);
 });

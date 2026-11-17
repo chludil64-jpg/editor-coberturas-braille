@@ -193,7 +193,7 @@
       <div class="fila dos"><label>Significado del lazo <select id="lazo-significado"><option>costa</option><option>río</option><option>límite</option><option>ruta</option><option>área de agua</option><option>otro</option></select></label><label><input type="checkbox" id="lazo-iman" checked> Imán</label></div>
       <div class="fila tres"><label>Intensidad <input id="lazo-intensidad" type="range" min="0" max="10" value="6"></label><label>Radio (mm) <input id="lazo-radio" type="number" min="1" max="40" value="8"></label><label>Simplificación (mm) <input id="lazo-simplificar" type="number" min="0" max="5" step="0.1" value="0.4"></label></div>
       <button type="button" id="btn-unir-lineas">Unir dos líneas seleccionadas</button>
-      <div class="fila dos"><label>Estilo de línea <select id="estilo-linea"><option value="continua">Continua</option><option value="punteada">Punteada</option><option value="rayada">Rayada</option><option value="ninguna">Ninguna</option></select></label>
+      <div class="fila dos"><label>Estilo de línea <select id="estilo-linea"><option value="continua">Continua</option><option value="punteada">Punteada</option><option value="rayada">Rayada</option><option value="puntoraya">Punto y raya</option><option value="ninguna">Ninguna</option></select></label>
       <label>Relleno táctil <select id="estilo-relleno"><option value="ninguno">Ninguno</option><option value="reticula">Retícula</option><option value="horizontales">Horizontales</option><option value="diagonales">Diagonales</option><option value="disperso">Disperso</option></select></label></div>
       <div id="muestras-patrones" aria-label="Muestras de patrones a escala real"></div>
       <div class="fila dos">
@@ -251,7 +251,7 @@
       <label>Rotación (°) <input id="obj-rotacion" type="number" step="1"></label></div>
       <div class="fila botones"><button type="button" id="obj-girar90">Girar 90°</button><button type="button" id="obj-voltear-h">Voltear horizontal</button><button type="button" id="obj-voltear-v">Voltear vertical</button><button type="button" id="obj-restablecer">Restablecer tamaño original</button><button type="button" id="btn-unir-prop">Unir dos líneas seleccionadas</button></div>
       <label id="obj-ref-opacidad-label" hidden>Opacidad de referencia (%) <input id="obj-ref-opacidad" type="number" min="0" max="100"></label>
-      <label>Línea <select id="obj-linea"><option>continua</option><option>punteada</option><option>rayada</option><option>ninguna</option></select></label>
+      <label>Línea <select id="obj-linea"><option>continua</option><option>punteada</option><option>rayada</option><option>puntoraya</option><option>ninguna</option></select></label>
       <label>Relleno <select id="obj-relleno"><option>ninguno</option><option>reticula</option><option>horizontales</option><option>diagonales</option><option>disperso</option></select></label>
       <label>Capa <select id="obj-capa"><option>referencia</option><option>dibujo</option><option value="rotulos">rótulos</option><option>claves</option></select></label></div>
     </section>

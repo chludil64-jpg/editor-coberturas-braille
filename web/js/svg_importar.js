@@ -113,9 +113,9 @@
       for(const child of el.children)if(child.localName!=='defs'&&child.localName!=='clipPath')visit(child,m,style);
     };visit(root,I,{fill:'black',stroke:'none'});return {anchoMm,altoMm,elementos,capas:agrupar(elementos)};}
   // Estilo táctil por defecto según el significado (informe del bot REA §5): la tierra va sin relleno
-  // para no llenar la hoja de puntos; el agua con retícula espaciada; ríos punteados y límites rayados.
+  // para no llenar la hoja de puntos; el agua con retícula espaciada; ríos punteados, límites rayados y rutas en punto y raya (distintas de la costa).
   function estiloInicial(significado,kind){
     if(kind==='fill')return significado==='agua'?'reticula':'ninguno';
-    return {costa:'continua','río':'punteada','límite':'rayada',ruta:'continua'}[significado]||'continua';}
+    return {costa:'continua','río':'punteada','límite':'rayada',ruta:'puntoraya'}[significado]||'continua';}
   const api={estiloInicial,areaVisible,recortar,path,transform,aplicar,mult,color,sugerir,agrupar,parsear};if(typeof module!=='undefined'&&module.exports)module.exports=api;else raiz.SvgImportar=api;
 })(typeof self!=='undefined'?self:this);

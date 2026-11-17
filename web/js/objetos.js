@@ -2,7 +2,11 @@
 (function (raiz) {
   'use strict';
   const LINEAS = Object.freeze({
-    continua: [1], punteada: [1, 0, 0], rayada: [1, 1, 1, 0, 0], ninguna: [0]
+    continua: [1],
+    punteada: [1, 0, 0, 0],                 // puntos sueltos: 1 punto y 3 huecos
+    rayada: [1, 1, 1, 1, 0, 0],             // trazos: 4 puntos y 2 huecos
+    puntoraya: [1, 1, 1, 1, 0, 0, 1, 0, 0], // trazo, hueco, punto, hueco (rutas)
+    ninguna: [0]
   });
   const RELLENOS = Object.freeze({ ninguno: 0, reticula: 3, horizontales: 3, diagonales: 3, disperso: 4 });
   const CAPAS = ['referencia', 'dibujo', 'rotulos', 'claves'];
