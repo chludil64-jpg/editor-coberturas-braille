@@ -119,18 +119,43 @@
   function borrarTramo(o,i){if(!['linea','polilinea'].includes(o.tipo)||i<0||i>=o.vertices.length-1)throw Error('Tramo inválido');const n=o.vertices,partes=[n.slice(0,i+1),n.slice(i+1)].filter(v=>v.length>=2);return partes.map(v=>crearObjeto('polilinea',{...o,vertices:v}));}
   function unirLineas(a,b,tolerancia=3){if(!['linea','polilinea'].includes(a.tipo)||!['linea','polilinea'].includes(b.tipo))throw Error('Elegí dos líneas abiertas');let av=a.vertices.slice(),bv=b.vertices.slice(),pares=[[0,0],[0,1],[1,0],[1,1]].map(([i,j])=>({i,j,d:Math.hypot(av[i?av.length-1:0][0]-bv[j?bv.length-1:0][0],av[i?av.length-1:0][1]-bv[j?bv.length-1:0][1])})).sort((x,y)=>x.d-y.d);const q=pares[0];if(q.d>tolerancia)throw Error('Los extremos están demasiado lejos');if(q.i===0)av.reverse();if(q.j===1)bv.reverse();return crearObjeto('polilinea',{...a,vertices:av.concat(bv.slice(1)),grupo:a.grupo===b.grupo?a.grupo:null});}
   /* Con grilla de impresora: el contorno se traza celda por celda (Bresenham) en la misma grilla
-     donde se imprime, así sigue la forma sin escalones dobles ni huecos; el relleno deja libre
-     una celda alrededor del contorno para que la línea se siga leyendo al tacto. */
+     donde se imprime, así sigue la forma sin escalones dobles ni huecos (todas las celdas
+     vecinas quedan a 2,05, 2,02 o 2,88 mm: la proporción de pasos diagonales la fija la pendiente).
+     Las líneas discontinuas se miden por distancia real en mm, no por cantidad de celdas: cada
+     unidad del ciclo equivale a un paso de grilla en la dirección del tramo, y los extremos de
+     cada trazo se ajustan a la celda más cercana a su posición ideal. Los vértices conservan su
+     punto. El relleno deja libre una celda alrededor del contorno. */
   function aGrilla(o,v,cerrado,ciclo,px,py) {
-    const celdas=[], vistas=new Set(), clave=(i,j)=>i+','+j;
-    let k=0;
-    const poner=(i,j)=>{ const c=clave(i,j); if(!vistas.has(c)){ vistas.add(c); if(ciclo[k%ciclo.length]) celdas.push([i,j]); k++; } };
+    const celdas=[], emitidas=new Set(), vistas=new Set(), clave=(i,j)=>i+','+j;
+    const n=ciclo.length, continuo=ciclo.every(x=>x), vacio=!ciclo.some(x=>x);
+    const emitir=(i,j)=>{ const c=clave(i,j); if(!emitidas.has(c)){ emitidas.add(c); celdas.push([i,j]); } };
+    let fase=0;
     const tramos=v.length-(cerrado?0:1);
     for(let t=0;t<tramos;t++) {
       const a=v[t], b=v[(t+1)%v.length];
-      let x0=Math.round(a[0]/px), y0=Math.round(a[1]/py); const x1=Math.round(b[0]/px), y1=Math.round(b[1]/py);
-      const dx=Math.abs(x1-x0), dy=-Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1; let err=dx+dy;
-      for(;;) { poner(x0,y0); if(x0===x1&&y0===y1)break; const e2=2*err; if(e2>=dy){err+=dy;x0+=sx;} if(e2<=dx){err+=dx;y0+=sy;} }
+      const x0=Math.round(a[0]/px), y0=Math.round(a[1]/py), x1=Math.round(b[0]/px), y1=Math.round(b[1]/py);
+      const ruta=[];
+      { let cx=x0, cy=y0; const dx=Math.abs(x1-x0), dy=-Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1; let err=dx+dy;
+        for(;;) { ruta.push([cx,cy]); if(cx===x1&&cy===y1)break; const e2=2*err; if(e2>=dy){err+=dy;cx+=sx;} if(e2<=dx){err+=dx;cy+=sy;} } }
+      for(const [i,j] of ruta) vistas.add(clave(i,j));
+      const L=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      if(continuo) { for(const [i,j] of ruta) emitir(i,j); continue; }
+      if(vacio) continue;
+      const ux=L?(b[0]-a[0])/L:1, uy=L?(b[1]-a[1])/L:0;
+      const u=1/Math.hypot(ux/px,uy/py), Lu=L/u;
+      const arcos=ruta.map(([i,j])=>Math.min(Math.max(((i*px-a[0])*ux+(j*py-a[1])*uy)/u,0),Lu));
+      const cercana=q=>{ let m=0,md=Infinity; for(let k=0;k<arcos.length;k++){ const e=Math.abs(arcos[k]-q); if(e<md-1e-9){md=e;m=k;} } return m; };
+      for(let K=Math.floor(fase);K<=Math.ceil(fase+Lu);K++) {
+        if(!ciclo[((K%n)+n)%n]) continue;
+        let K1=K; while(ciclo[(((K1+1)%n)+n)%n] && K1<fase+Lu+n) K1++;   // trazo de K a K1 (en unidades)
+        if(K1>=fase-0.5 && K<=fase+Lu+0.5) {
+          const i0=cercana(Math.max(K-fase,0)), i1=cercana(Math.min(K1-fase,Lu));
+          for(let k=i0;k<=i1;k++) emitir(ruta[k][0],ruta[k][1]);
+        }
+        K=K1;
+      }
+      if(t>0||cerrado) emitir(x0,y0);   // las esquinas conservan su punto
+      fase+=Lu;
     }
     // Las celdas del contorno (aunque la línea sea punteada) marcan el borde para el relleno.
     const salida=celdas.map(([i,j])=>[red(i*px),red(j*py)]);

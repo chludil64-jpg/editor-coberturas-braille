@@ -196,3 +196,48 @@ test('las líneas punteada, rayada y punto y raya se distinguen y las rutas impo
   assert.ok(Object.hasOwn(O.LINEAS,S.estiloInicial('ruta','stroke')));
   assert.equal(new Set(['costa','río','límite','ruta'].map(s=>S.estiloInicial(s,'stroke'))).size,4);
 });
+
+/* Trazado por grilla: continuidad táctil y patrones por longitud real */
+const mg={entrePuntos:2,grilla:{px:2.05,py:2.02}};
+const dist=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+test('línea continua a cualquier pendiente: sin huecos ni repetidos y con separación acotada',()=>{
+  for(const ang of [0,15,30,45,60,75,90,110,200]){
+    const r=ang*Math.PI/180,p=O.objetoAPuntos(obj('linea',{vertices:[[0,0],[120*Math.cos(r),120*Math.sin(r)]]}),mg);
+    for(let i=1;i<p.length;i++){const d=dist(p[i],p[i-1]);assert.ok(d>=2.0&&d<=3.2,`ang ${ang}: separación ${d.toFixed(2)}`);}
+  }
+});
+test('horizontales y verticales conservan un punto en cada celda',()=>{
+  const h=O.objetoAPuntos(obj('linea',{vertices:[[0,0],[41,0]]}),mg),v=O.objetoAPuntos(obj('linea',{vertices:[[0,0],[0,40.4]]}),mg);
+  assert.equal(h.length,21);assert.equal(v.length,21);
+  assert.ok(h.every((q,i)=>!i||Math.abs(dist(q,h[i-1])-2.05)<0.01));assert.ok(v.every((q,i)=>!i||Math.abs(dist(q,v[i-1])-2.02)<0.01));
+});
+test('rayada: el hueco mide lo mismo (±1,6 mm) en horizontal que en diagonal',()=>{
+  const huecos=ang=>{const r=ang*Math.PI/180,p=O.objetoAPuntos(obj('linea',{linea:'rayada',vertices:[[0,0],[200*Math.cos(r),200*Math.sin(r)]]}),mg),h=[];
+    for(let i=1;i<p.length;i++){const d=dist(p[i],p[i-1]);if(d>3.3)h.push(d);}return h.reduce((s,x)=>s+x,0)/h.length;};
+  const base=huecos(0);
+  for(const a of [15,30,45,60,75,90])assert.ok(Math.abs(huecos(a)-base)<1,`ang ${a}`);
+});
+test('punteada: la distancia media entre puntos no depende de la pendiente',()=>{
+  const medio=ang=>{const r=ang*Math.PI/180,p=O.objetoAPuntos(obj('linea',{linea:'punteada',vertices:[[0,0],[200*Math.cos(r),200*Math.sin(r)]]}),mg);return 200/(p.length-1);};
+  for(const a of [15,30,45,60,75])assert.ok(Math.abs(medio(a)-medio(0))<0.6,`ang ${a}`);
+});
+test('polígono rayado conserva el punto de cada esquina',()=>{
+  const v=[[0,0],[40,0],[40,30],[0,30]],p=O.objetoAPuntos(obj('poligono',{linea:'rayada',vertices:v}),mg);
+  for(const q of v)assert.ok(p.some(r=>Math.abs(r[0]-Math.round(q[0]/2.05)*2.05)<0.01&&Math.abs(r[1]-Math.round(q[1]/2.02)*2.02)<0.01),`esquina ${q}`);
+});
+test('relleno deja una celda libre alrededor del contorno diagonal',()=>{
+  const v=[[0,0],[60,10],[40,60]],cont=O.objetoAPuntos(obj('poligono',{vertices:v}),mg),todo=O.objetoAPuntos(obj('poligono',{vertices:v,relleno:'horizontales'}),mg);
+  const c=new Set(cont.map(q=>q+''));const extra=todo.filter(q=>!c.has(q+''));
+  assert.ok(extra.length>5);
+  assert.ok(extra.every(q=>cont.every(r=>dist(q,r)>2.5)));
+});
+test('Comprobar avisa de línea discontinua casi recta pero inclinada, solo en modo completo',()=>{
+  const mk=(linea,vertices)=>({ancho:100,alto:100,cuadros:[],objetos:[obj('linea',{linea,vertices})]});
+  const perfil={codificador:'grilla',grilla:{paso_x_mm:2.05,paso_y_mm:2.02},margenes_mm:{izquierdo:0,derecho:0,superior:0,inferior:0}};
+  const av=(p,completo)=>G.avisos(p,G.calcularPagina(p,{medidas:mg}),perfil,{completo}).filter(a=>/discontinua/.test(a.mensaje));
+  assert.equal(av(mk('rayada',[[10,10],[10.0+8,60]]),true).length,1);   // ~9°
+  assert.equal(av(mk('rayada',[[10,10],[10.0+8,60]]),false).length,0);
+  assert.equal(av(mk('continua',[[10,10],[18,60]]),true).length,0);
+  assert.equal(av(mk('rayada',[[10,10],[10,60]]),true).length,0);       // recta
+  assert.equal(av(mk('rayada',[[10,10],[40,40]]),true).length,0);       // diagonal
+});

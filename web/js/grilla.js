@@ -611,6 +611,19 @@
     }
     // Líneas casi paralelas de objetos distintos a menos de 5 mm (costoso: solo al apretar «Comprobar»).
     if (opciones && opciones.completo) {
+      // Líneas discontinuas con tramos casi verticales u horizontales, apenas inclinados (3° a 12° del eje): el patrón se deforma.
+      for (const o of objetos) {
+        if (!['linea', 'polilinea', 'poligono', 'rectangulo'].includes(o.tipo) || !o.linea || o.linea === 'continua' || o.linea === 'ninguna') continue;
+        const g = Objetos.geometria(o), cerr = o.tipo === 'poligono' || o.tipo === 'rectangulo' || !!o.cerrado;
+        let peor = null;
+        for (let i = 0; i < g.length - (cerr ? 0 : 1); i++) {
+          const a = g[i], b = g[(i + 1) % g.length], dx = Math.abs(b[0] - a[0]), dy = Math.abs(b[1] - a[1]);
+          if (Math.hypot(dx, dy) < 12) continue;
+          const ang = Math.atan2(Math.min(dx, dy), Math.max(dx, dy)) * 180 / Math.PI;
+          if (ang >= 3 && ang <= 12 && (!peor || ang < peor)) peor = ang;
+        }
+        if (peor !== null) lista.push({ nivel:'info', id:o.id, mensaje:`${o.nombre}: línea discontinua con un tramo casi recto pero inclinado unos ${Math.round(peor)}°; en la grilla el patrón de trazos y huecos se deforma. Conviene enderezarla o usar línea continua.` });
+      }
       for (const par of paralelasCercanas(objetos, grilla, 1.0, 5)) {
         lista.push({ nivel:'aviso', id:par.a.id, mensaje:`${par.a.nombre} y ${par.b.nombre}: líneas casi paralelas a ${par.dist.toFixed(1)} mm; conviene separarlas al menos 5 mm para distinguirlas.` });
       }
