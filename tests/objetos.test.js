@@ -128,3 +128,37 @@ test('avisos: paralelas cercanas, formas chicas, tramos de 1-2 celdas y exceso d
     O.crearObjeto('rectangulo',{id:'r3',x:160,y:100,ancho:20,alto:20,relleno:'disperso'})]);
   assert.ok(av(p,{}).some(m=>/combina 3 estilos de línea y 3 texturas/.test(m)));
 });
+
+test('clave: una muestra de al menos 12,5 x 25 mm por combinación, con rótulo braille y sin pisar el dibujo',()=>{
+  const L=require('../web/js/leyenda.js');
+  const perfil={codificador:'grilla',grilla:{paso_x_mm:2.05,paso_y_mm:2.02},carga:{orientacion:'horizontal'}};
+  const medidas=G.medidasDePerfil(perfil,297,210);
+  let n=0;const ctx={medidas,perfil,nuevoId:p=>p+(++n)};
+  const pag={ancho:297,alto:210,cuadros:[],trazos:[],capasVisibles:{},objetos:[
+    O.crearObjeto('polilinea',{id:'a',nombre:'Ruta',linea:'rayada',vertices:[[20,20],[100,20]]}),
+    O.crearObjeto('polilinea',{id:'b',nombre:'Polilínea',linea:'rayada',vertices:[[20,30],[100,30]]}),
+    O.crearObjeto('rectangulo',{id:'c',nombre:'Parque',x:120,y:20,ancho:30,alto:30,relleno:'reticula'})]};
+  const r=L.construir(pag,ctx);
+  assert.equal(r.combos,2);
+  assert.ok(r.entra);
+  assert.equal(r.objetos.length,2);assert.equal(r.cuadros.length,2);
+  const rect=r.objetos.find(o=>o.tipo==='rectangulo');
+  assert.ok(rect.ancho>=25&&rect.alto>=12.5);
+  assert.ok(Math.abs(rect.ancho/2.05-Math.round(rect.ancho/2.05))<1e-6);
+  assert.ok(r.objetos.every(o=>o.capa==='claves')&&r.cuadros.every(c=>c.capa==='claves'));
+  assert.ok(r.cuadros.some(c=>/Ruta/.test(c.texto))&&r.cuadros.some(c=>/Parque/.test(c.texto)));
+  // todo cae dentro de la hoja y a más de 6 mm del dibujo existente
+  pag.objetos.push(...r.objetos);pag.cuadros.push(...r.cuadros);
+  const calc=G.calcularPagina(pag,{medidas,separacionDibujo:0});
+  const claves=calc.puntos.filter(p=>p.id&&(r.objetos.some(o=>o.id===p.id)||r.cuadros.some(c=>c.id===p.id)));
+  const resto=calc.puntos.filter(p=>!claves.includes(p));
+  assert.ok(claves.length>0&&claves.every(p=>p.x<=297&&p.y<=210));
+  assert.ok(Math.min(...claves.map(p=>p.y))-Math.max(...resto.map(p=>p.y))>=6-1e-6);
+  // regenerar no duplica
+  const r2=L.construir(pag,ctx);
+  assert.equal(r2.objetos.length,2);
+  // sin lugar abajo: no entra
+  const llena={ancho:297,alto:210,cuadros:[],trazos:[],capasVisibles:{},objetos:[
+    O.crearObjeto('rectangulo',{id:'g',nombre:'Mar',x:10,y:10,ancho:270,alto:185,relleno:'diagonales'})]};
+  assert.equal(L.construir(llena,ctx).entra,false);
+});
