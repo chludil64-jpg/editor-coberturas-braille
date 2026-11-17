@@ -45,7 +45,7 @@
         const o = this.doc.opciones || {};
         this._calc = Grilla.calcularPagina(this.pagina(), {
           medidas: this.medidas(),
-          separacionDibujo: o.separarDibujo ? Number(o.separacionDibujo) || 0 : 0
+          separacionDibujo: Grilla.despejeEfectivo(o)
         });
       }
       return this._calc;

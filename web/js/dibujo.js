@@ -97,6 +97,12 @@
     App.cambio('opciones');
   }
   $('separar-dibujo').addEventListener('change', leerSeparacion);
+  $('mapa-tactil').addEventListener('change', () => {
+    App.registrar();
+    App.doc.opciones.mapaTactil = $('mapa-tactil').checked;
+    App.cambio('opciones');
+    App.anunciar($('mapa-tactil').checked ? 'Modo Mapa táctil activado: 6 mm de despeje entre braille y dibujo.' : 'Modo Mapa táctil desactivado.');
+  });
   $('separacion-dibujo').addEventListener('change', leerSeparacion);
 
   // Ralear: quita los puntos de dibujo (vectores y puntos fijos) a menos de la separación mínima
@@ -160,6 +166,7 @@
     if (motivo !== 'arrastre') mostrarTrazos();
     const o = App.doc.opciones || {};
     $('separar-dibujo').checked = !!o.separarDibujo;
+    $('mapa-tactil').checked = !!o.mapaTactil;
     if (document.activeElement !== $('separacion-dibujo')) $('separacion-dibujo').value = o.separacionDibujo;
   });
 

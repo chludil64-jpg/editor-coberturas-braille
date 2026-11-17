@@ -356,38 +356,56 @@
     }
     for (const o of visibles) {
       for (const p of Objetos.objetoAPuntos(o, op.medidas)) {
-        if (op.separacionDibujo > 0 && rects.some(r => distanciaARect(p[0],p[1],r) < op.separacionDibujo)) {
-          quitados++; continue;
-        }
         if (tapado(o, p[0], p[1])) continue;
         puntos.push({ x:p[0], y:p[1], origen:'objeto', id:o.id });
       }
     }
     for (const t of pagina.trazos || []) {
-      for (const p of t.puntos) {
-        if (op.separacionDibujo > 0 &&
-          rects.some(r => distanciaARect(p[0], p[1], r) < op.separacionDibujo)) {
-          quitados++;
-          continue;
-        }
-        puntos.push({ x: p[0], y: p[1], origen: 'dibujo', id: t.id });
-      }
+      for (const p of t.puntos) puntos.push({ x: p[0], y: p[1], origen: 'dibujo', id: t.id });
     }
     const g = op.medidas && op.medidas.grilla;
+    // Ajuste a la grilla de la impresora: lo que se ve es lo que se imprime.
+    const ajustados = g ? puntos.map(p => {
+      const [x, y] = ajustarAGrilla(p.x, p.y, g);
+      return { x, y, origen: p.origen, id: p.id };
+    }) : puntos;
+    // El despeje se mide sobre los puntos YA ajustados a la grilla (el braille también),
+    // para que los milímetros de separación sean los del relieve impreso.
+    let lista = ajustados;
+    if (op.separacionDibujo > 0 && rects.length) {
+      const zonas = new Map();
+      for (const p of ajustados) {
+        if (p.origen !== 'braille') continue;
+        const z = zonas.get(p.id);
+        if (!z) zonas.set(p.id, { x0: p.x, y0: p.y, x1: p.x, y1: p.y });
+        else { z.x0 = Math.min(z.x0, p.x); z.y0 = Math.min(z.y0, p.y); z.x1 = Math.max(z.x1, p.x); z.y1 = Math.max(z.y1, p.y); }
+      }
+      const cajas = [...zonas.values()];
+      lista = ajustados.filter(p => {
+        if (p.origen === 'braille') return true;
+        if (cajas.some(r => distanciaARect(p.x, p.y, r) < op.separacionDibujo - 1e-6)) { quitados++; return false; }
+        return true;
+      });
+    }
     if (g) {
-      // Ajuste a la grilla de la impresora: lo que se ve es lo que se imprime.
       const vistos = new Set();
-      const ajustados = [];
-      for (const p of puntos) {
-        const [x, y] = ajustarAGrilla(p.x, p.y, g);
-        const k = Math.round(x / g.px) + ',' + Math.round(y / g.py);
+      const salida = [];
+      for (const p of lista) {
+        const k = Math.round(p.x / g.px) + ',' + Math.round(p.y / g.py);
         if (vistos.has(k)) continue;
         vistos.add(k);
-        ajustados.push({ x, y, origen: p.origen, id: p.id });
+        salida.push(p);
       }
-      return { puntos: ajustados, cuadros, quitados };
+      return { puntos: salida, cuadros, quitados };
     }
-    return { puntos, cuadros, quitados };
+    return { puntos: lista, cuadros, quitados };
+  }
+
+  /** Despeje braille-dibujo (mm) según las opciones del proyecto: «Mapa táctil» exige al menos 6 mm. */
+  function despejeEfectivo(o) {
+    o = o || {};
+    const base = o.separarDibujo ? Number(o.separacionDibujo) || 0 : 0;
+    return o.mapaTactil ? Math.max(6, base) : base;
   }
 
   /** Lista simple [[x, y], ...] para exportar. */
@@ -418,7 +436,10 @@
    * Avisos de una página: desbordes, fuera de hoja, zona no imprimible,
    * choques entre cuadros, puntos demasiado juntos y caracteres sin transcribir.
    */
-  function avisos(pagina, calculo, perfil) {
+  function despejeAviso(o) { return o && o.mapaTactil ? 6 : 3; }
+
+  function avisos(pagina, calculo, perfil, opciones) {
+    const despeje = despejeAviso(opciones);
     const lista = [];
     const minimo = (perfil && Number(perfil.separacion_minima_mm)) || 2.0;
     const W = pagina.ancho, H = pagina.alto;
@@ -501,21 +522,21 @@
       const [x,y]=ajustarAGrilla(q[0],q[1],grilla);return {x,y,id:c.id};
     }));
     let cercanos = new Set(), brailleCerca = new Set();
-    const idxObjetos=indice(ptsObjetos.map(p=>[p.x,p.y]),Math.max(2*paso,3));
+    const idxObjetos=indice(ptsObjetos.map(p=>[p.x,p.y]),Math.max(2*paso,despeje));
     ptsObjetos.forEach((a,i)=>{for(const j of idxObjetos.vecinos(a.x,a.y)) {if(j<=i)continue;const b=ptsObjetos[j];
       if(a.id!==b.id&&Math.hypot(a.x-b.x,a.y-b.y)<2*paso-1e-6){cercanos.add(a.id);cercanos.add(b.id);}}});
     for (const p of ptsBraille) for (const j of idxObjetos.vecinos(p.x,p.y)) {
-      const q=ptsObjetos[j];if(Math.hypot(p.x-q.x,p.y-q.y)<3-1e-6)brailleCerca.add(p.id);
+      const q=ptsObjetos[j];if(Math.hypot(p.x-q.x,p.y-q.y)<despeje-1e-6)brailleCerca.add(p.id);
     }
     for (const id of cercanos) lista.push({ nivel:'aviso', id, mensaje:`Puntos de objetos distintos a menos de dos pasos de grilla.` });
-    for (const id of brailleCerca) lista.push({ nivel:'aviso', id, mensaje:`Braille a menos de 3 mm de un objeto.` });
+    for (const id of brailleCerca) lista.push({ nivel:'aviso', id, mensaje:`Braille a menos de ${despeje} mm de un objeto.` });
     return lista;
   }
 
   const api = {
     MEDIDAS, medidasDePerfil, ajustarAGrilla, calcularCuadro, ubicarSegunTinta, partirEnRenglones,
     muestrearLinea, muestrearPoligono, muestrearRectangulo, muestrearTrayecto, muestrearElipse,
-    quitarDuplicados, ralear, quitarJuntos, calcularPagina, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
+    quitarDuplicados, ralear, quitarJuntos, calcularPagina, despejeEfectivo, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else raiz.Grilla = api;

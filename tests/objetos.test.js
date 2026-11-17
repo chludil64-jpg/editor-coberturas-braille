@@ -83,3 +83,21 @@ test('quitarJuntos ralea objetos vectoriales y puntos fijos contra el braille',(
   // Con la separación mínima de la grilla no hay nada que quitar.
   assert.equal(G.quitarJuntos(p,G.calcularPagina(p,{medidas:mm}),2,mm),0);
 });
+
+test('despeje braille-dibujo se mide sobre puntos ajustados a la grilla y el mapa táctil usa 6 mm',()=>{
+  const g={entrePuntos:2,entrePuntosX:2,entrePuntosY:2,entreCeldas:6,entreRenglones:10,grilla:{px:2,py:2}};
+  assert.equal(G.despejeEfectivo({separarDibujo:true,separacionDibujo:3}),3);
+  assert.equal(G.despejeEfectivo({separarDibujo:true,separacionDibujo:3,mapaTactil:true}),6);
+  assert.equal(G.despejeEfectivo({separarDibujo:false,mapaTactil:true}),6);
+  const pag=()=>({ancho:100,alto:60,capasVisibles:{},trazos:[],
+    cuadros:[{id:'c',texto:'a',x:20,y:20,capa:'rotulos'}],
+    objetos:[O.crearObjeto('punto',{id:'p',x:25.9,y:20})]});
+  // braille «a»: un punto en (20,20); el objeto se ajusta a x=26 (6 mm de distancia)
+  const r3=G.calcularPagina(pag(),{medidas:g,separacionDibujo:3});
+  assert.ok(r3.puntos.some(p=>p.id==='p'));
+  const r6=G.calcularPagina(pag(),{medidas:g,separacionDibujo:G.despejeEfectivo({mapaTactil:true})});
+  assert.ok(r6.puntos.some(p=>p.id==='p'),'a 6 mm exactos se conserva');
+  const r7=G.calcularPagina(pag(),{medidas:g,separacionDibujo:7});
+  assert.ok(!r7.puntos.some(p=>p.id==='p'));
+  assert.equal(r7.quitados,1);
+});

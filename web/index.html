@@ -204,6 +204,10 @@
         <label><input type="checkbox" id="separar-dibujo" checked> Separar el dibujo del braille</label>
         <label class="corto">a <input type="number" id="separacion-dibujo" step="0.5" min="0" value="3"> mm</label>
       </div>
+      <div class="fila">
+        <label><input type="checkbox" id="mapa-tactil" aria-describedby="ayuda-mapa-tactil"> Modo «Mapa táctil» (despeje de 6 mm)</label>
+        <small id="ayuda-mapa-tactil">Deja 6 mm libres entre el braille y el dibujo, medidos sobre los puntos ya ajustados a la grilla.</small>
+      </div>
       <details>
         <summary>Agregar forma por coordenadas</summary>
         <form id="form-forma" class="editor" onsubmit="return false">
