@@ -155,7 +155,7 @@
   }
   App.EditorObjetos={crear,seleccionar,operar,alinear,buscar,reemplazar,transformarSeleccion};
   document.addEventListener('keydown',ev=>{
-    if(/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)||ev.target.id==='lienzo')return;
+    if(App.atajosBloqueados(ev)||ev.target.id==='lienzo')return;
     if(ev.key==='Delete'){operar('borrar');ev.preventDefault();}
     else if(ev.ctrlKey){const k=ev.key.toLowerCase();
       if(k==='d'){operar('duplicar');ev.preventDefault();}

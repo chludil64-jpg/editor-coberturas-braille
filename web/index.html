@@ -102,7 +102,7 @@
       <h2 id="t-cuadros">Cuadros braille</h2>
       <button type="button" id="btn-nuevo-cuadro" class="ancho">Nuevo cuadro vacío</button>
       <ul id="lista-cuadros" class="lista-cuadros" aria-label="Cuadros de la página" tabindex="-1"></ul>
-      <form id="editor-cuadro" class="editor" aria-labelledby="t-editor" hidden onsubmit="return false">
+      <form id="editor-cuadro" class="editor" aria-labelledby="t-editor" hidden data-sin-envio>
         <h3 id="t-editor">Cuadro elegido</h3>
         <label for="cuadro-texto">Texto (Enter = nuevo renglón)</label>
         <textarea id="cuadro-texto" rows="3" spellcheck="false"></textarea>
@@ -165,11 +165,12 @@
       </div>
     </div>
     <div class="contenedor-lienzo" id="contenedor-lienzo">
-      <canvas id="lienzo" tabindex="0" role="img"
-        aria-label="Lienzo de la página. Con un elemento elegido: flechas lo mueven un paso de grilla, Mayúscula más flecha mueve cinco pasos, Suprimir lo borra, Av Pág y Re Pág cambian de elemento, Escape lo suelta. La lista de páginas y elementos es la alternativa textual."
-        aria-describedby="estado-lienzo"></canvas>
+      <canvas id="lienzo" tabindex="0" role="application" aria-roledescription="lienzo de dibujo"
+        aria-label="Lienzo de la página"
+        aria-describedby="ayuda-lienzo"></canvas>
+      <p id="ayuda-lienzo" class="solo-lector">Con un elemento elegido: las flechas lo mueven un paso de grilla; Mayúscula más flecha mueve cinco pasos; Suprimir lo borra; Av Pág y Re Pág cambian de elemento; Escape lo suelta. Con la herramienta Editar vértices: Tab y Mayúscula Tab eligen el vértice, las flechas lo mueven, Insertar o más agrega un vértice después, Suprimir lo borra. La lista de páginas y elementos es la alternativa textual. F1 abre la ayuda de atajos.</p>
     </div>
-    <p id="estado-lienzo" class="estado" aria-live="polite"></p>
+    <p id="estado-lienzo" class="estado"></p>
     <p id="cursor-mm" class="estado" aria-hidden="true"></p>
   </section>
 
@@ -215,7 +216,7 @@
       </div>
       <details>
         <summary>Agregar forma por coordenadas</summary>
-        <form id="form-forma" class="editor" onsubmit="return false">
+        <form id="form-forma" class="editor" data-sin-envio>
           <label>Forma
             <select id="forma-tipo">
               <option value="linea">Línea</option>
@@ -494,7 +495,7 @@
 
 <!-- Diálogo: historial de cambios -->
 <dialog id="dlg-historial" aria-labelledby="t-historial">
-  <form method="dialog" class="editor ancho-dlg" onsubmit="return false">
+  <form method="dialog" class="editor ancho-dlg" data-sin-envio>
     <h2 id="t-historial">Historial de cambios</h2>
     <p class="nota">Del más antiguo al más nuevo. Elegí un paso para volver a cómo estaba la hoja en ese momento; los pasos «deshechos» se pueden recuperar mientras no hagas un cambio nuevo.</p>
     <p id="historial-vacio" class="nota">Todavía no hiciste ningún cambio.</p>
@@ -505,7 +506,7 @@
 
 <!-- Diálogo: plantillas de hoja -->
 <dialog id="dlg-plantillas" aria-labelledby="t-plantillas">
-  <form method="dialog" class="editor ancho-dlg" onsubmit="return false">
+  <form method="dialog" class="editor ancho-dlg" data-sin-envio>
     <h2 id="t-plantillas">Plantillas de hoja</h2>
     <p class="nota">Una plantilla guarda lo que hay en la página actual (encabezado, cuadros braille, marcos, símbolos…) para crear páginas nuevas con eso ya puesto. Se guarda en este navegador; con «Exportar .json» la llevás a otra computadora.</p>
     <fieldset>

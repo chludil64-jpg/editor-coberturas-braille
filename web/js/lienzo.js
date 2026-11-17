@@ -548,6 +548,66 @@
     return `Objeto «${el.nombre}», tipo ${el.tipo}.`;
   }
 
+  /* Edición de vértices con teclado (herramienta «Editar vértices»): Tab / Mayúscula+Tab eligen vértice,
+     flechas lo mueven (un paso de grilla; Mayúscula = 5 pasos), Insertar o «+» agrega uno después, Supr lo borra.
+     Devuelve true si la tecla se usó. */
+  function objetoDeVertices(){
+    const o=App.ui.sel?.tipo==='objeto'&&App.EditorObjetos.buscar(App.ui.sel.id);
+    return o&&!o.bloqueado&&['linea','polilinea','poligono'].includes(o.tipo)&&Array.isArray(o.vertices)?o:null;
+  }
+  function anunciarVertice(o,i,prefijo){
+    const p=o.vertices[i];
+    App.anunciar(`${prefijo?prefijo+' ':''}Vértice ${i+1} de ${o.vertices.length}, x ${p[0].toFixed(1)}, y ${p[1].toFixed(1)} mm.`);
+  }
+  function elegirVertice(o,i){verticeElegido={o,i,p:o.vertices[i]};dibujar();anunciarVertice(o,i);}
+  function teclasVertices(ev,flechas){
+    if(ev.ctrlKey||ev.metaKey||ev.altKey)return false;
+    const o=objetoDeVertices();
+    if(!o){
+      return false;
+    }
+    if(verticeElegido&&(verticeElegido.o.id!==o.id||verticeElegido.i>=o.vertices.length))verticeElegido=null;
+    const n=o.vertices.length;
+    if(ev.key==='Tab'){
+      let i=verticeElegido?verticeElegido.i+(ev.shiftKey?-1:1):(ev.shiftKey?n-1:0);
+      if(i<0||i>=n){verticeElegido=null;dibujar();return false;} // fuera de los extremos: el Tab sale del lienzo
+      elegirVertice(o,i);ev.preventDefault();return true;
+    }
+    if(!verticeElegido)return false;
+    const i=verticeElegido.i,r=v=>Math.round(v*1000)/1000;
+    if(flechas[ev.key]){
+      const k=ev.shiftKey?5:1,m=Objetos.pasos(App.medidas()),p=o.vertices[i];
+      App.registrar('Mover vértice con las flechas');
+      const nuevo=Objetos.editarVertice(o,i,[r(p[0]+flechas[ev.key][0]*k*m[0]),r(p[1]+flechas[ev.key][1]*k*m[1])]);
+      App.EditorObjetos.reemplazar(o.id,nuevo);
+      verticeElegido={o:nuevo,i,p:nuevo.vertices[i]};
+      App.cambio('objetos');anunciarVertice(nuevo,i);ev.preventDefault();return true;
+    }
+    if(ev.key==='Insert'||ev.key==='+'){
+      const v=o.vertices,cierra=o.tipo==='poligono';
+      let q;
+      if(i<n-1||cierra){const a=v[i],b=v[(i+1)%n];q=[(a[0]+b[0])/2,(a[1]+b[1])/2];}
+      else{const a=v[n-2],b=v[i],m=Objetos.pasos(App.medidas());q=[b[0]+Math.sign(b[0]-a[0])*m[0],b[1]+Math.sign(b[1]-a[1])*m[1]];}
+      App.registrar('Agregar vértice');
+      const nuevo=Objetos.agregarVertice(o,i,[r(q[0]),r(q[1])]);
+      App.EditorObjetos.reemplazar(o.id,nuevo);
+      verticeElegido={o:nuevo,i:i+1,p:nuevo.vertices[i+1]};
+      App.cambio('objetos');anunciarVertice(nuevo,i+1,'Vértice agregado.');ev.preventDefault();return true;
+    }
+    if(ev.key==='Delete'){
+      try{
+        App.registrar('Borrar vértice');
+        const nuevo=Objetos.quitarVertice(o,i);
+        App.EditorObjetos.reemplazar(o.id,nuevo);
+        const j=Math.min(i,nuevo.vertices.length-1);
+        verticeElegido={o:nuevo,i:j,p:nuevo.vertices[j]};
+        App.cambio('objetos');anunciarVertice(nuevo,j,'Vértice borrado.');
+      }catch(e){App.anunciar(e.message);}
+      ev.preventDefault();return true;
+    }
+    return false;
+  }
+
   lienzo.addEventListener('keydown', ev => {
     const flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if (App.ui.herramienta === 'medir') {
@@ -575,7 +635,7 @@
     if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])<.5){terminarLazo();}else{agregarAncla(cursorLazo);}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
     // Escape sin nada en curso: volver a «Elegir y mover» (para poder mover cuadros y formas).
     if(ev.key==='Escape'&&!lazo&&App.ui.herramienta!=='seleccionar'&&App.elegirHerramienta){App.elegirHerramienta('seleccionar');ev.preventDefault();return;}
-    if(ev.key==='Delete'&&verticeElegido&&App.ui.herramienta==='editar-vertices'){try{const v=verticeElegido,o=App.EditorObjetos.buscar(v.o.id);App.registrar('Borrar vértice');App.EditorObjetos.reemplazar(o.id,Objetos.quitarVertice(o,v.i));verticeElegido=null;App.cambio('objetos');App.anunciar('Vértice borrado.');}catch(e){App.anunciar(e.message);}ev.preventDefault();return;}
+    if(App.ui.herramienta==='editar-vertices'&&teclasVertices(ev,flechas))return;
     if (flechas[ev.key]) {
       if (!App.buscarSel()) { App.anunciar('Elegí un elemento con Av Pág o desde la lista.'); ev.preventDefault(); return; }
       if(ev.ctrlKey&&App.ui.sel.tipo==='objeto'){

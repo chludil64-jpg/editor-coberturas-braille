@@ -5,6 +5,9 @@
   const App = window.App;
   const $ = id => document.getElementById(id);
 
+  // Formularios que nunca se envían (la CSP no permite onsubmit en línea).
+  document.addEventListener('submit', ev => { if (ev.target.hasAttribute('data-sin-envio')) ev.preventDefault(); });
+
   // Menús con foco administrado según el patrón «menu button» de WAI-ARIA.
   const menus = [...document.querySelectorAll('.menu-desplegable')].map(contenedor => ({
     contenedor, boton: contenedor.querySelector('.menu-boton'),

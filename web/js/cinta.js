@@ -220,7 +220,7 @@
   }));
   // Atajos de una letra (fuera de campos de texto): V = elegir y mover, L = lazo.
   document.addEventListener('keydown', ev => {
-    if (ev.ctrlKey || ev.metaKey || ev.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || App.atajosBloqueados(ev)) return;
     if (ev.key === 'v' || ev.key === 'V') { App.elegirHerramienta('seleccionar'); }
     else if (ev.key === 'l' || ev.key === 'L') { App.elegirHerramienta('lazo'); }
     else if (ev.key === 'm' || ev.key === 'M') { App.elegirHerramienta('medir'); }

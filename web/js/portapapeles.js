@@ -119,7 +119,7 @@
   }
 
   raiz.document.addEventListener('keydown', ev => {
-    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey || ev.shiftKey || enCampo(ev.target)) return;
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey || ev.shiftKey || enCampo(ev.target) || raiz.document.querySelector('dialog[open]')) return;
     const k = ev.key.toLowerCase();
     if (!['c', 'x', 'v'].includes(k)) return;
     if (App.Lienzo && App.Lienzo.lazoActivo && App.Lienzo.lazoActivo()) return;

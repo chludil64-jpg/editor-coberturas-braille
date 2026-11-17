@@ -53,37 +53,66 @@
 
     _est() { return { pasados: this._historial, futuros: this._rehacer }; },
 
+    /* Memoria de deshacer: las imágenes de referencia (data URL) no se copian en cada paso. Se guardan
+       una sola vez en _imagenes (por contenido) y los pasos del historial llevan solo «@img:<id>». */
+    _imagenes: new Map(),
+    _idImagen(url) {
+      let h1 = 2166136261, h2 = 5381;
+      for (let i = 0; i < url.length; i++) {
+        const c = url.charCodeAt(i);
+        h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+        h2 = (Math.imul(h2, 33) + c) >>> 0;
+      }
+      return `${url.length.toString(36)}-${h1.toString(36)}-${h2.toString(36)}`;
+    },
+    /** Documento actual como texto para el historial (con las imágenes por referencia). */
+    _ser(doc) {
+      const imgs = this._imagenes;
+      return JSON.stringify(doc || this.doc, (k, v) => {
+        if (k === 'src' && typeof v === 'string' && v.length > 256 && v.startsWith('data:')) {
+          const id = this._idImagen(v);
+          if (!imgs.has(id)) imgs.set(id, v);
+          return '@img:' + id;
+        }
+        return v;
+      });
+    },
+    _deser(json) {
+      const imgs = this._imagenes;
+      return JSON.parse(json, (k, v) => (k === 'src' && typeof v === 'string' && v.startsWith('@img:') && imgs.has(v.slice(5))) ? imgs.get(v.slice(5)) : v);
+    },
+
     /**
      * Guarda una copia antes de modificar, para poder deshacer. `nombre` es el de la acción tal como se ve
      * en el historial («Pegar», «Mover»…); si falta, se completa con el motivo del próximo cambio().
      */
     registrar(nombre) {
-      this._pendiente = Historial.registrar(this._est(), JSON.stringify(this.doc), nombre);
+      this._pendiente = Historial.registrar(this._est(), this._ser(), nombre);
       this.sucio = true;
     },
     deshacer() {
       const est = this._est(), nombre = est.pasados.length && est.pasados[est.pasados.length - 1].nombre;
-      const json = Historial.deshacer(est, JSON.stringify(this.doc));
+      const json = Historial.deshacer(est, this._ser());
       if (json === null) { this.anunciar('No hay nada para deshacer.'); return; }
-      this.doc = JSON.parse(json);
+      this.doc = this._deser(json);
       this._ajustarTrasRestaurar();
       this.anunciar(nombre ? `Deshecho: ${nombre}.` : 'Deshecho.');
     },
     rehacer() {
       const est = this._est(), nombre = est.futuros.length && est.futuros[est.futuros.length - 1].nombre;
-      const json = Historial.rehacer(est, JSON.stringify(this.doc));
+      const json = Historial.rehacer(est, this._ser());
       if (json === null) { this.anunciar('No hay nada para rehacer.'); return; }
-      this.doc = JSON.parse(json);
+      this.doc = this._deser(json);
       this._ajustarTrasRestaurar();
       this.anunciar(nombre ? `Rehecho: ${nombre}.` : 'Rehecho.');
     },
     /** Pasos del historial para mostrarlos: {estados: [{nombre}], actual}. */
-    lineaDeTiempo() { return Historial.lineaDeTiempo(this._est(), JSON.stringify(this.doc)); },
+    lineaDeTiempo() { return Historial.lineaDeTiempo(this._est(), this._ser()); },
     /** Vuelve (o avanza) hasta el punto q de la línea de tiempo. Devuelve false si no hizo nada. */
     irAPaso(q) {
-      const json = Historial.irA(this._est(), q, JSON.stringify(this.doc));
+      const json = Historial.irA(this._est(), q, this._ser());
       if (json === null) return false;
-      this.doc = JSON.parse(json);
+      this.doc = this._deser(json);
       this.sucio = true;
       this._ajustarTrasRestaurar();
       return true;
@@ -94,7 +123,7 @@
       this.ui.seleccion=(this.ui.seleccion||[]).filter(id=>this.pagina().objetos.some(o=>o.id===id));
       this.cambio('historial');
     },
-    limpiarHistorial() { this._historial.length = 0; this._rehacer.length = 0; this._pendiente = null; },
+    limpiarHistorial() { this._historial.length = 0; this._rehacer.length = 0; this._pendiente = null; this._imagenes.clear(); },
 
     /** Avisa a todas las vistas que algo cambió. */
     cambio(motivo) {
@@ -123,11 +152,23 @@
       this.cambio('seleccion');
     },
 
+    /** True si el foco está en un campo de texto, algo editable o hay un diálogo/menú abierto: ahí no valen
+        los atajos de una letra ni los del editor (V, L, M, N, Supr…). */
+    atajosBloqueados(ev) {
+      const t = ev && ev.target;
+      if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return true;
+      if (document.querySelector('dialog[open]')) return true;
+      if (document.querySelector('[role="menu"]:not([hidden])')) return true;
+      return false;
+    },
+
     nuevoId(prefijo) {
       return (prefijo || 'e') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     },
 
     anunciar(texto) {
+      // Una sola región «live» (#anuncio). #estado-lienzo es texto visible, sin aria-live: así el lector
+      // no dice el mismo mensaje dos veces.
       const el = document.getElementById('anuncio');
       if (!el) return;
       el.textContent = '';
