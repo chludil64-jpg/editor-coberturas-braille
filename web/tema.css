@@ -152,3 +152,7 @@ footer.pie-avisos { position: relative; padding: 0; background: var(--panel); bo
 .panel-avisos h2 { font-size: .95rem; margin: 0 0 .4rem; }
 .panel-avisos .avisos { flex-direction: column; }
 .centro .estado { display: none; }
+
+/* Cinta: grupo de símbolos táctiles */
+.cinta-grupo-simbolos .cinta-grupo-cuerpo { max-width: 52rem; }
+.cinta-grupo-simbolos .cinta-campo input { width: 4.2rem; }

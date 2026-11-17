@@ -644,7 +644,11 @@
     dibujar();
   }
 
-  App.Lienzo = { limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, lazoActivo: () => !!lazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
+  App.Lienzo = { centroVisibleMm: () => {
+    const p = App.pagina();
+    const x = aMm(contenedor.scrollLeft + contenedor.clientWidth / 2 - lienzo.offsetLeft), y = aMm(contenedor.scrollTop + contenedor.clientHeight / 2 - lienzo.offsetTop);
+    return [Math.max(0, Math.min(p.ancho, x)), Math.max(0, Math.min(p.alto, y))];
+  }, limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, lazoActivo: () => !!lazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
   App.alCambiar(() => dibujar());
   window.addEventListener('resize', () => dibujar());
 })();
