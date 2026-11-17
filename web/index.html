@@ -193,6 +193,7 @@
         <label><input type="radio" name="herramienta" value="borrar-linea"> Borrar línea</label>
         <label><input type="radio" name="herramienta" value="tijera"> Tijera</label>
         <label><input type="radio" name="herramienta" value="medir"> Medir</label>
+        <label><input type="radio" name="herramienta" value="numerar"> Rótulo numerado</label>
       </fieldset>
       <div class="fila dos"><label>Significado del lazo <select id="lazo-significado"><option>costa</option><option>río</option><option>límite</option><option>ruta</option><option>área de agua</option><option>otro</option></select></label><label><input type="checkbox" id="lazo-iman" checked> Imán</label></div>
       <div class="fila tres"><label>Intensidad <input id="lazo-intensidad" type="range" min="0" max="10" value="6"></label><label>Radio (mm) <input id="lazo-radio" type="number" min="1" max="40" value="8"></label><label>Simplificación (mm) <input id="lazo-simplificar" type="number" min="0" max="5" step="0.1" value="0.4"></label></div>
@@ -246,6 +247,14 @@
       </div>
       <h3 id="t-trazos">Puntos fijos importados</h3>
       <ul id="lista-trazos" class="lista-cuadros" aria-labelledby="t-trazos"></ul>
+    </section>
+    <section id="panel-numerados" aria-labelledby="t-numerados"><h2 id="t-numerados">Rótulos numerados</h2>
+      <p class="nota">Con la herramienta «Rótulo numerado» (tecla N) cada clic en la hoja pone el próximo número en braille. Acá escribís qué significa cada uno: se arma la clave en la capa «claves», abajo de la hoja.</p>
+      <div class="fila botones">
+        <button type="button" id="btn-numerado-centro">Agregar rótulo en el centro de la vista</button>
+        <button type="button" id="btn-numerados-acomodar">Acomodar clave</button>
+      </div>
+      <ul id="lista-numerados" class="lista-cuadros" aria-label="Rótulos numerados de la página"></ul>
     </section>
     <section id="panel-propiedades" aria-labelledby="t-propiedades" hidden><h2 id="t-propiedades">Propiedades</h2>
       <div class="editor"><label>Nombre <input id="obj-nombre" type="text"></label>
@@ -558,5 +567,6 @@
 <script src="js/hoja_prueba.js"></script>
 <script src="js/portapapeles.js"></script>
 <script src="js/simbolos.js"></script>
+<script src="js/numerados.js"></script>
 </body>
 </html>

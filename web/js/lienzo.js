@@ -344,6 +344,7 @@
     const h = App.ui.herramienta;
     lienzo.setPointerCapture(ev.pointerId);
     medicion = null; anclaMedir = null; medirConTeclado = false;
+    if (h === 'numerar') { if (App.Numerados) App.Numerados.colocar(mm); return; }
     if (h === 'medir') {
       arrastre = { tipo: 'medir', inicio: mm, ultimo: mm };
       ponerMedicion(Medir.describir('linea', { a: mm, b: mm }), mm, mm, mm);
