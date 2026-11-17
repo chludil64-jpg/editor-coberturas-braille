@@ -109,7 +109,7 @@
   function crearDesdeElegidos() {
     const elegidos = [...listaTextos.querySelectorAll('input:checked')].map(i => grupos[Number(i.dataset.i)]);
     if (!elegidos.length) { App.anunciar('Elegí al menos un texto de la lista.'); return; }
-    App.registrar();
+    App.registrar('Crear cuadros desde el texto del PDF');
     const p = App.pagina();
     const alin = $('alin-defecto').value;
     let ultimo = null;
@@ -129,7 +129,7 @@
   }
 
   function nuevoCuadro() {
-    App.registrar();
+    App.registrar('Cuadro braille nuevo');
     const p = App.pagina();
     const c = { id: App.nuevoId('c'), texto: 'Texto', x: 20, y: 20, tinta: null, alineacion: 'libre', opciones: opcionesCuadro() };
     p.cuadros.push(c);
@@ -219,7 +219,7 @@
   $('cuadro-texto').addEventListener('input', () => {
     const c = cuadroElegido();
     if (!c) return;
-    if (!editando) { App.registrar(); editando = true; }
+    if (!editando) { App.registrar('Editar el texto de un cuadro'); editando = true; }
     c.texto = $('cuadro-texto').value;
     recolocar(c);
     App.cambio('texto');
@@ -256,7 +256,7 @@
   $('btn-ubicar').addEventListener('click', () => {
     const c = cuadroElegido();
     if (!c || !c.tinta) return;
-    App.registrar();
+    App.registrar('Ubicar el cuadro sobre la tinta');
     if (!c.alineacion || c.alineacion === 'libre') c.alineacion = 'centro';
     Grilla.ubicarSegunTinta(c, App.medidas());
     App.cambio('cuadros');

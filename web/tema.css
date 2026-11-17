@@ -161,3 +161,9 @@ footer.pie-avisos { position: relative; padding: 0; background: var(--panel); bo
 .lista-plantillas { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
 .lista-plantillas li { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .3rem .4rem; border: 1px solid var(--borde); border-radius: var(--radio); }
 .lista-plantillas .plantilla-nombre { flex: 1 1 14rem; }
+
+/* Historial de cambios */
+.lista-historial { max-height: 50vh; overflow: auto; margin: 0 0 .5rem; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: .25rem; }
+.lista-historial button { width: 100%; text-align: left; justify-content: flex-start; }
+.lista-historial button[aria-current="step"] { background: var(--lima); border-color: var(--texto); font-weight: 700; }
+.lista-historial .historial-futuro { opacity: .65; font-style: italic; }

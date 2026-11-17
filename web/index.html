@@ -492,6 +492,17 @@
   </form>
 </dialog>
 
+<!-- Diálogo: historial de cambios -->
+<dialog id="dlg-historial" aria-labelledby="t-historial">
+  <form method="dialog" class="editor ancho-dlg" onsubmit="return false">
+    <h2 id="t-historial">Historial de cambios</h2>
+    <p class="nota">Del más antiguo al más nuevo. Elegí un paso para volver a cómo estaba la hoja en ese momento; los pasos «deshechos» se pueden recuperar mientras no hagas un cambio nuevo.</p>
+    <p id="historial-vacio" class="nota">Todavía no hiciste ningún cambio.</p>
+    <ol id="historial-lista" class="lista-historial" aria-label="Pasos del historial"></ol>
+    <div class="fila botones"><button value="cancelar">Cerrar</button></div>
+  </form>
+</dialog>
+
 <!-- Diálogo: plantillas de hoja -->
 <dialog id="dlg-plantillas" aria-labelledby="t-plantillas">
   <form method="dialog" class="editor ancho-dlg" onsubmit="return false">
@@ -572,6 +583,7 @@
 <script src="js/objetos.js"></script>
 <script src="js/grilla.js"></script>
 <script src="js/medir.js"></script>
+<script src="js/historial.js"></script>
 <script src="js/proyecto.js"></script>
 <script src="js/editor_objetos.js"></script>
 <script src="js/menu_contextual.js"></script>
@@ -593,5 +605,6 @@
 <script src="js/simbolos.js"></script>
 <script src="js/numerados.js"></script>
 <script src="js/plantillas.js"></script>
+<script src="js/historial_ui.js"></script>
 </body>
 </html>

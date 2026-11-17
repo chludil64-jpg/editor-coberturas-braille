@@ -263,7 +263,7 @@
   async function abrirIbe(archivo) {
     try {
       const r = await App.api('/api/ibe/abrir', { method: 'POST', body: await archivo.arrayBuffer(), headers: { 'Content-Type': 'application/octet-stream' } });
-      App.registrar();
+      App.registrar('Abrir archivo .ibe');
       r.paginas.forEach((pg, i) => {
         const ancho = pg.ancho || 297, alto = pg.alto || 210;
         App.doc.paginas.push(App.paginaVacia(ancho, alto, {
@@ -330,7 +330,7 @@
         modo = confirm('Ya hay cuadros o dibujos en el documento.\n\nAceptar: REEMPLAZARLOS por los de la disposición.\n' +
           'Cancelar: AGREGAR los de la disposición a los actuales.') ? 'reemplazar' : 'agregar';
       }
-      App.registrar();
+      App.registrar('Importar disposición braille');
       const r = Disposicion.aplicar(App.doc, datos, modo, p => App.nuevoId(p), App.paginaVacia);
       App.ui.sel = null;
       App.cambio('disposicion');
@@ -342,7 +342,7 @@
     }
   });
   function nuevaPagina(ancho, alto, nombre) {
-    App.registrar();
+    App.registrar('Página nueva');
     App.doc.paginas.push(App.paginaVacia(ancho, alto, { nombre }));
     App.ui.pagina = App.doc.paginas.length - 1;
     App.ui.sel = null;

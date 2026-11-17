@@ -17,11 +17,11 @@
   function reemplazar(id,nuevo) { const a=objetos(),i=a.findIndex(o=>o.id===id); if(i>=0) a[i]=nuevo; }
   function transformarSeleccion(tipo,valor){
     const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado);if(!a.length)return;
-    App.registrar();a.forEach(o=>reemplazar(o.id,tipo==='escalar'?O.escalar(o,valor,valor):O.rotar(o,valor)));
+    App.registrar(tipo==='escalar'?'Cambiar tamaño':'Girar');a.forEach(o=>reemplazar(o.id,tipo==='escalar'?O.escalar(o,valor,valor):O.rotar(o,valor)));
     App.cambio('objetos');App.anunciar(`${a.length} objeto(s): ${tipo==='escalar'?'tamaño '+Math.round(valor*100)+' %':'rotación '+valor+'°'}.`);
   }
   function crear(tipo, datos) {
-    App.registrar();
+    App.registrar('Crear '+(({linea:'línea',polilinea:'polilínea',poligono:'polígono',rectangulo:'rectángulo',elipse:'elipse',punto:'punto'})[tipo]||tipo));
     const o=O.crearObjeto(tipo,Object.assign({id:App.nuevoId('o'), nombre:({linea:'Línea',polilinea:'Polilínea',poligono:'Polígono',rectangulo:'Rectángulo',elipse:'Elipse',punto:'Punto'})[tipo]||tipo,
       linea:$('estilo-linea').value,relleno:$('estilo-relleno').value,orden:objetos().length},datos||{}));
     objetos().push(o); seleccionar(o.id,false); App.anunciar(`${o.nombre} creado.`); return o;
@@ -30,7 +30,7 @@
     const ids=elegidos().filter(id=>buscar(id));
     const cuadros=App.ui.sel&&App.ui.sel.tipo==='cuadro'?App.pagina().cuadros.filter(c=>c.id===App.ui.sel.id):[];
     if(!ids.length&&!cuadros.length) return;
-    App.registrar(); const a=objetos();
+    App.registrar(({borrar:'Borrar',duplicar:'Duplicar',agrupar:'Agrupar',desagrupar:'Desagrupar',bloquear:'Bloquear o desbloquear',ocultar:'Ocultar o mostrar',frente:'Traer al frente',atras:'Enviar atrás'})[accion]||'Operación '+accion); const a=objetos();
     if(cuadros.length){const c=cuadros[0],p=App.pagina();
       if(accion==='borrar'){p.cuadros=p.cuadros.filter(q=>q.id!==c.id);App.seleccionar(null);}
       else if(accion==='duplicar'){const n=JSON.parse(JSON.stringify(c));n.id=App.nuevoId('c');n.x+=4;n.y+=4;p.cuadros.push(n);App.seleccionar('cuadro',n.id);}
@@ -54,7 +54,7 @@
   }
   function alinear(tipo) {
     const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado); if(a.length<2) return;
-    App.registrar(); const b=a.map(O.caja);
+    App.registrar('Alinear: '+tipo); const b=a.map(O.caja);
     const horizontal=!['arriba','medio','abajo','distribuir-v'].includes(tipo),c0=horizontal?'x0':'y0',c1=horizontal?'x1':'y1';
     const min=Math.min(...b.map(r=>r[c0])),max=Math.max(...b.map(r=>r[c1]));
     if(tipo.startsWith('distribuir')) {
@@ -76,7 +76,7 @@
     capas.replaceChildren();lista.replaceChildren();
     O.CAPAS.forEach(capa=>{
       const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=!(p.capasVisibles&&p.capasVisibles[capa]===false);
-      box.addEventListener('change',()=>{App.registrar();p.capasVisibles=p.capasVisibles||{};p.capasVisibles[capa]=box.checked;App.cambio('capas');App.anunciar(`${capa}: ${box.checked?'visible':'oculta'}.`);});
+      box.addEventListener('change',()=>{App.registrar('Capa «'+capa+'» '+(box.checked?'visible':'oculta'));p.capasVisibles=p.capasVisibles||{};p.capasVisibles[capa]=box.checked;App.cambio('capas');App.anunciar(`${capa}: ${box.checked?'visible':'oculta'}.`);});
       label.append(box,document.createTextNode(' '+capa));capas.append(label);
       const titulo=document.createElement('li');titulo.textContent=capa.toUpperCase();lista.append(titulo);
       const items=p.objetos.filter(o=>o.capa===capa).slice().sort((a,b)=>(b.orden||0)-(a.orden||0));
@@ -88,7 +88,7 @@
         b.setAttribute('aria-pressed',elegidos().includes(o.id)||App.ui.sel&&App.ui.sel.id===o.id?'true':'false');
         b.addEventListener('click',ev=>{if(o.tipo==='cuadro') App.seleccionar('cuadro',o.id);else seleccionar(o.id,ev.shiftKey);});
         const ren=document.createElement('button');ren.type='button';ren.textContent='Renombrar';ren.setAttribute('aria-label',`Renombrar ${o.nombre}`);
-        ren.addEventListener('click',()=>{const valor=prompt('Nuevo nombre del elemento',o.nombre);if(valor===null||!valor.trim())return;App.registrar();
+        ren.addEventListener('click',()=>{const valor=prompt('Nuevo nombre del elemento',o.nombre);if(valor===null||!valor.trim())return;App.registrar('Renombrar elemento');
           if(o.tipo==='cuadro'){const c=p.cuadros.find(x=>x.id===o.id);if(c)c.nombre=valor.trim();}
           else o.nombre=valor.trim();App.cambio('nombre');App.anunciar(`Nombre actualizado: ${valor.trim()}.`);});
         li.append(b,ren);lista.append(li);
@@ -115,11 +115,11 @@
     const c=App.ui.sel&&App.ui.sel.tipo==='cuadro'&&App.pagina().cuadros.find(q=>q.id===App.ui.sel.id);
     if(c){if(c.bloqueado||!['nombre','x','y'].includes(k))return;
       const valor=k==='nombre'?$(id).value.trim():Number($(id).value);if(!valor&&k==='nombre'||typeof valor==='number'&&!Number.isFinite(valor))return;
-      App.registrar();c[k]=valor;if(k==='x'||k==='y')c.alineacion='libre';App.cambio('cuadro');App.anunciar(`Cuadro: ${k} actualizado.`);return;}
+      App.registrar('Editar cuadro braille');c[k]=valor;if(k==='x'||k==='y')c.alineacion='libre';App.cambio('cuadro');App.anunciar(`Cuadro: ${k} actualizado.`);return;}
     const o=App.ui.sel&&buscar(App.ui.sel.id);if(!o||o.bloqueado)return;
     const input=$(id),valor=['nombre','linea','relleno','capa'].includes(k)?input.value:Number(input.value);
     if(typeof valor==='number'&&!Number.isFinite(valor))return;
-    App.registrar();let n=O.crearObjeto(o.tipo,o),b=O.caja(o);
+    App.registrar('Cambiar propiedad: '+k);let n=O.crearObjeto(o.tipo,o),b=O.caja(o);
     if(k==='x'||k==='y')n=O.mover(n,k==='x'?valor-b.x0:0,k==='y'?valor-b.y0:0);
     else if(k==='ancho'||k==='alto'){
       const factor=k==='ancho'?(b.ancho?valor/b.ancho:1):(b.alto?valor/b.alto:1);
@@ -131,7 +131,7 @@
   $('obj-girar90').addEventListener('click',()=>transformarSeleccion('rotar',90));
   for(const [id,eje] of [['obj-voltear-h','horizontal'],['obj-voltear-v','vertical']])$(id).addEventListener('click',()=>{
     const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado);if(!a.length)return;
-    App.registrar();a.forEach(o=>reemplazar(o.id,O.voltear(o,eje)));App.cambio('objetos');App.anunciar(`Volteo ${eje} aplicado.`);
+    App.registrar('Voltear '+eje);a.forEach(o=>reemplazar(o.id,O.voltear(o,eje)));App.cambio('objetos');App.anunciar(`Volteo ${eje} aplicado.`);
   });
   $('obj-restablecer').addEventListener('click',()=>{
     const o=App.ui.sel&&buscar(App.ui.sel.id);if(!o||o.tipo!=='imagen'||o.bloqueado)return;

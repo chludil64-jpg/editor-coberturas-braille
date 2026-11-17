@@ -51,26 +51,42 @@
       return this._calc;
     },
 
-    /** Guarda una copia antes de modificar, para poder deshacer. */
-    registrar() {
-      this._historial.push(JSON.stringify(this.doc));
-      if (this._historial.length > 150) this._historial.shift();
-      this._rehacer = [];
+    _est() { return { pasados: this._historial, futuros: this._rehacer }; },
+
+    /**
+     * Guarda una copia antes de modificar, para poder deshacer. `nombre` es el de la acción tal como se ve
+     * en el historial («Pegar», «Mover»…); si falta, se completa con el motivo del próximo cambio().
+     */
+    registrar(nombre) {
+      this._pendiente = Historial.registrar(this._est(), JSON.stringify(this.doc), nombre);
       this.sucio = true;
     },
     deshacer() {
-      if (!this._historial.length) { this.anunciar('No hay nada para deshacer.'); return; }
-      this._rehacer.push(JSON.stringify(this.doc));
-      this.doc = JSON.parse(this._historial.pop());
+      const est = this._est(), nombre = est.pasados.length && est.pasados[est.pasados.length - 1].nombre;
+      const json = Historial.deshacer(est, JSON.stringify(this.doc));
+      if (json === null) { this.anunciar('No hay nada para deshacer.'); return; }
+      this.doc = JSON.parse(json);
       this._ajustarTrasRestaurar();
-      this.anunciar('Deshecho.');
+      this.anunciar(nombre ? `Deshecho: ${nombre}.` : 'Deshecho.');
     },
     rehacer() {
-      if (!this._rehacer.length) { this.anunciar('No hay nada para rehacer.'); return; }
-      this._historial.push(JSON.stringify(this.doc));
-      this.doc = JSON.parse(this._rehacer.pop());
+      const est = this._est(), nombre = est.futuros.length && est.futuros[est.futuros.length - 1].nombre;
+      const json = Historial.rehacer(est, JSON.stringify(this.doc));
+      if (json === null) { this.anunciar('No hay nada para rehacer.'); return; }
+      this.doc = JSON.parse(json);
       this._ajustarTrasRestaurar();
-      this.anunciar('Rehecho.');
+      this.anunciar(nombre ? `Rehecho: ${nombre}.` : 'Rehecho.');
+    },
+    /** Pasos del historial para mostrarlos: {estados: [{nombre}], actual}. */
+    lineaDeTiempo() { return Historial.lineaDeTiempo(this._est(), JSON.stringify(this.doc)); },
+    /** Vuelve (o avanza) hasta el punto q de la línea de tiempo. Devuelve false si no hizo nada. */
+    irAPaso(q) {
+      const json = Historial.irA(this._est(), q, JSON.stringify(this.doc));
+      if (json === null) return false;
+      this.doc = JSON.parse(json);
+      this.sucio = true;
+      this._ajustarTrasRestaurar();
+      return true;
     },
     _ajustarTrasRestaurar() {
       if (this.ui.pagina >= this.doc.paginas.length) this.ui.pagina = this.doc.paginas.length - 1;
@@ -78,11 +94,16 @@
       this.ui.seleccion=(this.ui.seleccion||[]).filter(id=>this.pagina().objetos.some(o=>o.id===id));
       this.cambio('historial');
     },
-    limpiarHistorial() { this._historial = []; this._rehacer = []; },
+    limpiarHistorial() { this._historial.length = 0; this._rehacer.length = 0; this._pendiente = null; },
 
     /** Avisa a todas las vistas que algo cambió. */
     cambio(motivo) {
       this._calc = null;
+      // La acción recién registrada, si no tenía nombre, toma el del motivo (una sola vez).
+      if (this._pendiente && motivo !== 'seleccion' && motivo !== 'historial') {
+        Historial.nombrar(this._pendiente, Historial.nombrePorMotivo(motivo));
+        this._pendiente = null;
+      }
       for (const f of this._oyentes) {
         try { f(motivo); } catch (e) { console.error(e); }
       }
