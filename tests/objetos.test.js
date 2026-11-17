@@ -162,3 +162,25 @@ test('clave: una muestra de al menos 12,5 x 25 mm por combinación, con rótulo 
     O.crearObjeto('rectangulo',{id:'g',nombre:'Mar',x:10,y:10,ancho:270,alto:185,relleno:'diagonales'})]};
   assert.equal(L.construir(llena,ctx).entra,false);
 });
+
+test('hoja de prueba: 18 líneas, 4 rellenos, rótulos braille y todo dentro de la hoja sin errores',()=>{
+  const H=require('../web/js/hoja_prueba.js');
+  const perfil={codificador:'grilla',grilla:{paso_x_mm:2.05,paso_y_mm:2.02},carga:{orientacion:'horizontal'},
+    margenes_mm:{izquierdo:5,derecho:5,superior:5,inferior:5}};
+  const medidas=G.medidasDePerfil(perfil,297,210);
+  let n=0;
+  const r=H.construir({medidas,nuevoId:p=>p+(++n),ancho:297,alto:210});
+  assert.equal(r.objetos.filter(o=>o.tipo==='linea').length,3*3*2+3);
+  assert.equal(r.objetos.filter(o=>o.tipo==='rectangulo').length,4);
+  assert.deepEqual(new Set(r.objetos.filter(o=>o.tipo==='linea').map(o=>o.linea)),new Set(['continua','punteada','rayada']));
+  assert.ok(r.cuadros.length>=10);
+  assert.deepEqual(r.separaciones,[2.02,4.04,6.06]);
+  const pag={ancho:297,alto:210,cuadros:r.cuadros,objetos:r.objetos,trazos:[],capasVisibles:{},sinSeparacion:true};
+  const calc=G.calcularPagina(pag,{medidas,separacionDibujo:6});
+  assert.equal(calc.quitados,0);
+  assert.ok(calc.puntos.every(p=>p.x>=0&&p.y>=0&&p.x<=297&&p.y<=210));
+  assert.equal(G.avisos(pag,calc,perfil,{completo:false}).filter(a=>a.nivel==='error').length,0);
+  // los rótulos de prueba quedan a 1, 2 y 3 pasos de la línea
+  const lineaRot=r.objetos.filter(o=>/con rótulo/.test(o.nombre));
+  assert.equal(lineaRot.length,3);
+});

@@ -330,6 +330,8 @@
 
   function calcularPagina(pagina, opciones) {
     const op = Object.assign({ medidas: MEDIDAS, separacionDibujo: 0 }, opciones || {});
+    // Hojas de prueba: las distancias cortas entre braille y dibujo son lo que se quiere probar.
+    if (pagina.sinSeparacion) op.separacionDibujo = 0;
     const cuadros = new Map();
     const puntos = [];
     const rects = [];
@@ -617,6 +619,12 @@
     }
     for (const id of cercanos) lista.push({ nivel:'aviso', id, mensaje:`Puntos de objetos distintos a menos de dos pasos de grilla.` });
     for (const id of brailleCerca) lista.push({ nivel:'aviso', id, mensaje:`Braille a menos de ${despeje} mm de un objeto.` });
+    if (pagina.sinSeparacion) {
+      // Hoja de prueba: las cercanías y la variedad de estilos son intencionales.
+      const quedan = lista.filter(a => a.nivel === 'error' || !/casi paralelas|a menos de|estilos de línea|texturas|Apretá/.test(a.mensaje));
+      quedan.push({ nivel:'info', mensaje:'Hoja de prueba: las distancias cortas y la variedad de estilos son intencionales y no se avisan.' });
+      return quedan;
+    }
     return lista;
   }
 
