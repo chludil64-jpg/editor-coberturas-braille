@@ -192,8 +192,8 @@
     const calc = App.calculo().cuadros.get(el.id);
     const activo = document.activeElement;
     if (activo !== $('cuadro-texto')) $('cuadro-texto').value = el.texto;
-    if (activo !== $('cuadro-x')) $('cuadro-x').value = el.x.toFixed(2);
-    if (activo !== $('cuadro-y')) $('cuadro-y').value = el.y.toFixed(2);
+    if (activo !== $('cuadro-x')) $('cuadro-x').value = +el.x.toFixed(2);
+    if (activo !== $('cuadro-y')) $('cuadro-y').value = +el.y.toFixed(2);
     $('cuadro-alin').value = el.alineacion || 'libre';
     const op = el.opciones || {};
     $('cuadro-mayus').value = op.mayusculas === 'sin_signo' ? 'sin_signo' : (op.palabraMayusculas === 'cada_letra' ? 'cada_letra' : 'signo');
@@ -205,6 +205,17 @@
     let info = calc ? `${calc.celdas} celdas, ${calc.renglones.length} renglón(es): ${calc.ancho.toFixed(1)} × ${calc.alto.toFixed(1)} mm.` : '';
     if (el.tinta) info += ` Texto impreso: ${(el.tinta.x1 - el.tinta.x0).toFixed(1)} mm de ancho.`;
     $('cuadro-info').textContent = info;
+    // Etiquetas visuales (la misma información, en forma corta; el lector usa «cuadro-info»).
+    const coma = n => n.toFixed(1).replace('.', ',');
+    const chips = $('cuadro-chips');
+    chips.replaceChildren();
+    const ponerChip = t => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = t; chips.append(c); };
+    if (calc) {
+      ponerChip(`${calc.celdas} ${calc.celdas === 1 ? 'celda' : 'celdas'}`);
+      ponerChip(`${calc.renglones.length} ${calc.renglones.length === 1 ? 'renglón' : 'renglones'}`);
+      ponerChip(`${coma(calc.ancho)} × ${coma(calc.alto)} mm`);
+    }
+    if (el.tinta) ponerChip(`Tinta: ${coma(el.tinta.x1 - el.tinta.x0)} mm`);
     $('btn-ubicar').disabled = !el.tinta;
   }
 

@@ -123,18 +123,18 @@
         <label><input type="radio" name="herramienta" value="medir"> Medir</label>
       </fieldset>
       <div class="fila dos"><label>Significado del lazo <select id="lazo-significado"><option>costa</option><option>río</option><option>límite</option><option>ruta</option><option>área de agua</option><option>otro</option></select></label><label><input type="checkbox" id="lazo-iman" checked> Imán</label></div>
-      <div class="fila tres"><label>Intensidad <input id="lazo-intensidad" type="range" min="0" max="10" value="6"></label><label>Radio (mm) <input id="lazo-radio" type="number" min="1" max="40" value="8"></label><label>Simplificación (mm) <input id="lazo-simplificar" type="number" min="0" max="5" step="0.1" value="0.4"></label></div>
+      <div class="fila dos"><label class="insp-rotulo-campo">Intensidad <input id="lazo-intensidad" type="range" min="0" max="10" value="6"></label><label class="campo-pref"><span class="pref" aria-hidden="true">Radio</span><span class="solo-lector">Radio (mm)</span><input id="lazo-radio" type="number" min="1" max="40" value="8"><span class="suf" aria-hidden="true">mm</span></label><label class="campo-pref"><span class="pref" aria-hidden="true">Simpl.</span><span class="solo-lector">Simplificación (mm)</span><input id="lazo-simplificar" type="number" min="0" max="5" step="0.1" value="0.4"><span class="suf" aria-hidden="true">mm</span></label></div>
       <button type="button" id="btn-unir-lineas">Unir dos líneas seleccionadas</button>
       <div class="fila dos"><label>Estilo de línea <select id="estilo-linea"><option value="continua">Continua</option><option value="punteada">Punteada</option><option value="rayada">Rayada</option><option value="puntoraya">Punto y raya</option><option value="ninguna">Ninguna</option></select></label>
       <label>Relleno táctil <select id="estilo-relleno"><option value="ninguno">Ninguno</option><option value="reticula">Retícula</option><option value="horizontales">Horizontales</option><option value="diagonales">Diagonales</option><option value="disperso">Disperso</option></select></label></div>
       <div id="muestras-patrones" aria-label="Muestras de patrones a escala real"></div>
       <div class="fila dos">
-        <label>Paso entre puntos (mm) <input type="number" id="paso-dibujo" step="0.1" min="1" value="2"></label>
-        <label>Radio de la goma (mm) <input type="number" id="radio-goma" step="0.5" min="0.5" value="2"></label>
+        <label class="campo-pref" title="Paso entre puntos"><span class="pref" aria-hidden="true">Paso</span><span class="solo-lector">Paso entre puntos (mm)</span><input type="number" id="paso-dibujo" step="0.1" min="1" value="2"><span class="suf" aria-hidden="true">mm</span></label>
+        <label class="campo-pref" title="Radio de la goma"><span class="pref" data-icono="eraser" aria-hidden="true"></span><span class="solo-lector">Radio de la goma (mm)</span><input type="number" id="radio-goma" step="0.5" min="0.5" value="2"><span class="suf" aria-hidden="true">mm</span></label>
       </div>
       <div class="fila">
         <label><input type="checkbox" id="separar-dibujo" checked> Separar el dibujo del braille</label>
-        <label class="corto">a <input type="number" id="separacion-dibujo" step="0.5" min="0" value="3"> mm</label>
+        <label class="campo-pref" title="Separación entre el dibujo y el braille"><span class="pref" aria-hidden="true">a</span><span class="solo-lector">Separación (mm)</span><input type="number" id="separacion-dibujo" step="0.5" min="0" value="3"><span class="suf" aria-hidden="true">mm</span></label>
       </div>
       <div class="fila">
         <label><input type="checkbox" id="mapa-tactil" aria-describedby="ayuda-mapa-tactil"> Modo «Mapa táctil» (despeje de 6 mm)</label>
@@ -177,16 +177,33 @@
       <ul id="lista-trazos" class="lista-cuadros" aria-labelledby="t-trazos"></ul>
     </section>
     <section id="panel-propiedades" aria-labelledby="t-propiedades" hidden><h2 id="t-propiedades">Propiedades</h2>
-      <div class="editor"><label>Nombre <input id="obj-nombre" type="text"></label>
-      <div class="fila dos"><label>X (mm) <input id="obj-x" type="number" step="0.01"></label><label>Y (mm) <input id="obj-y" type="number" step="0.01"></label>
-      <label>Ancho (mm) <input id="obj-ancho" type="number" step="0.01" min="0"></label><label>Alto (mm) <input id="obj-alto" type="number" step="0.01" min="0"></label>
-      <label class="corto"><input id="obj-proporcion" type="checkbox" checked> Mantener proporción</label>
-      <label>Rotación (°) <input id="obj-rotacion" type="number" step="1"></label></div>
-      <div class="fila botones"><button type="button" id="obj-girar90">Girar 90°</button><button type="button" id="obj-voltear-h">Voltear horizontal</button><button type="button" id="obj-voltear-v">Voltear vertical</button><button type="button" id="obj-restablecer">Restablecer tamaño original</button><button type="button" id="btn-unir-prop">Unir dos líneas seleccionadas</button></div>
-      <label id="obj-ref-opacidad-label" hidden>Opacidad de referencia (%) <input id="obj-ref-opacidad" type="number" min="0" max="100"></label>
-      <label>Línea <select id="obj-linea"><option>continua</option><option>punteada</option><option>rayada</option><option>puntoraya</option><option>ninguna</option></select></label>
-      <label>Relleno <select id="obj-relleno"><option>ninguno</option><option>reticula</option><option>horizontales</option><option>diagonales</option><option>disperso</option></select></label>
-      <label>Capa <select id="obj-capa"><option>referencia</option><option>dibujo</option><option value="rotulos">rótulos</option><option>claves</option></select></label></div>
+      <div class="editor insp"><label class="insp-rotulo" for="obj-nombre">Nombre</label><input id="obj-nombre" type="text">
+      <h4 class="insp-titulo" id="t-ins-obj-pos">Posición y tamaño</h4>
+      <div class="insp-fila dos" role="group" aria-labelledby="t-ins-obj-pos">
+        <label class="campo-pref"><span class="pref" aria-hidden="true">X</span><span class="solo-lector">X (mm)</span><input id="obj-x" type="number" step="0.01"><span class="suf" aria-hidden="true">mm</span></label>
+        <label class="campo-pref"><span class="pref" aria-hidden="true">Y</span><span class="solo-lector">Y (mm)</span><input id="obj-y" type="number" step="0.01"><span class="suf" aria-hidden="true">mm</span></label>
+        <label class="campo-pref"><span class="pref" data-icono="move-horizontal" aria-hidden="true"></span><span class="solo-lector">Ancho (mm)</span><input id="obj-ancho" type="number" step="0.01" min="0"><span class="suf" aria-hidden="true">mm</span></label>
+        <label class="campo-pref"><span class="pref" data-icono="move-vertical" aria-hidden="true"></span><span class="solo-lector">Alto (mm)</span><input id="obj-alto" type="number" step="0.01" min="0"><span class="suf" aria-hidden="true">mm</span></label>
+      </div>
+      <div class="insp-fila dos">
+        <label class="campo-pref"><span class="pref" data-icono="rotate-cw" aria-hidden="true"></span><span class="solo-lector">Rotación (grados)</span><input id="obj-rotacion" type="number" step="1"><span class="suf" aria-hidden="true">°</span></label>
+        <label class="insp-interruptor"><input id="obj-proporcion" type="checkbox" checked> Mantener proporción</label>
+      </div>
+      <label id="obj-ref-opacidad-label" class="campo-pref" hidden><span class="pref" data-icono="eye" aria-hidden="true"></span><span class="solo-lector">Opacidad de referencia (%)</span><input id="obj-ref-opacidad" type="number" min="0" max="100"><span class="suf" aria-hidden="true">%</span></label>
+      <h4 class="insp-titulo">Transformar</h4>
+      <div class="insp-acciones" role="group" aria-label="Transformar el objeto">
+        <button type="button" id="obj-girar90" class="icono-solo" data-icono="rotate-cw" title="Girar 90°" aria-label="Girar 90°"></button>
+        <button type="button" id="obj-voltear-h" class="icono-solo" data-icono="flip-horizontal-2" title="Voltear horizontal" aria-label="Voltear horizontal"></button>
+        <button type="button" id="obj-voltear-v" class="icono-solo" data-icono="flip-vertical-2" title="Voltear vertical" aria-label="Voltear vertical"></button>
+        <button type="button" id="obj-restablecer" class="icono-solo" data-icono="rotate-ccw" title="Restablecer tamaño original" aria-label="Restablecer tamaño original"></button>
+        <button type="button" id="btn-unir-prop" class="icono-solo" data-icono="link-2" title="Unir dos líneas seleccionadas" aria-label="Unir dos líneas seleccionadas"></button>
+      </div>
+      <h4 class="insp-titulo">Línea</h4>
+      <select id="obj-linea" data-segmentado="muestras" data-patron="linea" data-rotulo-grupo="Línea"><option value="continua" title="Continua">continua</option><option value="punteada" title="Punteada">punteada</option><option value="rayada" title="Rayada">rayada</option><option value="puntoraya" title="Punto y raya">puntoraya</option><option value="ninguna" title="Ninguna">ninguna</option></select>
+      <h4 class="insp-titulo">Relleno</h4>
+      <select id="obj-relleno" data-segmentado="muestras" data-patron="relleno" data-rotulo-grupo="Relleno"><option value="ninguno" title="Ninguno">ninguno</option><option value="reticula" title="Retícula">reticula</option><option value="horizontales" title="Horizontales">horizontales</option><option value="diagonales" title="Diagonales">diagonales</option><option value="disperso" title="Disperso">disperso</option></select>
+      <label class="insp-rotulo" for="obj-capa">Capa</label>
+      <select id="obj-capa"><option>referencia</option><option>dibujo</option><option value="rotulos">rótulos</option><option>claves</option></select></div>
     </section>
     <!-- Páginas y elementos, textos del PDF y cuadros braille (antes en el panel izquierdo) -->
     <section aria-labelledby="t-elementos"><h2 id="t-elementos">Páginas y elementos</h2>
@@ -205,12 +222,12 @@
         <button type="button" id="btn-elegir-todos">Elegir todos</button>
         <button type="button" id="btn-elegir-ninguno">Ninguno</button>
       </div>
-      <div class="fila">
-        <label for="alin-defecto">Alinear con la tinta</label>
-        <select id="alin-defecto">
-          <option value="centro">Centro</option>
-          <option value="izquierda">Izquierda</option>
-          <option value="derecha">Derecha</option>
+      <div class="insp">
+        <h4 class="insp-titulo" id="t-alin-defecto">Alinear con la tinta</h4>
+        <select id="alin-defecto" data-segmentado="iconos" data-rotulo-grupo="Alinear con la tinta">
+          <option value="izquierda" data-ic="align-left" data-corto="Izq." title="Izquierda">Izquierda</option>
+          <option value="centro" data-ic="align-center" data-corto="Centro" title="Centro" selected>Centro</option>
+          <option value="derecha" data-ic="align-right" data-corto="Der." title="Derecha">Derecha</option>
         </select>
       </div>
       <button type="button" id="btn-crear-cuadros" class="ancho">Crear cuadros con los elegidos</button>
@@ -220,42 +237,42 @@
       <h2 id="t-cuadros">Cuadros braille</h2>
       <button type="button" id="btn-nuevo-cuadro" class="ancho">Nuevo cuadro vacío</button>
       <ul id="lista-cuadros" class="lista-cuadros" aria-label="Cuadros de la página" tabindex="-1"></ul>
-      <form id="editor-cuadro" class="editor" aria-labelledby="t-editor" hidden data-sin-envio>
+      <form id="editor-cuadro" class="editor insp" aria-labelledby="t-editor" hidden data-sin-envio>
         <h3 id="t-editor">Cuadro elegido</h3>
-        <label for="cuadro-texto">Texto (Enter = nuevo renglón)</label>
-        <textarea id="cuadro-texto" rows="3" spellcheck="false"></textarea>
-        <p class="braille-vista" id="cuadro-braille" aria-hidden="true"></p>
-        <p id="cuadro-braille-texto" class="solo-lector"></p>
-        <p class="nota" id="cuadro-info" aria-live="polite"></p>
-        <div class="fila dos">
-          <label>X (mm) <input type="number" id="cuadro-x" step="0.5"></label>
-          <label>Y (mm) <input type="number" id="cuadro-y" step="0.5"></label>
+        <label for="cuadro-texto" class="insp-rotulo">Texto (Enter = nuevo renglón)</label>
+        <textarea id="cuadro-texto" rows="2" spellcheck="false"></textarea>
+        <div class="insp-tarjeta">
+          <p class="braille-vista" id="cuadro-braille" aria-hidden="true"></p>
+          <p id="cuadro-braille-texto" class="solo-lector"></p>
+          <p class="insp-chips" id="cuadro-chips" aria-hidden="true"></p>
+          <p class="solo-lector" id="cuadro-info" aria-live="polite"></p>
         </div>
-        <div class="fila dos">
-          <label>Alineación
-            <select id="cuadro-alin">
-              <option value="centro">Centro de la tinta</option>
-              <option value="izquierda">Izquierda de la tinta</option>
-              <option value="derecha">Derecha de la tinta</option>
-              <option value="libre">Libre (posición a mano)</option>
-            </select>
-          </label>
-          <label>Mayúsculas
-            <select id="cuadro-mayus">
-              <option value="signo">Con signo (46-46 en palabra)</option>
-              <option value="cada_letra">Signo en cada letra</option>
-              <option value="sin_signo">Todo mayúsculas sin signo</option>
-            </select>
-          </label>
+        <h4 class="insp-titulo" id="t-ins-pos">Posición</h4>
+        <div class="insp-fila tres" role="group" aria-labelledby="t-ins-pos">
+          <label class="campo-pref"><span class="pref" aria-hidden="true">X</span><span class="solo-lector">X, posición horizontal (mm)</span><input type="number" id="cuadro-x" step="0.5"><span class="suf" aria-hidden="true">mm</span></label>
+          <label class="campo-pref"><span class="pref" aria-hidden="true">Y</span><span class="solo-lector">Y, posición vertical (mm)</span><input type="number" id="cuadro-y" step="0.5"><span class="suf" aria-hidden="true">mm</span></label>
+          <label class="campo-pref" title="Ancho máximo para partir el texto en renglones"><span class="pref" data-icono="move-horizontal" aria-hidden="true"></span><span class="solo-lector">Ancho máximo (mm)</span><input type="number" id="cuadro-ancho-max" step="1" min="5"><span class="suf" aria-hidden="true">mm</span></label>
         </div>
-        <div class="fila dos">
-          <label>Ancho máx. (mm) <input type="number" id="cuadro-ancho-max" step="1" min="5"></label>
-          <button type="button" id="btn-partir">Partir en renglones</button>
-        </div>
-        <div class="fila botones">
-          <button type="button" id="btn-ubicar">Ubicar sobre la tinta</button>
-          <button type="button" id="btn-duplicar">Duplicar</button>
-          <button type="button" id="btn-borrar-cuadro" class="peligro">Borrar</button>
+        <h4 class="insp-titulo" id="t-ins-alin">Alineación con la tinta</h4>
+        <select id="cuadro-alin" data-segmentado="iconos" data-rotulo-grupo="Alineación con la tinta">
+          <option value="izquierda" data-ic="align-left" data-corto="Izq." title="Izquierda de la tinta">Izquierda de la tinta</option>
+          <option value="centro" data-ic="align-center" data-corto="Centro" title="Centro de la tinta">Centro de la tinta</option>
+          <option value="derecha" data-ic="align-right" data-corto="Der." title="Derecha de la tinta">Derecha de la tinta</option>
+          <option value="libre" hidden>Libre (posición a mano)</option>
+        </select>
+        <h4 class="insp-titulo">Mayúsculas</h4>
+        <select id="cuadro-mayus" data-segmentado="texto" data-rotulo-grupo="Mayúsculas">
+          <option value="signo" data-corto="Con signo" title="Con signo (46-46 en palabra)">Con signo (46-46 en palabra)</option>
+          <option value="cada_letra" data-corto="Cada letra" title="Signo en cada letra">Signo en cada letra</option>
+          <option value="sin_signo" data-corto="Sin signo" title="Todo mayúsculas sin signo">Todo mayúsculas sin signo</option>
+        </select>
+        <h4 class="insp-titulo">Acciones</h4>
+        <div class="insp-acciones" role="group" aria-label="Acciones del cuadro">
+          <button type="button" id="btn-partir" class="icono-solo" data-icono="wrap-text" title="Partir en renglones (según el ancho máximo)" aria-label="Partir en renglones"></button>
+          <button type="button" id="btn-ubicar" class="icono-solo" data-icono="crosshair" title="Ubicar sobre la tinta" aria-label="Ubicar sobre la tinta"></button>
+          <button type="button" id="btn-duplicar" class="icono-solo" data-icono="copy" title="Duplicar" aria-label="Duplicar"></button>
+          <span class="insp-espacio" aria-hidden="true"></span>
+          <button type="button" id="btn-borrar-cuadro" class="peligro" data-icono="trash-2" title="Borrar el cuadro" aria-label="Borrar">Borrar</button>
         </div>
       </form>
     </section>
@@ -643,6 +660,7 @@
 <script src="js/principal.js"></script>
 <script src="js/cinta.js"></script>
 <script src="js/interfaz.js"></script>
+<script src="js/inspector.js"></script>
 <script src="js/leyenda.js"></script>
 <script src="js/hoja_prueba.js"></script>
 <script src="js/portapapeles.js"></script>

@@ -104,7 +104,7 @@
     if(!o&&!c) return;
     const b=o?O.caja(o):{x0:c.x,y0:c.y,ancho:App.calculo().cuadros.get(c.id)?.ancho||0,alto:App.calculo().cuadros.get(c.id)?.alto||0};
     const vals={nombre:o?o.nombre:c.nombre||c.texto.split('\n')[0],x:b.x0,y:b.y0,ancho:b.ancho,alto:b.alto,rotacion:o?.rotacion||0,linea:o?.linea||'ninguna',relleno:o?.relleno||'ninguno',capa:o?.capa||'rotulos'};
-    Object.entries(campos).forEach(([k,id])=>{if(document.activeElement!==$(id)) $(id).value=vals[k];});
+    Object.entries(campos).forEach(([k,id])=>{if(document.activeElement!==$(id)) $(id).value=typeof vals[k]==='number'?+vals[k].toFixed(2):vals[k];});
     $('obj-ancho').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';$('obj-alto').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';
     for(const id of ['obj-proporcion','obj-girar90','obj-voltear-h','obj-voltear-v','obj-restablecer'])$(id).disabled=!!c;
     $('obj-restablecer').disabled=!!c||!['imagen','referencia'].includes(o.tipo);

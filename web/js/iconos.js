@@ -74,7 +74,18 @@
  "layout-template": "<rect width=\"18\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\" /> <rect width=\"9\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\" /> <rect width=\"5\" height=\"7\" x=\"16\" y=\"14\" rx=\"1\" />",
  "file-plus": "<path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\" /> <path d=\"M14 2v4a2 2 0 0 0 2 2h4\" /> <path d=\"M9 15h6\" /> <path d=\"M12 18v-6\" />",
  "history": "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\" /> <path d=\"M3 3v5h5\" /> <path d=\"M12 7v5l4 2\" />",
- "text-cursor-input": "<path d=\"M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1\" /> <path d=\"M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5\" /> <path d=\"M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1\" /> <path d=\"M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7\" /> <path d=\"M9 7v10\" />"
+ "text-cursor-input": "<path d=\"M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1\" /> <path d=\"M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5\" /> <path d=\"M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1\" /> <path d=\"M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7\" /> <path d=\"M9 7v10\" />",
+ "align-left": "<line x1=\"21\" x2=\"3\" y1=\"6\" y2=\"6\" /> <line x1=\"15\" x2=\"3\" y1=\"12\" y2=\"12\" /> <line x1=\"17\" x2=\"3\" y1=\"18\" y2=\"18\" />",
+ "align-center": "<line x1=\"21\" x2=\"3\" y1=\"6\" y2=\"6\" /> <line x1=\"17\" x2=\"7\" y1=\"12\" y2=\"12\" /> <line x1=\"19\" x2=\"5\" y1=\"18\" y2=\"18\" />",
+ "align-right": "<line x1=\"21\" x2=\"3\" y1=\"6\" y2=\"6\" /> <line x1=\"21\" x2=\"9\" y1=\"12\" y2=\"12\" /> <line x1=\"21\" x2=\"7\" y1=\"18\" y2=\"18\" />",
+ "rotate-cw": "<path d=\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\" /> <path d=\"M21 3v5h-5\" />",
+ "rotate-ccw": "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\" /> <path d=\"M3 3v5h5\" />",
+ "flip-horizontal-2": "<path d=\"m3 7 5 5-5 5V7\" /> <path d=\"m21 7-5 5 5 5V7\" /> <path d=\"M12 20v2\" /> <path d=\"M12 14v2\" /> <path d=\"M12 8v2\" /> <path d=\"M12 2v2\" />",
+ "flip-vertical-2": "<path d=\"m17 3-5 5-5-5h10\" /> <path d=\"m17 21-5-5-5 5h10\" /> <path d=\"M4 12H2\" /> <path d=\"M10 12H8\" /> <path d=\"M16 12h-2\" /> <path d=\"M22 12h-2\" />",
+ "crosshair": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"22\" x2=\"18\" y1=\"12\" y2=\"12\" /> <line x1=\"6\" x2=\"2\" y1=\"12\" y2=\"12\" /> <line x1=\"12\" x2=\"12\" y1=\"6\" y2=\"2\" /> <line x1=\"12\" x2=\"12\" y1=\"22\" y2=\"18\" />",
+ "wrap-text": "<line x1=\"3\" x2=\"21\" y1=\"6\" y2=\"6\" /> <path d=\"M3 12h15a3 3 0 1 1 0 6h-4\" /> <polyline points=\"16 16 14 18 16 20\" /> <line x1=\"3\" x2=\"10\" y1=\"18\" y2=\"18\" />",
+ "move-horizontal": "<polyline points=\"18 8 22 12 18 16\" /> <polyline points=\"6 8 2 12 6 16\" /> <line x1=\"2\" x2=\"22\" y1=\"12\" y2=\"12\" />",
+ "move-vertical": "<polyline points=\"8 18 12 22 16 18\" /> <polyline points=\"8 6 12 2 16 6\" /> <line x1=\"12\" x2=\"12\" y1=\"2\" y2=\"22\" />"
 };
   function svg(nombre, tam) {
     const c = D[nombre];
