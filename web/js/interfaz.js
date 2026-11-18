@@ -20,7 +20,7 @@
     'btn-exp-pdf': 'file-down', 'btn-exp-png': 'image', 'btn-exp-prn': 'file-output', 'btn-exp-ibe': 'file-code',
     'btn-abrir-ibe': 'folder-input', 'btn-salir': 'power', 'btn-deshacer': 'undo-2', 'btn-rehacer': 'redo-2',
     'btn-comprobar': 'shield-check', 'btn-imprimir': 'printer', 'btn-nuevo-cuadro': 'type',
-    'btn-imagen': 'image', 'btn-svg': 'shapes', 'btn-calcar': 'scan-line', 'btn-perfil': 'settings',
+    'btn-imagen': 'image', 'btn-svg': 'shapes', 'btn-vectorizar': 'pen-tool', 'btn-calcar': 'scan-line', 'btn-perfil': 'settings',
     'btn-calibracion': 'ruler', 'btn-unir-lineas': 'link-2', 'btn-ralear': 'wand-sparkles',
     'btn-textos-pdf': 'text-cursor-input'
   };

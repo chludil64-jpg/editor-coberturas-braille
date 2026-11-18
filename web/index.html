@@ -169,6 +169,7 @@
       <div class="fila botones">
         <button type="button" id="btn-imagen">Imagen de referencia…</button>
         <button type="button" id="btn-svg">Importar SVG…</button>
+        <button type="button" id="btn-vectorizar">Imagen a dibujo (vectorizar)…</button>
         <button type="button" id="btn-calcar">Calcar vectores del PDF…</button>
         <button type="button" id="btn-ralear">Ralear puntos</button>
       </div>
@@ -548,6 +549,18 @@
   </form>
 </dialog>
 
+<dialog id="dlg-vectorizar" aria-labelledby="t-vectorizar"><div class="editor ancho-dlg"><h2 id="t-vectorizar">Imagen a dibujo (vectorizar)</h2>
+  <p class="nota">Elegí una foto o un escaneo de un dibujo de libro (PNG o JPG). Se convierte en contornos editables que podés mover, escalar y corregir. Los ajustes se ven al instante en la vista previa.</p>
+  <label>Imagen <input id="vec-archivo" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg"></label>
+  <div class="fila dos"><label>Qué trazar <select id="vec-modo"><option value="contornos">Solo contornos (siluetas)</option><option value="lineas">Líneas del dibujo (una línea por trazo)</option></select></label>
+  <label>Suavizado (0 a 3) <input id="vec-suave" type="range" min="0" max="3" step="1" value="1"></label></div>
+  <div class="fila dos"><label>Umbral de tinta <input id="vec-umbral" type="range" min="1" max="254" value="128"> <output id="vec-umbral-valor">128</output></label>
+  <label><input type="checkbox" id="vec-auto" checked> Umbral automático</label></div>
+  <div class="fila dos"><label>Limpiar manchas menores a (px²) <input id="vec-area" type="number" min="0" value="12"></label></div>
+  <div class="fila dos"><label>Ancho (mm) <input id="vec-ancho" type="number" min="5" value="100"></label><label>X (mm) <input id="vec-x" type="number" value="10"></label><label>Y (mm) <input id="vec-y" type="number" value="10"></label></div>
+  <p id="vec-estado" role="status" aria-live="polite"></p>
+  <canvas id="vec-previa" width="520" height="340" role="img" aria-label="Vista previa de los trazos que se van a importar"></canvas>
+  <div class="fila botones"><button id="vec-importar" type="button" disabled>Importar dibujo</button><button id="vec-cerrar" type="button">Cerrar</button></div></div></dialog>
 <dialog id="dlg-svg" aria-labelledby="t-svg"><div class="editor ancho-dlg"><h2 id="t-svg">Importar SVG como dibujo</h2>
   <p class="nota">Cada forma del SVG pasa a contornos editables, respetando el orden de pintado: lo que queda tapado por una forma de arriba no aparece. Los objetos quedan agrupados en la capa «dibujo».</p>
   <label>Archivo SVG <input id="svg-archivo" type="file" accept="image/svg+xml,.svg"></label>
@@ -624,6 +637,8 @@
 <script src="js/imagen.js"></script>
 <script src="js/importar_dibujo.js"></script>
 <script src="js/svg_dialogo.js"></script>
+<script src="js/vectorizar.js"></script>
+<script src="js/vectorizar_dialogo.js"></script>
 <script src="js/calibracion.js"></script>
 <script src="js/principal.js"></script>
 <script src="js/cinta.js"></script>

@@ -31,7 +31,7 @@
     ]],
     ['insertar', 'Insertar', [
       ['Braille', ['btn-nuevo-cuadro']],
-      ['Imágenes y mapas', ['btn-imagen', 'btn-svg', 'btn-calcar']]
+      ['Imágenes y mapas', ['btn-imagen', 'btn-svg', 'btn-vectorizar', 'btn-calcar']]
     ]],
     ['formato', 'Formato', [
       ['Página nueva', ['btn-nueva-horizontal', 'btn-nueva-vertical']]
