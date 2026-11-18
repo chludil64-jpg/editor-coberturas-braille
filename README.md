@@ -71,6 +71,10 @@ La Everest-D V4 se maneja con modo gráfico por grilla (`ESC BEL`, CR LF por fil
 3. Mantené la interfaz accesible (teclado, lector de pantalla, textos de al menos 13 px) y en español rioplatense.
 4. No subas documentos de terceros (boletas, muestras con copyright): usá material propio o sintético.
 
+## Autoría
+
+Creado por **Matías Chludil** ([@chludil64-jpg](https://github.com/chludil64-jpg)), con asistencia de herramientas de IA. Las contribuciones son bienvenidas.
+
 ## Licencia
 
 Código bajo licencia [MIT](LICENSE), © 2026 Matías Chludil y colaboradores.
