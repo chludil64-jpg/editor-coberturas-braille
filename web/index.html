@@ -69,80 +69,6 @@
 </header>
 
 <main class="area">
-  <!-- Panel izquierdo: textos y cuadros -->
-  <aside class="panel" id="panel-izq" aria-label="Páginas y elementos">
-    <section aria-labelledby="t-elementos"><h2 id="t-elementos">Páginas y elementos</h2>
-      <div id="capas-controles" role="group" aria-label="Capas visibles"></div>
-      <ul id="lista-elementos" class="lista-elementos" aria-label="Elementos de la página" tabindex="-1"></ul>
-      <p class="nota">Para ordenar, bloquear, agrupar, duplicar, borrar o alinear: <strong>clic derecho</strong> sobre el elemento en la hoja o en esta lista (con teclado: tecla de menú o Mayús+F10).</p>
-    </section>
-    <section aria-labelledby="t-textos">
-      <h2 id="t-textos">Textos del PDF</h2>
-      <p id="textos-vacio" class="nota">Abrí un PDF para ver sus textos. Si es un escaneo sin texto, creá los cuadros a mano.</p>
-      <div class="fila">
-        <label><input type="checkbox" id="agrupar" checked> Agrupar renglones vecinos</label>
-      </div>
-      <ul id="lista-textos" class="lista-textos" aria-label="Textos detectados en la página"></ul>
-      <div class="fila botones">
-        <button type="button" id="btn-elegir-todos">Elegir todos</button>
-        <button type="button" id="btn-elegir-ninguno">Ninguno</button>
-      </div>
-      <div class="fila">
-        <label for="alin-defecto">Alinear con la tinta</label>
-        <select id="alin-defecto">
-          <option value="centro">Centro</option>
-          <option value="izquierda">Izquierda</option>
-          <option value="derecha">Derecha</option>
-        </select>
-      </div>
-      <button type="button" id="btn-crear-cuadros" class="ancho">Crear cuadros con los elegidos</button>
-    </section>
-
-    <section aria-labelledby="t-cuadros">
-      <h2 id="t-cuadros">Cuadros braille</h2>
-      <button type="button" id="btn-nuevo-cuadro" class="ancho">Nuevo cuadro vacío</button>
-      <ul id="lista-cuadros" class="lista-cuadros" aria-label="Cuadros de la página" tabindex="-1"></ul>
-      <form id="editor-cuadro" class="editor" aria-labelledby="t-editor" hidden data-sin-envio>
-        <h3 id="t-editor">Cuadro elegido</h3>
-        <label for="cuadro-texto">Texto (Enter = nuevo renglón)</label>
-        <textarea id="cuadro-texto" rows="3" spellcheck="false"></textarea>
-        <p class="braille-vista" id="cuadro-braille" aria-hidden="true"></p>
-        <p id="cuadro-braille-texto" class="solo-lector"></p>
-        <p class="nota" id="cuadro-info" aria-live="polite"></p>
-        <div class="fila dos">
-          <label>X (mm) <input type="number" id="cuadro-x" step="0.5"></label>
-          <label>Y (mm) <input type="number" id="cuadro-y" step="0.5"></label>
-        </div>
-        <div class="fila dos">
-          <label>Alineación
-            <select id="cuadro-alin">
-              <option value="centro">Centro de la tinta</option>
-              <option value="izquierda">Izquierda de la tinta</option>
-              <option value="derecha">Derecha de la tinta</option>
-              <option value="libre">Libre (posición a mano)</option>
-            </select>
-          </label>
-          <label>Mayúsculas
-            <select id="cuadro-mayus">
-              <option value="signo">Con signo (46-46 en palabra)</option>
-              <option value="cada_letra">Signo en cada letra</option>
-              <option value="sin_signo">Todo mayúsculas sin signo</option>
-            </select>
-          </label>
-        </div>
-        <div class="fila dos">
-          <label>Ancho máx. (mm) <input type="number" id="cuadro-ancho-max" step="1" min="5"></label>
-          <button type="button" id="btn-partir">Partir en renglones</button>
-        </div>
-        <div class="fila botones">
-          <button type="button" id="btn-ubicar">Ubicar sobre la tinta</button>
-          <button type="button" id="btn-duplicar">Duplicar</button>
-          <button type="button" id="btn-borrar-cuadro" class="peligro">Borrar</button>
-        </div>
-      </form>
-    </section>
-  </aside>
-
   <!-- Centro: lienzo -->
   <section class="centro" aria-labelledby="t-lienzo">
     <h2 id="t-lienzo" class="solo-lector">Lienzo</h2>
@@ -176,7 +102,7 @@
   </section>
 
   <!-- Panel derecho: dibujo y avisos -->
-  <aside class="panel" id="panel-der" aria-label="Crear y propiedades">
+  <aside class="panel" id="panel-der" aria-label="Crear, propiedades, elementos y cuadros braille">
     <section id="panel-crear" aria-labelledby="t-dibujo">
       <h2 id="t-dibujo">Crear</h2>
       <fieldset class="herr-dibujo">
@@ -260,6 +186,77 @@
       <label>Línea <select id="obj-linea"><option>continua</option><option>punteada</option><option>rayada</option><option>puntoraya</option><option>ninguna</option></select></label>
       <label>Relleno <select id="obj-relleno"><option>ninguno</option><option>reticula</option><option>horizontales</option><option>diagonales</option><option>disperso</option></select></label>
       <label>Capa <select id="obj-capa"><option>referencia</option><option>dibujo</option><option value="rotulos">rótulos</option><option>claves</option></select></label></div>
+    </section>
+    <!-- Páginas y elementos, textos del PDF y cuadros braille (antes en el panel izquierdo) -->
+    <section aria-labelledby="t-elementos"><h2 id="t-elementos">Páginas y elementos</h2>
+      <div id="capas-controles" role="group" aria-label="Capas visibles"></div>
+      <ul id="lista-elementos" class="lista-elementos" aria-label="Elementos de la página" tabindex="-1"></ul>
+      <p class="nota">Para ordenar, bloquear, agrupar, duplicar, borrar o alinear: <strong>clic derecho</strong> sobre el elemento en la hoja o en esta lista (con teclado: tecla de menú o Mayús+F10).</p>
+    </section>
+    <section aria-labelledby="t-textos">
+      <h2 id="t-textos">Textos del PDF</h2>
+      <p id="textos-vacio" class="nota">Abrí un PDF para ver sus textos. Si es un escaneo sin texto, creá los cuadros a mano.</p>
+      <div class="fila">
+        <label><input type="checkbox" id="agrupar" checked> Agrupar renglones vecinos</label>
+      </div>
+      <ul id="lista-textos" class="lista-textos" aria-label="Textos detectados en la página"></ul>
+      <div class="fila botones">
+        <button type="button" id="btn-elegir-todos">Elegir todos</button>
+        <button type="button" id="btn-elegir-ninguno">Ninguno</button>
+      </div>
+      <div class="fila">
+        <label for="alin-defecto">Alinear con la tinta</label>
+        <select id="alin-defecto">
+          <option value="centro">Centro</option>
+          <option value="izquierda">Izquierda</option>
+          <option value="derecha">Derecha</option>
+        </select>
+      </div>
+      <button type="button" id="btn-crear-cuadros" class="ancho">Crear cuadros con los elegidos</button>
+    </section>
+
+    <section aria-labelledby="t-cuadros">
+      <h2 id="t-cuadros">Cuadros braille</h2>
+      <button type="button" id="btn-nuevo-cuadro" class="ancho">Nuevo cuadro vacío</button>
+      <ul id="lista-cuadros" class="lista-cuadros" aria-label="Cuadros de la página" tabindex="-1"></ul>
+      <form id="editor-cuadro" class="editor" aria-labelledby="t-editor" hidden data-sin-envio>
+        <h3 id="t-editor">Cuadro elegido</h3>
+        <label for="cuadro-texto">Texto (Enter = nuevo renglón)</label>
+        <textarea id="cuadro-texto" rows="3" spellcheck="false"></textarea>
+        <p class="braille-vista" id="cuadro-braille" aria-hidden="true"></p>
+        <p id="cuadro-braille-texto" class="solo-lector"></p>
+        <p class="nota" id="cuadro-info" aria-live="polite"></p>
+        <div class="fila dos">
+          <label>X (mm) <input type="number" id="cuadro-x" step="0.5"></label>
+          <label>Y (mm) <input type="number" id="cuadro-y" step="0.5"></label>
+        </div>
+        <div class="fila dos">
+          <label>Alineación
+            <select id="cuadro-alin">
+              <option value="centro">Centro de la tinta</option>
+              <option value="izquierda">Izquierda de la tinta</option>
+              <option value="derecha">Derecha de la tinta</option>
+              <option value="libre">Libre (posición a mano)</option>
+            </select>
+          </label>
+          <label>Mayúsculas
+            <select id="cuadro-mayus">
+              <option value="signo">Con signo (46-46 en palabra)</option>
+              <option value="cada_letra">Signo en cada letra</option>
+              <option value="sin_signo">Todo mayúsculas sin signo</option>
+            </select>
+          </label>
+        </div>
+        <div class="fila dos">
+          <label>Ancho máx. (mm) <input type="number" id="cuadro-ancho-max" step="1" min="5"></label>
+          <button type="button" id="btn-partir">Partir en renglones</button>
+        </div>
+        <div class="fila botones">
+          <button type="button" id="btn-ubicar">Ubicar sobre la tinta</button>
+          <button type="button" id="btn-duplicar">Duplicar</button>
+          <button type="button" id="btn-borrar-cuadro" class="peligro">Borrar</button>
+        </div>
+      </form>
     </section>
   </aside>
 </main>
