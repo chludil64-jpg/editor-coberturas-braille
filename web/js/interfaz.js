@@ -14,6 +14,7 @@
 
   // ------------------------------------------------------------ íconos
   const ICONOS = {
+    'btn-nuevo-proyecto': 'file-plus', 'btn-guardar-como': 'save-all',
     'btn-abrir-pdf': 'file-up', 'btn-abrir-proyecto': 'folder-open', 'btn-guardar-proyecto': 'save',
     'btn-nueva-horizontal': 'rectangle-horizontal', 'btn-nueva-vertical': 'rectangle-vertical',
     'btn-exportar-disposicion': 'download', 'btn-importar-disposicion': 'upload',

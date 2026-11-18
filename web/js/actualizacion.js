@@ -116,8 +116,8 @@
   if (App.botonCinta) {
     const g = document.querySelector('#cinta-panel-archivo [aria-label="Programa"] .cinta-grupo-cuerpo');
     if (g) {
-      g.prepend(App.botonCinta({ id: 'btn-actualizar', texto: 'Actualizar', icono: 'download',
-        titulo: 'Buscar actualizaciones', alClic: buscar }));
+      g.insertBefore(App.botonCinta({ id: 'btn-actualizar', texto: 'Actualizar', icono: 'download',
+        titulo: 'Buscar actualizaciones', alClic: buscar }), g.querySelector('#btn-atajos, #btn-salir'));
       if (window.Iconos) window.Iconos.aplicar(g);
     }
   }

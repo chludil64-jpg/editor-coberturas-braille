@@ -24,10 +24,12 @@
     <div class="menu-desplegable">
       <button type="button" class="menu-boton" id="menu-archivo-boton" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-archivo">Archivo ▾</button>
       <div id="menu-archivo" class="menu-panel" role="menu" aria-labelledby="menu-archivo-boton" hidden>
+        <button type="button" role="menuitem" id="btn-nuevo-proyecto" tabindex="-1">Nuevo documento</button>
         <button type="button" role="menuitem" id="btn-abrir-pdf" tabindex="-1">Abrir PDF…</button>
         <button type="button" role="menuitem" id="btn-abrir-proyecto" tabindex="-1">Abrir proyecto…</button>
         <button type="button" role="menuitem" id="btn-svg-menu" tabindex="-1">Importar SVG…</button>
         <button type="button" role="menuitem" id="btn-guardar-proyecto" tabindex="-1">Guardar proyecto</button>
+        <button type="button" role="menuitem" id="btn-guardar-como" tabindex="-1">Guardar como…</button>
         <button type="button" role="menuitem" id="btn-exportar-disposicion" tabindex="-1">Exportar disposición braille…</button>
         <button type="button" role="menuitem" id="btn-importar-disposicion" tabindex="-1">Importar disposición braille…</button>
         <button type="button" role="menuitem" id="btn-abrir-ibe" tabindex="-1">Abrir .ibe…</button>
@@ -509,6 +511,8 @@
       <thead><tr><th scope="col">Atajo</th><th scope="col">Acción</th></tr></thead>
       <tbody>
         <tr><th scope="row">Ctrl+S</th><td>Guardar el proyecto (la primera vez pregunta dónde; después reescribe el mismo archivo)</td></tr>
+        <tr><th scope="row">Ctrl+Mayús+S</th><td>Guardar como: elegir otro archivo o lugar para el proyecto</td></tr>
+        <tr><th scope="row">Nuevo documento</th><td>Desde Archivo › Documento (sin atajo: Ctrl+N lo reserva el navegador)</td></tr>
         <tr><th scope="row">Ctrl+O</th><td>Abrir un PDF</td></tr>
         <tr><th scope="row">Ctrl+P</th><td>Imprimir</td></tr>
         <tr><th scope="row">Ctrl+Z / Ctrl+Y</th><td>Deshacer / Rehacer</td></tr>

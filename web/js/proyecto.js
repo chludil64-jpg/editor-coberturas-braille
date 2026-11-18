@@ -251,12 +251,13 @@
      * Guarda el proyecto. Con File System Access API (Chrome/Edge): la primera vez pregunta dónde y después
      * reescribe el mismo archivo. Sin ella (o si falla), descarga el archivo como antes.
      */
-    async guardarProyecto() {
+    async guardarProyecto(comoNuevo) {
       const nombre = (this.pdf.nombre || 'proyecto').replace(/\.[^.]+$/, '') + '.braille.json';
       const texto = this._textoProyecto();
       if (typeof window.showSaveFilePicker === 'function') {
         try {
-          if (!this._archivo) {
+          // «Guardar como…» siempre pregunta; si se cancela, se conserva el archivo anterior.
+          if (!this._archivo || comoNuevo) {
             this._archivo = await window.showSaveFilePicker({
               suggestedName: nombre, id: 'editor-braille',
               types: [{ description: 'Proyecto de Editor Braille', accept: { 'application/json': ['.json'] } }]
@@ -276,6 +277,23 @@
       this.descargarBlob(nombre, new Blob([texto], { type: 'application/json' }));
       this.sucio = false;
       this.anunciar(`Proyecto guardado como ${nombre} (en la carpeta de descargas).`);
+    },
+
+    /** Guardar como…: siempre pregunta dónde (o descarga si el navegador no puede elegir ubicación). */
+    guardarComo() { return this.guardarProyecto(true); },
+
+    /** Documento nuevo: página A4 horizontal vacía, sin PDF de fondo y sin archivo de guardado anterior. */
+    nuevoProyecto() {
+      this.pdf = { id: null, nombre: '', base64: null, info: [] };
+      this.doc = docNuevo();
+      this.doc.opciones.separacionDibujo = Number(this.perfil && this.perfil.separacion_dibujo_braille_mm) || 3;
+      this.ui.pagina = 0;
+      this.ui.sel = null;
+      this.ui.seleccion = [];
+      this.limpiarHistorial();
+      this._archivo = null;
+      this.sucio = false;
+      this.cambio('proyecto');
     },
 
     async abrirProyecto(texto) {

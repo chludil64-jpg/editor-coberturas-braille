@@ -306,6 +306,17 @@
     }
   });
   $('btn-guardar-proyecto').addEventListener('click', () => App.guardarProyecto());
+  $('btn-guardar-como').addEventListener('click', () => App.guardarComo());
+  // Nuevo: con cambios sin guardar pide confirmación. Ctrl+N no se asigna: el navegador lo reserva.
+  function nuevoDocumento() {
+    if (App.sucio && !confirm('Hay cambios sin guardar. ¿Crear un documento nuevo igual?')) return;
+    App.nuevoProyecto();
+    App.Lienzo.limpiarFondos();
+    aplicarPerfilUi();
+    App.Lienzo.ajustarZoom();
+    App.anunciar('Documento nuevo: una hoja A4 horizontal vacía. El historial de deshacer quedó limpio.');
+  }
+  $('btn-nuevo-proyecto').addEventListener('click', nuevoDocumento);
 
   // ------------------------------------------------------------ disposición braille
   // Solo los cuadros braille y los dibujos, sin el PDF: para reaplicarlos sobre el mismo

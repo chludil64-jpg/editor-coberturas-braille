@@ -18,10 +18,10 @@
   // Pestañas: [id, título, grupos]; cada grupo: [nombre, [ids de elementos existentes o marcadores]]
   const PESTANAS = [
     ['archivo', 'Archivo', [
-      ['Documento', ['btn-abrir-pdf', 'btn-abrir-proyecto', 'btn-guardar-proyecto']],
-      ['Disposición braille', ['btn-exportar-disposicion', 'btn-importar-disposicion']],
-      ['Exportar', ['btn-exp-pdf', 'btn-exp-png', 'btn-exp-prn', 'btn-exp-ibe', 'btn-abrir-ibe']],
-      ['Programa', ['btn-salir']]
+      ['Documento', ['btn-nuevo-proyecto', 'btn-abrir-proyecto', 'btn-guardar-proyecto', 'btn-guardar-como']],
+      ['Importar', ['btn-abrir-pdf', 'btn-abrir-ibe', 'btn-importar-disposicion']],
+      ['Exportar', ['btn-exportar-disposicion', 'btn-exp-pdf', 'btn-exp-png', 'btn-exp-prn', 'btn-exp-ibe']],
+      ['Programa', ['+imprimir', 'btn-salir']]
     ]],
     ['inicio', 'Inicio', [
       ['Edición', ['btn-deshacer', 'btn-rehacer']],
@@ -150,8 +150,9 @@
   header.append(cinta);
   // Rótulos cortos en la cinta; el nombre completo queda para el lector de pantalla y la ayuda emergente.
   const CORTOS = {
-    'btn-abrir-proyecto': 'Abrir', 'btn-guardar-proyecto': 'Guardar', 'btn-nueva-horizontal': 'Horizontal',
-    'btn-nueva-vertical': 'Vertical', 'btn-exportar-disposicion': 'Exportar', 'btn-importar-disposicion': 'Importar',
+    'btn-nuevo-proyecto': 'Nuevo', 'btn-abrir-proyecto': 'Abrir', 'btn-guardar-proyecto': 'Guardar',
+    'btn-guardar-como': 'Guardar como', 'btn-abrir-pdf': 'Abrir PDF', 'btn-nueva-horizontal': 'Horizontal',
+    'btn-nueva-vertical': 'Vertical', 'btn-exportar-disposicion': 'Disposición', 'btn-importar-disposicion': 'Disposición',
     'btn-exp-pdf': 'PDF 1:1', 'btn-exp-prn': '.prn', 'btn-exp-ibe': '.ibe', 'btn-abrir-ibe': 'Abrir .ibe', 'btn-salir': 'Cerrar'
   };
   for (const [id, corto] of Object.entries(CORTOS)) {

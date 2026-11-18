@@ -15,6 +15,9 @@
 
   document.addEventListener('keydown', ev => {
     if (ev.key === 'F1') { ev.preventDefault(); abrirAyuda(); return; }
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.shiftKey && ev.key.toLowerCase() === 's') {
+      ev.preventDefault(); App.guardarComo(); return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey) {
       const k = ev.key.toLowerCase();
       if (k === 's') { ev.preventDefault(); App.guardarProyecto(); }
@@ -33,7 +36,7 @@
     if (g) {
       const b = App.botonCinta({ id: 'btn-atajos', texto: 'Atajos', icono: 'keyboard',
         titulo: 'Ver los atajos de teclado (F1)', alClic: abrirAyuda });
-      g.prepend(b);
+      g.insertBefore(b, g.querySelector('#btn-salir'));
       if (window.Iconos) window.Iconos.aplicar(g);
     }
   }
