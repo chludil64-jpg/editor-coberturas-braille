@@ -448,8 +448,7 @@
       if(ev.shiftKey)ang=Math.round(ang/15)*15;
       const rad=ang*Math.PI/180;
       ponerMedicion(Medir.describir('rotar',{grados:ang}),mm);
-      a.originales.forEach(o=>{let n=Objetos.rotar(o,ang),p=Objetos.centro(o),dx=p[0]-c[0],dy=p[1]-c[1];
-        n=Objetos.mover(n,dx*Math.cos(rad)-dy*Math.sin(rad)-dx,dx*Math.sin(rad)+dy*Math.cos(rad)-dy);App.EditorObjetos.reemplazar(o.id,n);});App.cambio('arrastre');
+      a.originales.forEach(o=>App.EditorObjetos.reemplazar(o.id,Objetos.rotar(o,ang,c)));App.cambio('arrastre');
     } else if (arrastre.tipo === 'goma') {
       arrastre.ultimo = mm;
       arrastre.quitados += borrarConGoma(mm);

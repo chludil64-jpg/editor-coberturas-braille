@@ -241,3 +241,52 @@ test('Comprobar avisa de línea discontinua casi recta pero inclinada, solo en m
   assert.equal(av(mk('rayada',[[10,10],[10,60]]),true).length,0);       // recta
   assert.equal(av(mk('rayada',[[10,10],[40,40]]),true).length,0);       // diagonal
 });
+
+/* Transformaciones de grupo: todo gira, se espeja y escala alrededor de UN pivote común. */
+const grupoPrueba=()=>[
+  obj('polilinea',{id:'a',vertices:[[0,0],[10,5],[20,0]],borrados:[[5,2,1]]}),
+  obj('poligono',{id:'b',vertices:[[30,10],[50,10],[40,30]],relleno:'reticula'}),
+  obj('rectangulo',{id:'c',x:5,y:20,ancho:12,alto:6,rotacion:20}),
+  obj('elipse',{id:'d',x:60,y:0,ancho:10,alto:20})
+];
+const puntosGrupo=l=>l.flatMap(o=>O.geometria(o));
+const cerca=(u,v,t=0.02)=>{assert.equal(u.length,v.length);u.forEach((p,i)=>{assert.ok(Math.hypot(p[0]-v[i][0],p[1]-v[i][1])<=t,`punto ${i}: ${p} vs ${v[i]}`);});};
+const mismos=(u,v,t=0.02)=>{assert.equal(u.length,v.length);v.forEach(q=>assert.ok(u.some(p=>Math.hypot(p[0]-q[0],p[1]-q[1])<=t),'falta '+q));};
+const aplicar=(f,l,c)=>l.map(o=>f(o,c));
+test('grupo girado 90° y espejado coincide con la transformación geométrica respecto del centro común',()=>{
+  const g=grupoPrueba(),c=O.centroConjunto(g),orig=puntosGrupo(g);
+  const gir=orig.map(([x,y])=>[c[0]-(y-c[1]),c[1]+(x-c[0])]);       // +90° (x→y)
+  cerca(puntosGrupo(aplicar((o,p)=>O.rotar(o,90,p),g,c)),gir);
+  const gir2=orig.map(([x,y])=>[c[0]+(y-c[1]),c[1]-(x-c[0])]);
+  cerca(puntosGrupo(aplicar((o,p)=>O.rotar(o,-90,p),g,c)),gir2);
+  mismos(puntosGrupo(aplicar((o,p)=>O.voltear(o,'horizontal',p),g,c)),orig.map(([x,y])=>[2*c[0]-x,y]));
+  mismos(puntosGrupo(aplicar((o,p)=>O.voltear(o,'vertical',p),g,c)),orig.map(([x,y])=>[x,2*c[1]-y]));
+  cerca(puntosGrupo(aplicar((o,p)=>O.escalar(o,2,2,p),g,c)),orig.map(([x,y])=>[c[0]+2*(x-c[0]),c[1]+2*(y-c[1])]));
+  const girado=aplicar((o,p)=>O.rotar(o,90,p),g,c);
+  const bo=O.caja({tipo:'puntos',puntos:orig}),bn=O.caja({tipo:'puntos',puntos:puntosGrupo(girado)});
+  assert.ok(Math.abs(bn.ancho-bo.alto)<0.05&&Math.abs(bn.alto-bo.ancho)<0.05);
+  // el borrado sigue al dibujo
+  const b0=girado[0].borrados[0];assert.ok(Math.abs(b0[0]-(c[0]-(2-c[1])))<0.01&&Math.abs(b0[1]-(c[1]+(5-c[0])))<0.01);
+});
+test('girar 4 veces 90° o espejar 2 veces devuelve la geometría original',()=>{
+  const g=grupoPrueba(),c=O.centroConjunto(g),orig=puntosGrupo(g);
+  let r=g;for(let i=0;i<4;i++)r=aplicar((o,p)=>O.rotar(o,90,p),r,c);cerca(puntosGrupo(r),orig);
+  for(const eje of ['horizontal','vertical']){let e=g;for(let i=0;i<2;i++)e=aplicar((o,p)=>O.voltear(o,eje,p),e,c);mismos(puntosGrupo(e),orig);}
+  let m=g;m=aplicar((o,p)=>O.voltear(o,'horizontal',p),m,c);m=aplicar((o,p)=>O.rotar(o,90,p),m,c);m=aplicar((o,p)=>O.voltear(o,'horizontal',p),m,c);
+  mismos(puntosGrupo(m),puntosGrupo(aplicar((o,p)=>O.rotar(o,-90,p),g,c)));
+});
+test('escala no pareja de un grupo con rectángulo girado lo convierte en polígono sin descolocarlo',()=>{
+  const g=grupoPrueba(),c=O.centroConjunto(g),orig=puntosGrupo(g);
+  const n=aplicar((o,p)=>O.escalar(o,2,.5,p),g,c);
+  cerca(puntosGrupo(n),orig.map(([x,y])=>[c[0]+2*(x-c[0]),c[1]+.5*(y-c[1])]));
+  assert.equal(n[2].tipo,'poligono');
+});
+test('estilo de línea y relleno se aplica a todo el grupo; relleno solo a formas cerradas',()=>{
+  const g=[obj('polilinea',{id:'a',vertices:[[0,0],[10,0]]}),obj('poligono',{id:'b',vertices:[[0,0],[40,0],[20,36]]}),obj('rectangulo',{id:'c',x:0,y:0,ancho:8,alto:8})];
+  let r=O.aplicarEstilo(g,'linea','rayada');assert.equal(r.cambiados,3);assert.ok(r.objetos.every(o=>o.linea==='rayada'));
+  assert.equal(O.valorComun(r.objetos,'linea'),'rayada');assert.equal(O.valorComun(g,'linea'),'continua');
+  r=O.aplicarEstilo(g,'relleno','diagonales');assert.equal(r.cambiados,2);assert.equal(r.objetos[0].relleno,'ninguno');assert.equal(r.objetos[1].relleno,'diagonales');
+  assert.equal(O.aplicarEstilo([g[0]],'relleno','reticula').cambiados,0);
+  const mix=[Object.assign({},g[1],{linea:'punteada'}),g[2]];assert.equal(O.valorComun(mix,'linea'),null);
+  assert.ok(O.objetoAPuntos(r.objetos[1],m).length>O.objetoAPuntos(g[1],m).length);
+});

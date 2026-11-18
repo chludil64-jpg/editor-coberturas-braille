@@ -78,26 +78,68 @@
     } else { n.x=red((n.x||0)+dx); n.y=red((n.y||0)+dy); }
     return n;
   }
-  function escalar(o, sx, sy, origen) {
-    const n=copiar(o), c=origen||centro(o);
-    n.borrados=(n.borrados||[]).map(q=>[red(c[0]+(q[0]-c[0])*sx),red(c[1]+(q[1]-c[1])*sy),q[2]*Math.max(Math.abs(sx),Math.abs(sy))]);
-    if (['puntos','linea','polilinea','poligono'].includes(n.tipo)) {
-      const k=n.tipo==='puntos'?'puntos':'vertices';
-      n[k]=(n[k]||[]).map(q=>[red(c[0]+(q[0]-c[0])*sx),red(c[1]+(q[1]-c[1])*sy)]);
-    } else {
-      n.x=red(c[0]+((n.x||0)-c[0])*sx); n.y=red(c[1]+((n.y||0)-c[1])*sy);
-      n.ancho=red((n.ancho||0)*sx); n.alto=red((n.alto||0)*sy);
-    }
-    return n;
+  /* Transformación afín alrededor de UN pivote: m=[a,b,c,d] con x'=a·x+c·y, y'=b·x+d·y (relativos al pivote).
+     Polilíneas, polígonos y puntos se «hornean» en los vértices; rectángulo/elipse/imagen conservan
+     su tipo si la transformación es una semejanza (giro, espejo, escala pareja) y, si no, pasan a polígono. */
+  const EPS=1e-9, GEOM=['puntos','linea','polilinea','poligono'];
+  function centroConjunto(lista){
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    for(const o of lista||[]){const b=caja(o);if(b.ancho===0&&b.alto===0&&!vertices(o).length)continue;x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}
+    return x0===Infinity?[0,0]:[(x0+x1)/2,(y0+y1)/2];
   }
-  function rotar(o, grados) { const n=copiar(o); n.rotacion=red(((n.rotacion||0)+grados)%360); return n; }
-  function voltear(o, eje) {
-    const n=copiar(o);
-    if(n.tipo==='imagen') { n[eje==='horizontal'?'espejoX':'espejoY']=!n[eje==='horizontal'?'espejoX':'espejoY'];return n; }
-    const c=centro(o),k=n.tipo==='puntos'?'puntos':'vertices';
-    if(['puntos','linea','polilinea','poligono'].includes(n.tipo)) n[k]=(n[k]||[]).map(p=>eje==='horizontal'?[red(2*c[0]-p[0]),p[1]]:[p[0],red(2*c[1]-p[1])]);
-    else if(n.tipo!=='punto') n.rotacion=red(-(n.rotacion||0));
-    return n;
+  function transformar(o, m, pivote) {
+    const n=copiar(o), [a,b,c,d]=m, det=a*d-b*c, s=Math.sqrt(Math.abs(det))||1;
+    const p=pivote||centroConjunto([o]);
+    const pt=q=>[red(p[0]+a*(q[0]-p[0])+c*(q[1]-p[1])), red(p[1]+b*(q[0]-p[0])+d*(q[1]-p[1]))];
+    n.borrados=(n.borrados||[]).map(q=>{const r=pt(q);return [r[0],r[1],q[2]*s];});
+    if(GEOM.includes(n.tipo)||n.tipo==='punto'){
+      if(n.tipo==='punto'){const r=pt([n.x||0,n.y||0]);n.x=r[0];n.y=r[1];return n;}
+      const k=n.tipo==='puntos'?'puntos':'vertices';
+      n[k]=geometria(o).map(pt); n.rotacion=0; return n;
+    }
+    // rectángulo, elipse, imagen, referencia: caja con centro y giro propios
+    const w=n.ancho||0,h=n.alto||0,C=pt([(n.x||0)+w/2,(n.y||0)+h/2]);
+    const rot=n.rotacion||0, esImg=n.tipo==='imagen';
+    const sim=Math.abs(a*a+b*b-(c*c+d*d))<=EPS*(a*a+b*b+c*c+d*d+1)&&Math.abs(a*c+b*d)<=EPS*(a*a+b*b+1);
+    const poner=(w2,h2,rot2)=>{n.ancho=red(w2);n.alto=red(h2);n.x=red(C[0]-w2/2);n.y=red(C[1]-h2/2);n.rotacion=red(((rot2%360)+360)%360);return n;};
+    if(sim){
+      const th=Math.atan2(b,a)*180/Math.PI, flip=det<0;
+      if(flip&&esImg){n.espejoY=!n.espejoY;}
+      return poner(w*s,h*s,flip?th-rot:th+rot);
+    }
+    const axial=Math.abs(b)<=EPS&&Math.abs(c)<=EPS, r2=((rot%180)+180)%180;
+    if(axial&&(Math.abs(r2)<EPS||Math.abs(r2-90)<EPS)){
+      const girado=Math.abs(r2-90)<EPS, sx=girado?d:a, sy=girado?a:d;  // escala sobre los ejes locales
+      if(esImg){ if(a<0)n[girado?'espejoY':'espejoX']=!n[girado?'espejoY':'espejoX']; if(d<0)n[girado?'espejoX':'espejoY']=!n[girado?'espejoX':'espejoY']; }
+      return poner(w*Math.abs(sx),h*Math.abs(sy),rot);
+    }
+    if(esImg){ // imagen con deformación oblicua: se aproxima con una semejanza
+      const th=Math.atan2(b,a)*180/Math.PI, flip=det<0; if(flip)n.espejoY=!n.espejoY;
+      return poner(w*s,h*s,flip?th-rot:th+rot);
+    }
+    if(n.tipo==='referencia'){const th=Math.atan2(b,a)*180/Math.PI;return poner(w*s,h*s,det<0?th-rot:th+rot);}
+    const v=geometria(o).map(pt), q=crearObjeto('poligono',Object.assign({},n,{tipo:'poligono',vertices:v,rotacion:0,x:0,y:0,ancho:0,alto:0}));
+    return q;
+  }
+  const rad=g=>g*Math.PI/180;
+  function escalar(o, sx, sy, origen) { return transformar(o,[sx,0,0,sy],origen||centroConjunto([o])); }
+  function rotar(o, grados, pivote) {
+    const t=rad(grados),cs=Math.cos(t),sn=Math.sin(t);
+    return transformar(o,[Math.abs(cs)<1e-12?0:cs,Math.abs(sn)<1e-12?0:sn,Math.abs(sn)<1e-12?0:-sn,Math.abs(cs)<1e-12?0:cs],pivote||centroConjunto([o]));
+  }
+  function voltear(o, eje, pivote) {
+    return transformar(o,eje==='horizontal'?[-1,0,0,1]:[1,0,0,-1],pivote||centroConjunto([o]));
+  }
+  const esCerrado=o=>['rectangulo','elipse','poligono'].includes(o.tipo)||(['polilinea','linea'].includes(o.tipo)&&!!o.cerrado);
+  /* Aplica linea/relleno a una lista de objetos (grupo o selección). El relleno solo va a formas cerradas. */
+  function aplicarEstilo(lista,clave,valor){
+    const aplica=o=>clave==='relleno'?esCerrado(o):o.tipo!=='imagen'&&o.tipo!=='referencia'&&o.tipo!=='puntos'&&o.tipo!=='punto';
+    const objetos=lista.map(o=>aplica(o)?Object.assign(copiar(o),{[clave]:valor}):o);
+    return {objetos,cambiados:lista.filter(aplica).length};
+  }
+  function valorComun(lista,clave){
+    const v=lista.filter(o=>clave!=='relleno'||esCerrado(o)).map(o=>o[clave]);
+    return v.length&&v.every(x=>x===v[0])?v[0]:null;
   }
   function pasos(m) { return [m && m.grilla && m.grilla.px || m && m.entrePuntosX || m && m.entrePuntos || 2,
     m && m.grilla && m.grilla.py || m && m.entrePuntosY || m && m.entrePuntos || 2]; }
@@ -262,6 +304,6 @@
     }
     return (o.borrados||[]).length?salida.filter(p=>!o.borrados.some(q=>Math.hypot(p[0]-q[0],p[1]-q[1])<=q[2])):salida;
   }
-  const api={ LINEAS,RELLENOS,CAPAS,crearObjeto,migrarTrazos,mover,escalar,rotar,voltear,caja,centro,geometria,objetoAPuntos,pasos,editarVertice,agregarVertice,quitarVertice,cortarLinea,borrarTramo,unirLineas,distanciaSegmento };
+  const api={ LINEAS,RELLENOS,CAPAS,crearObjeto,migrarTrazos,mover,escalar,rotar,voltear,transformar,centroConjunto,aplicarEstilo,valorComun,esCerrado,caja,centro,geometria,objetoAPuntos,pasos,editarVertice,agregarVertice,quitarVertice,cortarLinea,borrarTramo,unirLineas,distanciaSegmento };
   if(typeof module!=='undefined'&&module.exports) module.exports=api; else raiz.Objetos=api;
 })(typeof self!=='undefined'?self:this);

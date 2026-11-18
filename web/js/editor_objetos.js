@@ -17,7 +17,7 @@
   function reemplazar(id,nuevo) { const a=objetos(),i=a.findIndex(o=>o.id===id); if(i>=0) a[i]=nuevo; }
   function transformarSeleccion(tipo,valor){
     const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado);if(!a.length)return;
-    App.registrar(tipo==='escalar'?'Cambiar tamaño':'Girar');a.forEach(o=>reemplazar(o.id,tipo==='escalar'?O.escalar(o,valor,valor):O.rotar(o,valor)));
+    App.registrar(tipo==='escalar'?'Cambiar tamaño':'Girar');const c=O.centroConjunto(a);a.forEach(o=>reemplazar(o.id,tipo==='escalar'?O.escalar(o,valor,valor,c):O.rotar(o,valor,c)));
     App.cambio('objetos');App.anunciar(`${a.length} objeto(s): ${tipo==='escalar'?'tamaño '+Math.round(valor*100)+' %':'rotación '+valor+'°'}.`);
   }
   function crear(tipo, datos) {
@@ -104,7 +104,9 @@
     if(!o&&!c) return;
     const b=o?O.caja(o):{x0:c.x,y0:c.y,ancho:App.calculo().cuadros.get(c.id)?.ancho||0,alto:App.calculo().cuadros.get(c.id)?.alto||0};
     const vals={nombre:o?o.nombre:c.nombre||c.texto.split('\n')[0],x:b.x0,y:b.y0,ancho:b.ancho,alto:b.alto,rotacion:o?.rotacion||0,linea:o?.linea||'ninguna',relleno:o?.relleno||'ninguno',capa:o?.capa||'rotulos'};
-    Object.entries(campos).forEach(([k,id])=>{if(document.activeElement!==$(id)) $(id).value=typeof vals[k]==='number'?+vals[k].toFixed(2):vals[k];});
+    if(o){const sel=elegidos().map(buscar).filter(Boolean),lista=sel.length>1?sel:[o];
+      vals.linea=O.valorComun(lista,'linea');vals.relleno=O.valorComun(lista,'relleno');if(vals.relleno===null&&!lista.some(O.esCerrado))vals.relleno='ninguno';}
+    Object.entries(campos).forEach(([k,id])=>{if(document.activeElement!==$(id)) $(id).value=vals[k]===null?'':typeof vals[k]==='number'?+vals[k].toFixed(2):vals[k];});
     $('obj-ancho').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';$('obj-alto').disabled=!!c||o.tipo==='puntos'||o.tipo==='punto';
     for(const id of ['obj-proporcion','obj-girar90','obj-voltear-h','obj-voltear-v','obj-restablecer'])$(id).disabled=!!c;
     $('obj-restablecer').disabled=!!c||!['imagen','referencia'].includes(o.tipo);
@@ -119,6 +121,12 @@
     const o=App.ui.sel&&buscar(App.ui.sel.id);if(!o||o.bloqueado)return;
     const input=$(id),valor=['nombre','linea','relleno','capa'].includes(k)?input.value:Number(input.value);
     if(typeof valor==='number'&&!Number.isFinite(valor))return;
+    if(k==='linea'||k==='relleno'){
+      const sel=elegidos().map(buscar).filter(q=>q&&!q.bloqueado),lista=sel.length?sel:[o],r=O.aplicarEstilo(lista,k,valor);
+      if(!r.cambiados){App.anunciar(k==='relleno'?'Ninguna de las formas elegidas es cerrada: el relleno no se aplica.':'Nada que cambiar.');pintarPropiedades();return;}
+      App.registrar('Cambiar propiedad: '+k);r.objetos.forEach(n=>reemplazar(n.id,n));App.cambio('objetos');
+      App.anunciar(`${k==='linea'?'Línea':'Relleno'} «${valor}» aplicado a ${r.cambiados} objeto(s)`+(k==='relleno'&&r.cambiados<lista.length?'; el relleno solo vale para formas cerradas.':'.'));return;
+    }
     App.registrar('Cambiar propiedad: '+k);let n=O.crearObjeto(o.tipo,o),b=O.caja(o);
     if(k==='x'||k==='y')n=O.mover(n,k==='x'?valor-b.x0:0,k==='y'?valor-b.y0:0);
     else if(k==='ancho'||k==='alto'){
@@ -131,7 +139,7 @@
   $('obj-girar90').addEventListener('click',()=>transformarSeleccion('rotar',90));
   for(const [id,eje] of [['obj-voltear-h','horizontal'],['obj-voltear-v','vertical']])$(id).addEventListener('click',()=>{
     const a=elegidos().map(buscar).filter(o=>o&&!o.bloqueado);if(!a.length)return;
-    App.registrar('Voltear '+eje);a.forEach(o=>reemplazar(o.id,O.voltear(o,eje)));App.cambio('objetos');App.anunciar(`Volteo ${eje} aplicado.`);
+    App.registrar('Voltear '+eje);const c=O.centroConjunto(a);a.forEach(o=>reemplazar(o.id,O.voltear(o,eje,c)));App.cambio('objetos');App.anunciar(`Volteo ${eje} aplicado.`);
   });
   $('obj-restablecer').addEventListener('click',()=>{
     const o=App.ui.sel&&buscar(App.ui.sel.id);if(!o||o.tipo!=='imagen'||o.bloqueado)return;
