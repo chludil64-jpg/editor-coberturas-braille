@@ -641,8 +641,32 @@
     return lista;
   }
 
+  /**
+   * Agrupa avisos idénticos (mismo nivel y mismo texto) en uno solo con la cantidad.
+   * Devuelve la lista ordenada por gravedad (error, aviso, info), conservando el orden
+   * de aparición dentro de cada nivel. Si un aviso se repite, el texto gana «(N casos)»
+   * y pierde el «id» (ya no apunta a un único elemento).
+   */
+  function agruparAvisos(lista) {
+    const orden = { error: 0, aviso: 1, info: 2 };
+    const mapa = new Map();
+    for (const a of lista || []) {
+      const k = a.nivel + '\u0001' + a.mensaje;
+      if (!mapa.has(k)) mapa.set(k, { nivel: a.nivel, mensaje: a.mensaje, cuenta: 0, id: a.id });
+      mapa.get(k).cuenta++;
+    }
+    const salida = [...mapa.values()].map(g => {
+      if (g.cuenta > 1) {
+        g.mensaje = g.mensaje.replace(/\.$/, '') + ` (${g.cuenta} casos).`;
+        delete g.id;
+      }
+      return g;
+    });
+    return salida.sort((x, y) => (orden[x.nivel] ?? 9) - (orden[y.nivel] ?? 9));
+  }
+
   const api = {
-    MEDIDAS, medidasDePerfil, ajustarAGrilla, calcularCuadro, ubicarSegunTinta, partirEnRenglones,
+    MEDIDAS, medidasDePerfil, agruparAvisos, ajustarAGrilla, calcularCuadro, ubicarSegunTinta, partirEnRenglones,
     muestrearLinea, muestrearPoligono, muestrearRectangulo, muestrearTrayecto, muestrearElipse,
     paralelasCercanas, quitarDuplicados, ralear, quitarJuntos, calcularPagina, despejeEfectivo, listaParaExportar, margenesDeDiseno, avisos, rectCuadro, anchoRenglon
   };

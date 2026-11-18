@@ -105,8 +105,18 @@
   async function abrirImprimir(carga, titulo) {
     cargaImpresion = carga || null;
     const d = carga || paraExportar();
-    const advertencias = carga ? [] : Grilla.avisos(App.pagina(),App.calculo(),App.perfil,Object.assign({},App.doc.opciones,{completo:true}));
-    $('imprimir-resumen').textContent = `${titulo || 'Página ' + (App.ui.pagina + 1)}: ${d.puntos.length} puntos, diseño de ${d.ancho} × ${d.alto} mm. ${advertencias.length ? advertencias.length + ' avisos antes de imprimir: ' + advertencias.map(a=>a.mensaje).join(' ') : 'Sin avisos.'}`;
+    const advertencias = carga ? [] : Grilla.agruparAvisos(Grilla.avisos(App.pagina(),App.calculo(),App.perfil,Object.assign({},App.doc.opciones,{completo:true})));
+    const resumen = $('imprimir-resumen');
+    resumen.textContent = `${titulo || 'Página ' + (App.ui.pagina + 1)}: ${d.puntos.length} puntos, diseño de ${d.ancho} × ${d.alto} mm. ${advertencias.length ? advertencias.length + ' avisos distintos antes de imprimir:' : 'Sin avisos.'}`;
+    let ulAvisos = $('imprimir-avisos');
+    if (!ulAvisos) { ulAvisos = document.createElement('ul'); ulAvisos.id = 'imprimir-avisos'; ulAvisos.className = 'avisos'; resumen.after(ulAvisos); }
+    ulAvisos.innerHTML = '';
+    for (const a of advertencias) {
+      const li = document.createElement('li');
+      li.className = a.nivel;
+      li.textContent = { error: 'Error: ', aviso: 'Atención: ', info: '' }[a.nivel] + a.mensaje;
+      ulAvisos.append(li);
+    }
     $('imp-confirmo').checked = false;
     $('imprimir-estado').textContent = 'Buscando impresoras…';
     $('imp-formato').value = App.perfil.codificador || 'grilla';
@@ -411,7 +421,7 @@
 
   function mostrarAvisos(completo) {
     const calc = App.calculo();
-    const lista = Grilla.avisos(App.pagina(), calc, App.perfil, Object.assign({}, App.doc.opciones, { completo: !!completo }));
+    const lista = Grilla.agruparAvisos(Grilla.avisos(App.pagina(), calc, App.perfil, Object.assign({}, App.doc.opciones, { completo: !!completo })));
     const ul = $('lista-avisos');
     ul.innerHTML = '';
     for (const a of lista) {
