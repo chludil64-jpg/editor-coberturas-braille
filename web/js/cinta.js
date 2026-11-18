@@ -224,6 +224,5 @@
     if (ev.key === 'v' || ev.key === 'V') { App.elegirHerramienta('seleccionar'); }
     else if (ev.key === 'l' || ev.key === 'L') { App.elegirHerramienta('lazo'); }
     else if (ev.key === 'm' || ev.key === 'M') { App.elegirHerramienta('medir'); }
-    else if (ev.key === 'n' || ev.key === 'N') { App.elegirHerramienta('numerar'); }
   });
 })();

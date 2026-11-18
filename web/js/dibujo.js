@@ -5,7 +5,7 @@
   const $ = id => document.getElementById(id);
   const nombresHerr = {
     seleccionar: 'Elegir y mover', punto: 'Punto', linea: 'Línea', polilinea: 'Polilínea', poligono: 'Polígono', rectangulo: 'Rectángulo',
-    elipse: 'Elipse', mano: 'Mano alzada', goma: 'Goma',lazo:'Lazo magnético','editar-vertices':'Editar vértices','borrar-linea':'Borrar línea',tijera:'Tijera',medir:'Medir',numerar:'Rótulo numerado'
+    elipse: 'Elipse', mano: 'Mano alzada', goma: 'Goma',lazo:'Lazo magnético','editar-vertices':'Editar vértices','borrar-linea':'Borrar línea',tijera:'Tijera',medir:'Medir'
   };
 
   function agregarTrazo(tipo, puntos, nombre) {

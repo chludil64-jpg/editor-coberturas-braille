@@ -125,7 +125,6 @@
       'borrar-linea': 'Clic sobre una línea para borrarla (Alt+clic borra solo ese tramo).',
       tijera: 'Clic sobre una línea para cortarla en dos en ese punto.',
       goma: 'Arrastrá sobre los puntos para borrarlos.',
-      numerar: 'Cada clic en la hoja pone el próximo número en braille y lo agrega a la clave. Escribí qué significa en el panel «Rótulos numerados». N activa esta herramienta; Escape vuelve a Elegir y mover.',
       medir: 'Arrastrá sobre la hoja: se muestran la distancia (mm) y el ángulo. No crea nada. Con teclado: flechas mueven el cursor, Enter fija el primer y el segundo punto. M activa esta herramienta.'
     };
     function actualizar() {

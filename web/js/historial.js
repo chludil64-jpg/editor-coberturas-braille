@@ -12,7 +12,7 @@
     objetos: 'Cambio en los objetos', cuadros: 'Cambio en los cuadros braille', cuadro: 'Editar cuadro braille',
     texto: 'Editar texto braille', dibujo: 'Dibujo', mover: 'Mover', arrastre: 'Mover o transformar',
     pagina: 'Cambio de página', opciones: 'Cambio de opciones', capas: 'Capas visibles', nombre: 'Renombrar',
-    borrar: 'Borrar', disposicion: 'Importar disposición braille', numerados: 'Rótulos numerados', perfil: 'Perfil de impresora'
+    borrar: 'Borrar', disposicion: 'Importar disposición braille', perfil: 'Perfil de impresora'
   };
   /** Nombre por defecto según el motivo del aviso de cambio. */
   function nombrePorMotivo(motivo) { return NOMBRES[motivo] || 'Cambio'; }
