@@ -587,6 +587,7 @@
   <label>Archivo SVG <input id="svg-archivo" type="file" accept="image/svg+xml,.svg"></label>
   <div class="fila dos"><label>Ancho (mm) <input id="svg-ancho" type="number" min="5" value="100"></label><label>X (mm) <input id="svg-x" type="number" value="10"></label><label>Y (mm) <input id="svg-y" type="number" value="10"></label></div>
   <div class="fila dos"><label><input type="checkbox" id="svg-rellenar"> Rellenar formas con textura</label><label>Textura <select id="svg-textura" disabled><option value="reticula">Retícula</option><option value="horizontales">Horizontales</option><option value="diagonales">Diagonales</option><option value="disperso">Disperso</option></select></label></div>
+  <label>Textos del SVG <select id="svg-textos"><option value="braille" selected>Como braille (cuadros en la capa «rotulos»)</option><option value="contorno">Como contorno de letras (dibujo)</option><option value="ignorar">Ignorar</option></select></label>
   <p id="svg-estado" role="status" aria-live="polite"></p>
   <canvas id="svg-previa" width="520" height="340" role="img" aria-label="Vista previa de los contornos que se van a importar"></canvas>
   <details class="plegable-chico"><summary>Modo mapa (agrupar por colores)</summary>
@@ -654,6 +655,7 @@
 <script src="js/capas_color.js"></script>
 <script src="js/svg_importar.js"></script>
 <script src="js/svg_dibujo.js"></script>
+<script src="js/svg_texto.js"></script>
 <script src="js/lazo.js"></script>
 <script src="js/imagen.js"></script>
 <script src="js/importar_dibujo.js"></script>
