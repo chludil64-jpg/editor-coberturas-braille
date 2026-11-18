@@ -73,11 +73,11 @@ La Everest-D V4 se maneja con modo gráfico por grilla (`ESC BEL`, CR LF por fil
 
 ## Autoría
 
-Creado por **Matías Chludil** ([@chludil64-jpg](https://github.com/chludil64-jpg)), con asistencia de herramientas de IA. Las contribuciones son bienvenidas.
+Creado por **Matias Chludil** ([@chludil64-jpg](https://github.com/chludil64-jpg)), con asistencia de herramientas de IA. Las contribuciones son bienvenidas.
 
 ## Licencia
 
-Código bajo licencia [MIT](LICENSE), © 2026 Matías Chludil y colaboradores.
+Código bajo licencia [MIT](LICENSE), © 2026 Matias Chludil y colaboradores.
 
 Componentes de terceros:
 

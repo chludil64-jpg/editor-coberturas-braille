@@ -35,7 +35,7 @@ El programa no está firmado digitalmente, así que Windows puede mostrar «Wind
 ## Código y licencia
 
 - Código fuente: https://github.com/chludil64-jpg/editor-coberturas-braille
-- Licencia MIT, © 2026 Matías Chludil y colaboradores.
+- Licencia MIT, © 2026 Matias Chludil y colaboradores.
 - El ejecutable incluye PyMuPDF (AGPL-3.0): quien lo redistribuya debe hacerlo con el código fuente disponible (el repositorio de arriba). También usa íconos Lucide (ISC) y Pillow (MIT-CMU).
 
 ---
