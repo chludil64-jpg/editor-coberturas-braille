@@ -5,8 +5,8 @@ Editor de braille y gráficos táctiles para la impresora Index Everest-D V4, co
 **[Descargar Editor Braille para Windows]({URL_ZIP})**
 
 - Versión: **2.0.0**
-- Tamaño: **49,3 MB** (51.687.418 bytes)
-- SHA256: `08e4dda68913662205697aaf075732f77f296f2508ae26ada81a90690a9b7caf`
+- Tamaño: **49,3 MB** (51.701.417 bytes)
+- SHA256: `c51e60a37ce4baeec54615683e31f9268e4d37a1a45f4501e285cf357e397fcf`
 
 > La versión, el tamaño y el SHA256 de arriba corresponden al zip generado el 18/11/2026 en `dist/`. Si volvés a empaquetar, `herramientas/empaquetar.ps1` imprime el SHA256 nuevo y `herramientas/generar_version_json.py` lo escribe en `version.json`: actualizá estos datos.
 
@@ -47,7 +47,7 @@ El programa no está firmado digitalmente, así que Windows puede mostrar «Wind
 El botón «Buscar actualizaciones» lee este archivo. Ejemplo:
 
 ```json
-{"version":"2.0.0","url":"{URL_ZIP}","sha256":"08e4dda68913662205697aaf075732f77f296f2508ae26ada81a90690a9b7caf","notas":"Primera versión portable."}
+{"version":"2.0.0","url":"{URL_ZIP}","sha256":"c51e60a37ce4baeec54615683e31f9268e4d37a1a45f4501e285cf357e397fcf","notas":"Primera versión portable."}
 ```
 
 - `version`: número `X.Y.Z`; el programa ofrece actualizar solo si es mayor que el instalado.
