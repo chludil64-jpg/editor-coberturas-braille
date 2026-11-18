@@ -42,7 +42,10 @@ def cuadrado_grafico():
 
 
 def muestra_index():
+    # Si tenés la muestra original de Index en ejemplos/ibe/ se usa esa; si no, la sintética del repo.
     ruta = os.path.join(RAIZ, "ejemplos", "ibe", "_everest_functions_graphs.ibe")
+    if not os.path.isfile(ruta):
+        ruta = os.path.join(RAIZ, "tests", "fixtures", "ibe", "sintetico_everest.ibe")
     with open(ruta, "rb") as f:
         return f.read()
 

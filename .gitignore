@@ -21,3 +21,14 @@ graphify-out/
 # Empaquetado (PyInstaller / Inno Setup)
 build/
 dist/
+
+# Material que no se publica (documentos de terceros, muestras con copyright, configuración personal del asistente)
+ejemplos/*.pdf
+ejemplos/ibe/*.ibe
+ejemplos/mapa_prueba.png
+ejemplos/mapa_usuario.png
+ejemplos/mapas/
+docs/verificacion_plantilla*.png
+docs/logos/referencia_*.png
+docs/logos/comparativa_*.png
+CLAUDE.md

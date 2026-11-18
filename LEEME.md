@@ -1,5 +1,7 @@
 # Editor de coberturas braille (Index Everest-D V4)
 
+> Manual de uso. Para instalar, ejecutar desde el código o colaborar, ver el [README](README.md).
+
 Programa local para armar la **cobertura braille en acetato** que se superpone a una boleta o plantilla de votación impresa en tinta. Cada texto en braille queda en el mismo lugar que el texto impreso, y se pueden sumar dibujos en relieve (recuadros, flechas, imágenes).
 
 Funciona sin internet. Se usa en el navegador, pero todo corre en esta PC: el servidor escucha solo en `127.0.0.1`.
@@ -13,6 +15,10 @@ Funciona sin internet. Se usa en el navegador, pero todo corre en esta PC: el se
 
 1. Doble clic en **`iniciar.bat`**. Se abre una ventana negra (el servidor) y el navegador en `http://127.0.0.1:8777/`.
 2. Para salir, usá el botón **Cerrar programa** o cerrá la ventana negra.
+
+## Actualizar
+- En **Archivo → Actualizar** (Buscar actualizaciones) el programa consulta si hay una versión nueva. Si la hay, pide confirmación, la descarga, verifica su huella SHA256 y se reabre actualizado (solo en el portable; el perfil y la calibración no se tocan). Si corrés desde el código, se actualiza con `git pull`.
+- La versión actual figura en ese diálogo y en la ayuda de atajos (F1).
 
 ## Instalar como aplicación
 - Con el servidor abierto (`iniciar.bat`), en Chrome o Edge aparece un ícono de instalar en la barra de direcciones (o menú ⋮ > «Instalar Editor Braille»).
@@ -54,11 +60,11 @@ Todo sale de **una sola lista de puntos en mm**: la que se ve en pantalla es la 
 - **Archivo .prn**: modo gráfico por grilla calibrada para la Everest-D V4 (ver abajo).
 - **Imprimir…** queda como botón directo. Envía a la Index por el spooler de Windows (modo RAW) o por red (IP y puerto 9100). Siempre pide marcar la casilla de confirmación antes de enviar. **Perfil de impresora…** y **Calibración…** están en el menú **Impresora**.
 - **Guardar / Abrir proyecto**: archivo `.braille.json` con el PDF incluido, los cuadros, los dibujos y el perfil.
-- **Abrir .ibe…**: abre un archivo de Index (por ejemplo las muestras de `ejemplos/ibe/`) en una página nueva para verlo.
+- **Abrir .ibe…**: abre un archivo de Index (por ejemplo las muestras sintéticas de `tests/fixtures/ibe/`) en una página nueva para verlo.
 
 ## Formato .ibe (punto libre)
 
-Texto plano latin-1, tal como en las muestras gráficas de Index (`ejemplos/ibe/`):
+Texto plano latin-1, tal como en las muestras gráficas de Index:
 
 ```
 ESC D DP2,LS50,TM0,BI0,CH46,LP27;
@@ -76,7 +82,7 @@ x:y;
 - Las muestras de Everest y BrailleBox **no cierran con `;`** al final; las de Basic y geometry sí. El programa lo cierra por defecto (se puede quitar en el perfil).
 - Fin de línea: LF (como Everest) o CR LF (como geometry).
 
-Todos esos valores se cambian en **Perfil de impresora…** (`perfiles/everest_v4.json`). Recomendación para la primera prueba: mandar primero `ejemplos/ibe/_everest_functions_graphs.ibe` tal cual, y recién después un archivo hecho con este programa.
+Todos esos valores se cambian en **Perfil de impresora…** (`perfiles/everest_v4.json`). Recomendación para la primera prueba: mandar primero una muestra original de Index (si la tenés) tal cual, y recién después un archivo hecho con este programa.
 
 ## Modo grilla (`.prn`)
 
@@ -105,7 +111,8 @@ Para mapas raster, colocá una imagen de referencia y trazá con el lazo magnét
 - `motor/` — `pdf_io.py` (textos, fondo, vectores, PDF de prueba, PNG), `index_v4.py` (codificadores y lector .ibe), `perfil.py` (perfil y transformación a la hoja), `impresion.py` (RAW por `winspool.drv` y red).
 - `web/` — interfaz (HTML, CSS y JS sin frameworks).
 - `perfiles/everest_v4.json` — perfil de la impresora.
-- `ejemplos/` — PDF de Gaiman y muestras `.ibe` de Index.
+- `ejemplos/` — material de ejemplo local (no se publica en el repositorio).
+- `tests/fixtures/` — muestras `.ibe` y PDF sintéticos para las pruebas.
 - `tests/` — pruebas.
 
 ## Pruebas

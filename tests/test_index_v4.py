@@ -17,23 +17,24 @@ sys.path.insert(0, BASE)
 from motor import impresion, index_v4, perfil  # noqa: E402
 import app  # noqa: E402
 
-MUESTRAS = sorted(glob.glob(os.path.join(BASE, "ejemplos", "ibe", "*.ibe")))
-PDF_GAIMAN = os.path.join(BASE, "ejemplos", "plantilla_boleta_gaiman_A4.pdf")
+FIXTURES = os.path.join(BASE, "tests", "fixtures")
+MUESTRAS = sorted(glob.glob(os.path.join(FIXTURES, "ibe", "*.ibe")))
+PDF_PLANTILLA = os.path.join(FIXTURES, "plantilla_sintetica.pdf")
 
 
 class TestPuntoLibre(unittest.TestCase):
     def test_hay_muestras(self):
-        self.assertEqual(len(MUESTRAS), 4, "Faltan las 4 muestras .ibe en ejemplos/ibe")
+        self.assertEqual(len(MUESTRAS), 4, "Faltan las 4 muestras .ibe sintéticas en tests/fixtures/ibe")
 
     def test_encabezado_muestra_everest(self):
-        with open(os.path.join(BASE, "ejemplos", "ibe", "_everest_functions_graphs.ibe"), "rb") as f:
+        with open(os.path.join(FIXTURES, "ibe", "sintetico_everest.ibe"), "rb") as f:
             leido = index_v4.leer_ibe(f.read())
         self.assertEqual(leido["encabezado"], {"DP": 2, "LS": 50, "TM": 0, "BI": 0, "CH": 34, "LP": 29})
         pag = leido["paginas"][0]
         self.assertEqual(pag["origen"], (3.0, 0.0))
         self.assertAlmostEqual(pag["ancho"], 197.07)
         self.assertAlmostEqual(pag["alto"], 280.75)
-        self.assertGreater(len(pag["puntos"]), 700)
+        self.assertGreater(len(pag["puntos"]), 300)
 
     def test_ida_y_vuelta_muestras(self):
         for ruta in MUESTRAS:
@@ -182,7 +183,9 @@ class TestPdf(unittest.TestCase):
     def setUpClass(cls):
         from motor import pdf_io
         cls.pdf_io = pdf_io
-        with open(PDF_GAIMAN, "rb") as f:
+        if not os.path.isfile(PDF_PLANTILLA):
+            raise unittest.SkipTest("Falta tests/fixtures/plantilla_sintetica.pdf (python tests/fixtures/generar_fixtures.py)")
+        with open(PDF_PLANTILLA, "rb") as f:
             cls.doc = pdf_io.abrir(f.read())
 
     def test_textos_en_mm(self):
