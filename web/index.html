@@ -548,11 +548,18 @@
   </form>
 </dialog>
 
-<dialog id="dlg-svg" aria-labelledby="t-svg"><div class="editor ancho-dlg"><h2 id="t-svg">Importar SVG</h2>
+<dialog id="dlg-svg" aria-labelledby="t-svg"><div class="editor ancho-dlg"><h2 id="t-svg">Importar SVG como dibujo</h2>
+  <p class="nota">Cada forma del SVG pasa a contornos editables, respetando el orden de pintado: lo que queda tapado por una forma de arriba no aparece. Los objetos quedan agrupados en la capa «dibujo».</p>
   <label>Archivo SVG <input id="svg-archivo" type="file" accept="image/svg+xml,.svg"></label>
   <div class="fila dos"><label>Ancho (mm) <input id="svg-ancho" type="number" min="5" value="100"></label><label>X (mm) <input id="svg-x" type="number" value="10"></label><label>Y (mm) <input id="svg-y" type="number" value="10"></label></div>
-  <p id="svg-estado" role="status" aria-live="polite"></p><div class="tabla-capas-contenedor"><table id="svg-tabla"><caption>Capas por color del SVG</caption><thead><tr><th>Color y muestra</th><th>Elementos</th><th>Miniatura</th><th>Significado</th><th>Estilo</th></tr></thead><tbody></tbody></table></div>
-  <div class="fila botones"><button id="svg-agregar" type="button" disabled>Agregar capas editables</button><button id="svg-cerrar" type="button">Cerrar</button></div></div></dialog>
+  <div class="fila dos"><label><input type="checkbox" id="svg-rellenar"> Rellenar formas con textura</label><label>Textura <select id="svg-textura" disabled><option value="reticula">Retícula</option><option value="horizontales">Horizontales</option><option value="diagonales">Diagonales</option><option value="disperso">Disperso</option></select></label></div>
+  <p id="svg-estado" role="status" aria-live="polite"></p>
+  <canvas id="svg-previa" width="520" height="340" role="img" aria-label="Vista previa de los contornos que se van a importar"></canvas>
+  <details class="plegable-chico"><summary>Modo mapa (agrupar por colores)</summary>
+    <label><input type="checkbox" id="svg-modo-mapa"> Importar como mapa: agrupar por colores, con significado y estilo</label>
+    <div class="tabla-capas-contenedor"><table id="svg-tabla"><caption>Capas por color del SVG</caption><thead><tr><th>Color y muestra</th><th>Elementos</th><th>Miniatura</th><th>Significado</th><th>Estilo</th></tr></thead><tbody></tbody></table></div>
+  </details>
+  <div class="fila botones"><button id="svg-agregar" type="button" disabled>Importar dibujo</button><button id="svg-cerrar" type="button">Cerrar</button></div></div></dialog>
 
 <!-- Diálogo: calcar vectores -->
 <dialog id="dlg-calcar" aria-labelledby="t-calcar">
@@ -612,8 +619,11 @@
 <script src="js/dibujo.js"></script>
 <script src="js/capas_color.js"></script>
 <script src="js/svg_importar.js"></script>
+<script src="js/svg_dibujo.js"></script>
 <script src="js/lazo.js"></script>
 <script src="js/imagen.js"></script>
+<script src="js/importar_dibujo.js"></script>
+<script src="js/svg_dialogo.js"></script>
 <script src="js/calibracion.js"></script>
 <script src="js/principal.js"></script>
 <script src="js/cinta.js"></script>

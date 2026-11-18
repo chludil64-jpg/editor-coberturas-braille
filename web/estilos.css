@@ -253,3 +253,4 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .cinta-grupo-nombre { font-size: .85rem; text-align: center; color: #444; margin-top: .25rem; }
 .cinta [data-herramienta][aria-pressed="true"] { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); }
 @media (prefers-color-scheme: dark) { .cinta-panel { background: transparent; } .cinta-grupo-nombre { color: #bbb; } .cinta-grupo { border-color: #555; } }
+#svg-previa { display: block; max-width: 100%; height: auto; border: 1px solid var(--borde); background: #fff; margin: .4rem 0; }
