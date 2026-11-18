@@ -14,8 +14,8 @@ Paquete listo en `dist/entrega/` (no está en git; se regenera con `herramientas
 | `entrega_portable.md` | Este documento. |
 
 - Versión: **2.0.0**
-- Tamaño: 51.719.805 bytes (49,3 MB)
-- SHA256: `2fba03b0a2b2379d9f11ab0e68a1a5fbc79e4649da668d50cdbbf524f553fbcb`
+- Tamaño: 51.726.173 bytes (49,3 MB)
+- SHA256: `88dc97d84c95452f95f37358d4a422e0ebfa8b10fdad2277555f936a8c69b546`
 - Código fuente (MIT): https://github.com/chludil64-jpg/editor-coberturas-braille
 
 ## Pasos de integración en el sitio
