@@ -21,12 +21,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 VERSION = "2.0.0"
+# Dirección https del version.json de actualizaciones. Vacía = sin configurar.
+# También se puede definir en %LOCALAPPDATA%\EditorBraille\config.json: {"url_actualizaciones": "https://.../version.json"}
+URL_ACTUALIZACIONES = ""
 CONGELADO = bool(getattr(sys, "frozen", False))   # True dentro del .exe de PyInstaller
 # Recursos de solo lectura (web/, perfiles/): junto al script o dentro del paquete congelado.
 BASE = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 
-from motor import impresion, index_v4, pdf_io, perfil as perfil_mod  # noqa: E402
+from motor import actualizacion, impresion, index_v4, pdf_io, perfil as perfil_mod  # noqa: E402
 
 WEB = os.path.join(BASE, "web")
 PERFIL_DEFECTO = os.path.join(BASE, "perfiles", "everest_v4.json")
@@ -71,7 +74,7 @@ def carpeta_datos():
 
 
 def preparar_datos_congelado():
-    """En el .exe los datos escribibles (perfil editado, log) van a %LOCALAPPDATA%\EditorBraille.
+    """En el .exe los datos escribibles (perfil editado, log) van a %LOCALAPPDATA%/EditorBraille.
     Copia el perfil por defecto la primera vez y redirige la salida de errores a log.txt."""
     global RUTA_PERFIL
     carpeta = carpeta_datos()
@@ -236,6 +239,10 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._responder(200, perfil_mod.cargar(RUTA_PERFIL))
             if ruta == "/api/perfil/defecto":
                 return self._responder(200, perfil_mod.completar({}))
+            if ruta == "/api/version":
+                return self._responder(200, {"version": VERSION, "congelado": CONGELADO})
+            if ruta == "/api/actualizacion/buscar":
+                return self._buscar_actualizacion()
             if ruta == "/api/impresoras":
                 return self._responder(200, {"impresoras": impresion.listar_impresoras()})
             if ruta.startswith("/api/pdf/"):
@@ -324,6 +331,8 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._archivo_json((cuerpo.get("nombre") or "braille") + ".png", datos)
             if ruta == "/api/imprimir":
                 return self._imprimir(self._json())
+            if ruta == "/api/actualizacion/instalar":
+                return self._instalar_actualizacion()
             if ruta == "/api/apagar":
                 self._responder(200, {"ok": True})
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
@@ -336,6 +345,42 @@ class Manejador(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             return self._error_interno(e)
 
+    def _buscar_actualizacion(self):
+        url = actualizacion.url_configurada(URL_ACTUALIZACIONES, carpeta_datos())
+        if not url:
+            return self._responder(200, {"estado": "sin_configurar", "actual": VERSION,
+                                         "mensaje": "No hay dirección de actualizaciones configurada."})
+        try:
+            resultado, _ = actualizacion.buscar(url, VERSION)
+        except actualizacion.ErrorActualizacion as e:
+            return self._responder(200, {"estado": "error", "actual": VERSION, "mensaje": str(e)})
+        resultado["estado"] = "nueva" if resultado["hay"] else "al_dia"
+        resultado["congelado"] = CONGELADO
+        return self._responder(200, resultado)
+
+    def _instalar_actualizacion(self):
+        url = actualizacion.url_configurada(URL_ACTUALIZACIONES, carpeta_datos())
+        if not CONGELADO:
+            return self._responder(200, {"ok": False, "mensaje": (
+                "Estás corriendo desde el código fuente: la actualización se hace con «git pull» "
+                "en la carpeta del proyecto.")})
+        destino = os.path.dirname(os.path.abspath(sys.executable))
+        if not actualizacion.carpeta_escribible(destino):
+            return self._responder(200, {"ok": False, "mensaje": (
+                "La carpeta del programa no se puede modificar sin permisos de administrador. "
+                "Descargá el zip nuevo y reemplazá la carpeta a mano.")})
+        try:
+            info, origen = actualizacion.preparar_instalacion(url, VERSION, carpeta_datos())
+            guion = actualizacion.escribir_actualizador(
+                origen, destino, os.getpid(), os.path.join(carpeta_datos(), "actualizacion"))
+            actualizacion.lanzar_actualizador(guion)
+        except actualizacion.ErrorActualizacion as e:
+            return self._responder(200, {"ok": False, "mensaje": str(e)})
+        self._responder(200, {"ok": True, "version": info["version"],
+                              "mensaje": "Actualización lista. El programa se cierra y se vuelve a abrir solo."})
+        threading.Thread(target=self.server.shutdown, daemon=True).start()
+        return None
+
     def _imprimir(self, cuerpo):
         if cuerpo.get("confirmado") is not True:
             return self._error(400, "Falta la confirmación del usuario para imprimir.")
@@ -346,7 +391,7 @@ class Manejador(BaseHTTPRequestHandler):
             return self._error(400, "La Everest-D V4 no acepta el formato punto libre (.ibe, da error 202). "
                                     "Elegí el formato «Grilla ESC BEL» en el diálogo de impresión.")
         # Copia del último trabajo enviado, para diagnóstico (se sobrescribe en cada envío).
-        # Va a %LOCALAPPDATA%, fuera de la carpeta del proyecto (que puede estar en OneDrive).
+        # Va a %LOCALAPPDATA%, fuera de la carpeta del proyecto (que puede estar en una carpeta sincronizada con la nube).
         try:
             carpeta = carpeta_datos()
             os.makedirs(carpeta, exist_ok=True)

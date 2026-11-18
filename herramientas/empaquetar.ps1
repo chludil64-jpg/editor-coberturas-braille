@@ -1,5 +1,7 @@
 # Genera la version portable (zip) y, si hay Inno Setup, el instalador.
-# Uso: powershell -ExecutionPolicy Bypass -File herramientas\empaquetar.ps1
+# Uso: powershell -ExecutionPolicy Bypass -File herramientas\empaquetar.ps1 [-UrlZip https://sitio/EditorBraille-portable-X.zip] [-Notas "texto"]
+# Con -UrlZip tambien genera dist/version.json (para «Buscar actualizaciones»).
+param([string]$UrlZip = "", [string]$Notas = "")
 $ErrorActionPreference = 'Stop'
 $raiz = Split-Path -Parent $PSScriptRoot
 Set-Location $raiz
@@ -24,5 +26,9 @@ if ($iscc) {
     if ($LASTEXITCODE -ne 0) { throw 'Inno Setup fallo' }
 } else {
     Write-Host 'Inno Setup no esta instalado: se omite el instalador (instalalo y volve a correr este script).'
+}
+if ($UrlZip) {
+    python herramientas\generar_version_json.py $zip $UrlZip --notas $Notas
+    if ($LASTEXITCODE -ne 0) { throw 'version.json fallo' }
 }
 Get-FileHash $zip -Algorithm SHA256 | Format-List

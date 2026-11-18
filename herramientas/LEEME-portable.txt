@@ -21,3 +21,7 @@ DATOS Y PROBLEMAS
 - El perfil de la impresora y la calibración se guardan en %LOCALAPPDATA%\EditorBraille (no en la carpeta del programa).
 - Si algo falla, el registro está en %LOCALAPPDATA%\EditorBraille\log.txt.
 - Si Windows SmartScreen avisa, elegí «Más información» > «Ejecutar de todas formas» (el programa no está firmado).
+
+ACTUALIZAR
+- En la pestaña Archivo hay un botón «Actualizar» (Buscar actualizaciones). Descarga la versión nueva, verifica su huella SHA256 y reemplaza los archivos del programa. El perfil y la calibración no se tocan.
+- Si la carpeta del programa no se puede modificar (por ejemplo, está en Archivos de programa), descargá el zip nuevo y reemplazá la carpeta a mano.
