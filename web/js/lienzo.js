@@ -14,7 +14,7 @@
   const fondos = new Map(); // clave -> Image
   const referencias=new Map();
   let mapaLazo=null,claveLazo='';
-  let lazo=null,cursorLazo=[10,10],verticeElegido=null;
+  let lazo=null,cursorLazo=[10,10],verticeElegido=null,cursorLazoTeclado=false;
   let arrastre = null;      // estado del gesto en curso
   let vistaPrevia = null;   // puntos de la forma que se está dibujando
   let verticesPendientes = null;
@@ -324,8 +324,8 @@
   function tramoLazo(a,b){const f=prepararLazo();if(!f||!document.getElementById('lazo-iman').checked)return [a,b];const px=q=>[(q[0]-f.x)/f.w*mapaLazo.W,(q[1]-f.y)/f.h*mapaLazo.H],mm=q=>[f.x+q[0]/mapaLazo.W*f.w,f.y+q[1]/mapaLazo.H*f.h];const radio=Number(document.getElementById('lazo-radio').value)||8,inten=Number(document.getElementById('lazo-intensidad').value)/5;return window.Lazo.camino(mapaLazo,px(a),px(b),Math.ceil(radio*mapaLazo.W/f.w),inten).map(mm);}
   /** Puntos del trazo: primer anclaje y, después, cada tramo sin repetir su inicio. */
   function puntosLazo(){if(!lazo||!lazo.anclas.length)return [];return [lazo.anclas[0]].concat(...lazo.tramos.map(s=>s.slice(1)));}
-  function iniciarLazo(mm){lazo={anclas:[mm],tramos:[],quitadas:[],preview:[]};App.anunciar('Lazo iniciado. Cada clic fija un punto; arrastrá un punto para corregirlo; Ctrl+Z o Retroceso borra el último; Enter o doble clic termina.');}
-  function agregarAncla(mm){const ant=lazo.anclas.at(-1);lazo.tramos.push(tramoLazo(ant,mm));lazo.anclas.push(mm);lazo.quitadas=[];App.anunciar(`Punto ${lazo.anclas.length} fijado.`);}
+  function iniciarLazo(mm){lazo={anclas:[mm],tramos:[],quitadas:[],preview:[]};App.anunciar('Lazo iniciado. Cada clic fija un punto; arrastrá un punto para corregirlo; Ctrl+Z o Retroceso borra el último; Enter o doble clic termina la línea sin cerrarla; clic derecho abre más opciones; Escape cancela.');}
+  function agregarAncla(mm){const ant=lazo.anclas.at(-1);lazo.tramos.push(tramoLazo(ant,mm));lazo.anclas.push(mm);lazo.quitadas=[];cursorLazoTeclado=false;App.anunciar(`Punto ${lazo.anclas.length} fijado.`);}
   /** Saca el último punto del lazo (Ctrl+Z / Retroceso). Devuelve false si no había lazo. */
   function deshacerLazo(){if(!lazo)return false;if(lazo.anclas.length<=1){lazo=null;App.anunciar('Lazo cancelado.');dibujar();return true;}lazo.quitadas.push({ancla:lazo.anclas.pop(),tramo:lazo.tramos.pop()});lazo.preview=[];App.anunciar(`Punto borrado. Quedan ${lazo.anclas.length}.`);dibujar();return true;}
   /** Vuelve a poner el último punto quitado (Ctrl+Y). */
@@ -333,6 +333,11 @@
   /** Mueve un anclaje y recalcula los dos tramos que lo tocan. */
   function moverAncla(i,mm){lazo.anclas[i]=mm;if(i>0)lazo.tramos[i-1]=tramoLazo(lazo.anclas[i-1],mm);if(i<lazo.anclas.length-1)lazo.tramos[i]=tramoLazo(mm,lazo.anclas[i+1]);}
   function anclaCercana(mm){if(!lazo)return -1;const tol=Math.max(2,8/escala());let mejor=-1,dmin=Infinity;lazo.anclas.forEach((q,i)=>{const d=Math.hypot(q[0]-mm[0],q[1]-mm[1]);if(d<tol&&d<dmin){dmin=d;mejor=i;}});return mejor;}
+  function cancelarLazo(){if(!lazo)return;lazo=null;cursorLazoTeclado=false;App.anunciar('Lazo cancelado.');dibujar();}
+  /** Menú del lazo (clic derecho o tecla de menú): terminar la línea abierta, cerrar la forma, deshacer o cancelar. */
+  function menuLazo(x,y,desde){if(!lazo)return false;const n=lazo.anclas.length;if(n<2){App.anunciar('Fijá al menos 2 puntos para terminar la línea.');return true;}
+    const acciones=[{texto:'Terminar línea aquí',alClic:()=>terminarLazo(false)}];if(n>=3)acciones.push({texto:'Cerrar forma',alClic:()=>terminarLazo(true)});acciones.push({texto:'Deshacer último punto',alClic:()=>deshacerLazo()},{texto:'Cancelar lazo',alClic:cancelarLazo});
+    if(App.MenuContextual)App.MenuContextual.abrirLista(x,y,desde||lienzo,acciones,'Acciones del lazo');return true;}
   function terminarLazo(cerrar=false){if(!lazo)return;if(cerrar&&lazo.anclas.length>=3){lazo.tramos.push(tramoLazo(lazo.anclas.at(-1),lazo.anclas[0]));}const puntos=puntosLazo();const minimo=cerrar?3:2;if(puntos.length>=minimo){const tipo=cerrar?'poligono':'polilinea',tol=Number(document.getElementById('lazo-simplificar').value)||0,v=window.Lazo.simplificar(puntos,tol);const sig=document.getElementById('lazo-significado').value;App.EditorObjetos.crear(tipo,{nombre:sig[0].toUpperCase()+sig.slice(1),vertices:v,cerrado:cerrar});App.anunciar(`${sig}: ${v.length} vértices. ${cerrar?'Forma cerrada.':'Trazo terminado.'}`);}lazo=null;dibujar();}
   function lineaCercana(mm){const tol=Math.max(2,7/escala());let mejor=null;for(const o of App.pagina().objetos||[]){if(o.bloqueado||o.oculto||!['linea','polilinea','poligono'].includes(o.tipo))continue;const v=Objetos.geometria(o);for(let i=0;i<v.length-(o.tipo==='poligono'?0:1);i++){const d=Objetos.distanciaSegmento(mm[0],mm[1],v[i],v[(i+1)%v.length]);if(d<tol&&(!mejor||d<mejor.d))mejor={o,i,d};}}return mejor;}
   function verticeCercano(mm){const o=App.ui.sel?.tipo==='objeto'&&App.EditorObjetos.buscar(App.ui.sel.id);if(!o||o.bloqueado||!['linea','polilinea','poligono'].includes(o.tipo))return null;const v=Objetos.geometria(o),i=v.findIndex(p=>Math.hypot(mm[0]-p[0],mm[1]-p[1])<Math.max(2,8/escala()));return i<0?null:{o,i,p:v[i]};}
@@ -401,7 +406,7 @@
     const mm = posicion(ev);
     textoCursor = `x ${mm[0].toFixed(1)} mm · y ${mm[1].toFixed(1)} mm`;
     document.getElementById('cursor-mm').textContent = textoCursor;
-    cursorLazo=mm;
+    cursorLazo=mm;cursorLazoTeclado=false;
     if(lazo&&arrastre&&arrastre.tipo==='ancla'){if(Math.hypot(mm[0]-arrastre.inicio[0],mm[1]-arrastre.inicio[1])>0.8)arrastre.movido=true;if(arrastre.movido){const now=performance.now();if(!arrastre.ultima||now-arrastre.ultima>60){moverAncla(arrastre.i,mm);arrastre.ultima=now;dibujar();}}return;}
     if(lazo&&!arrastre&&App.ui.herramienta==='lazo'){const now=performance.now();if(!lazo.ultimaVista||now-lazo.ultimaVista>80){lazo.preview=tramoLazo(lazo.anclas.at(-1),mm).slice(1);lazo.ultimaVista=now;dibujar();}}
     if(!arrastre&&App.ui.herramienta==='seleccionar'){
@@ -631,7 +636,7 @@
       }
       if (ev.key === 'Escape') { limpiarMedicion(); medirConTeclado = false; App.anunciar('Medición cancelada.'); ev.preventDefault(); dibujar(); return; }
     }
-    if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])<.5){terminarLazo();}else{agregarAncla(cursorLazo);}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){lazo=null;App.anunciar('Lazo cancelado.');ev.preventDefault();dibujar();return;}}
+    if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];cursorLazoTeclado=true;App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(cursorLazoTeclado&&Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])>=.5){agregarAncla(cursorLazo);}else if(lazo.anclas.length>=2){terminarLazo(false);}else{App.anunciar('Fijá al menos 2 puntos para terminar la línea.');}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){cancelarLazo();ev.preventDefault();return;}}
     // Escape sin nada en curso: volver a «Elegir y mover» (para poder mover cuadros y formas).
     if(ev.key==='Escape'&&!lazo&&App.ui.herramienta!=='seleccionar'&&App.elegirHerramienta){App.elegirHerramienta('seleccionar');ev.preventDefault();return;}
     if(App.ui.herramienta==='editar-vertices'&&teclasVertices(ev,flechas))return;
@@ -677,7 +682,7 @@
   // Clic derecho sobre un elemento: lo elige (si no estaba elegido) y abre el menú de acciones.
   lienzo.addEventListener('contextmenu', ev => {
     ev.preventDefault();
-    if (lazo) return;
+    if (lazo) { menuLazo(ev.clientX, ev.clientY, lienzo); return; }
     const mm = posicion(ev), t = tocar(mm);
     if (t && t.tipo === 'objeto' && !(App.ui.seleccion || []).includes(t.id)) App.EditorObjetos.seleccionar(t.id, false);
     else if (t && t.tipo !== 'objeto') App.seleccionar(t.tipo, t.id);
@@ -708,7 +713,7 @@
     const p = App.pagina();
     const x = aMm(contenedor.scrollLeft + contenedor.clientWidth / 2 - lienzo.offsetLeft), y = aMm(contenedor.scrollTop + contenedor.clientHeight / 2 - lienzo.offsetTop);
     return [Math.max(0, Math.min(p.ancho, x)), Math.max(0, Math.min(p.alto, y))];
-  }, limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, lazoActivo: () => !!lazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
+  }, limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, lazoActivo: () => !!lazo, menuLazo, terminarLazo, cancelarLazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
   App.alCambiar(() => dibujar());
   window.addEventListener('resize', () => dibujar());
 })();

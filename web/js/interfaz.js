@@ -120,7 +120,7 @@
     crear.querySelector('h2').after(ayuda);
     const TEXTOS = {
       seleccionar: 'Hacé clic en un elemento para elegirlo; arrastralo para moverlo. Clic derecho: más acciones. Atajos: V elegir y mover, L lazo, M medir, Escape vuelve acá.',
-      lazo: 'Hacé clic sobre el mapa de fondo: la línea se pega al borde. Arrastrá un punto para corregirlo; Ctrl+Z borra el último; Enter o doble clic termina.',
+      lazo: 'Hacé clic sobre el mapa de fondo: la línea se pega al borde. Arrastrá un punto para corregirlo; Ctrl+Z borra el último. Para terminar sin cerrar el circuito: Enter, doble clic, o clic derecho y «Terminar línea aquí» (hacen falta 2 puntos como mínimo). Para cerrar la forma: clic en el primer punto o «Cerrar forma» en el menú. Escape cancela. Con teclado: las flechas mueven el cursor y Enter fija un punto; Enter sin mover el cursor termina.',
       'editar-vertices': 'Arrastrá un vértice para moverlo; doble clic en un tramo agrega uno; Suprimir borra el elegido.',
       'borrar-linea': 'Clic sobre una línea para borrarla (Alt+clic borra solo ese tramo).',
       tijera: 'Clic sobre una línea para cortarla en dos en ese punto.',
