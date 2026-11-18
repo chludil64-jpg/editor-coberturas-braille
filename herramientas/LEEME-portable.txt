@@ -1,0 +1,23 @@
+EDITOR BRAILLE - versión portable
+
+REQUISITOS
+- Windows 10 u 11.
+- Google Chrome o Microsoft Edge.
+- Para imprimir por USB: el controlador (driver) de la Index Everest-D V4 instalado. Por red no hace falta.
+- No hace falta instalar Python.
+
+USO
+1. Descomprimí TODA la carpeta «Editor Braille» donde quieras (Escritorio, pendrive, etc.). No ejecutes el programa desde dentro del zip.
+2. Doble clic en «Editor Braille.exe». Se abre el navegador con el editor. No aparece ventana negra.
+3. Para salir usá el botón «Cerrar programa» del editor.
+
+ACCESO DIRECTO
+- Clic derecho sobre «Editor Braille.exe» > Mostrar más opciones > Enviar a > Escritorio (crear acceso directo).
+
+INSTALAR COMO APLICACIÓN (opcional)
+- Con el programa abierto, en Chrome o Edge: menú (tres puntos) > «Instalar Editor Braille» o «Aplicaciones» > «Instalar este sitio como aplicación».
+
+DATOS Y PROBLEMAS
+- El perfil de la impresora y la calibración se guardan en %LOCALAPPDATA%\EditorBraille (no en la carpeta del programa).
+- Si algo falla, el registro está en %LOCALAPPDATA%\EditorBraille\log.txt.
+- Si Windows SmartScreen avisa, elegí «Más información» > «Ejecutar de todas formas» (el programa no está firmado).

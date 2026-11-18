@@ -20,13 +20,17 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+VERSION = "2.0.0"
+CONGELADO = bool(getattr(sys, "frozen", False))   # True dentro del .exe de PyInstaller
+# Recursos de solo lectura (web/, perfiles/): junto al script o dentro del paquete congelado.
+BASE = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 
 from motor import impresion, index_v4, pdf_io, perfil as perfil_mod  # noqa: E402
 
 WEB = os.path.join(BASE, "web")
-RUTA_PERFIL = os.path.join(BASE, "perfiles", "everest_v4.json")
+PERFIL_DEFECTO = os.path.join(BASE, "perfiles", "everest_v4.json")
+RUTA_PERFIL = PERFIL_DEFECTO
 MAX_SUBIDA = 40 * 1024 * 1024     # tope de cualquier cuerpo recibido (PDF incluido)
 MAX_PDFS_RETENIDOS = 3            # documentos PDF abiertos en memoria
 MAX_DPI = 200
@@ -64,6 +68,27 @@ def carpeta_datos():
     """Carpeta de datos locales: %LOCALAPPDATA%\\EditorBraille (en otros sistemas, ~/.local/share)."""
     base = os.environ.get("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), ".local", "share")
     return os.path.join(base, "EditorBraille")
+
+
+def preparar_datos_congelado():
+    """En el .exe los datos escribibles (perfil editado, log) van a %LOCALAPPDATA%\EditorBraille.
+    Copia el perfil por defecto la primera vez y redirige la salida de errores a log.txt."""
+    global RUTA_PERFIL
+    carpeta = carpeta_datos()
+    os.makedirs(carpeta, exist_ok=True)
+    RUTA_PERFIL = os.path.join(carpeta, "everest_v4.json")
+    if not os.path.isfile(RUTA_PERFIL) and os.path.isfile(PERFIL_DEFECTO):
+        import shutil
+        shutil.copyfile(PERFIL_DEFECTO, RUTA_PERFIL)
+    ruta_log = os.path.join(carpeta, "log.txt")
+    try:
+        if os.path.isfile(ruta_log) and os.path.getsize(ruta_log) > 512 * 1024:
+            os.replace(ruta_log, ruta_log + ".1")
+        log = open(ruta_log, "a", encoding="utf-8", buffering=1)
+        sys.stdout = sys.stderr = log
+        print(f"--- Editor Braille {VERSION} ---", flush=True)
+    except OSError:
+        pass
 
 
 def _doc(ident):
@@ -147,7 +172,7 @@ def generar_archivo(cuerpo):
 
 
 class Manejador(BaseHTTPRequestHandler):
-    server_version = "EditorBraille/1.0"
+    server_version = "EditorBraille/" + VERSION
 
     def log_message(self, formato, *args):  # registro breve en consola
         sys.stderr.write("[%s] %s\n" % (self.log_date_time_string(), formato % args))
@@ -399,9 +424,12 @@ def main():
     mimetypes.add_type("text/css", ".css")
     mimetypes.add_type("application/manifest+json", ".webmanifest")
     ap = argparse.ArgumentParser(description="Editor de coberturas braille (servidor local)")
-    ap.add_argument("--puerto", type=int, default=8777)
+    ap.add_argument("--puerto", type=int,
+                    default=int(os.environ.get("EDITOR_BRAILLE_PUERTO") or 8777))
     ap.add_argument("--sin-navegador", action="store_true")
     args = ap.parse_args()
+    if CONGELADO:
+        preparar_datos_congelado()
     if ya_esta_abierto(args.puerto):
         url = f"http://127.0.0.1:{args.puerto}/"
         print(f"El editor ya estaba abierto. Abriendo {url}", flush=True)

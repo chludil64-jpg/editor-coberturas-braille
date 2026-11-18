@@ -17,3 +17,7 @@ desktop.ini
 
 # Grafo de conocimiento (graphify)
 graphify-out/
+
+# Empaquetado (PyInstaller / Inno Setup)
+build/
+dist/
