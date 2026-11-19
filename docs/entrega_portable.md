@@ -8,38 +8,43 @@ Paquete listo en `dist/entrega/` (no está en git; se regenera con `herramientas
 
 | Archivo | Para qué |
 |---|---|
-| `EditorBraille-portable-2.0.0.zip` | El programa (Windows 10/11, sin instalar Python). |
-| `version.json.plantilla` | Lo que consulta el botón «Actualizar». Reemplazar `{URL_ZIP}` y renombrar a `version.json`. |
+| `EditorBraille-portable-2.0.1.zip` | El programa (Windows 10/11, sin instalar Python). |
+| `version.json` | Lo que consulta el botón «Actualizar». Ya trae la URL real del zip. |
 | `pagina_descarga.md` | Texto listo para la página (requisitos, pasos, SmartScreen, licencia). |
 | `entrega_portable.md` | Este documento. |
 
-- Versión: **2.0.0**
-- Tamaño: 51.726.173 bytes (49,3 MB)
-- SHA256: `88dc97d84c95452f95f37358d4a422e0ebfa8b10fdad2277555f936a8c69b546`
+- Versión: **2.0.1**
+- Tamaño: 51.726.590 bytes (49,3 MB)
+- SHA256: `1f2776926921c114be1b7661478c5e64318bdaad5b22297e7ea8488eaa414fb3`
 - Código fuente (MIT): https://github.com/chludil64-jpg/editor-coberturas-braille
+
+## Dónde se publica
+
+- Página de descarga: https://www.ciencia.chubut.gov.ar/app-inclusion/editor-braille/
+- Carpeta de estáticos: `https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/`
+  - `EditorBraille-portable-2.0.1.zip`
+  - `version.json` (dirección fija: `https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json`)
 
 ## Pasos de integración en el sitio
 
-1. Subir el zip a los estáticos del sitio con una URL **https** estable, por ejemplo `https://SITIO/descargas/editor-braille/EditorBraille-portable-2.0.0.zip`.
-2. Crear `version.json` desde la plantilla, con esa URL en `url`, y publicarlo en una URL https **fija** que no cambie entre versiones, por ejemplo `https://SITIO/descargas/editor-braille/version.json`.
-   - O generarlo: `python herramientas/generar_version_json.py dist/EditorBraille-portable-2.0.0.zip https://SITIO/.../EditorBraille-portable-2.0.0.zip --salida dist/version.json`
-3. Crear la página de descarga con el texto de `pagina_descarga.md` (reemplazar `{URL_ZIP}`).
-4. Servir `version.json` con `Content-Type: application/json`, sin redirecciones a http y de menos de 64 KB. El zip puede pesar hasta 300 MB.
+1. Subir el zip y `version.json` a la carpeta de estáticos de arriba (zip y `version.json` **en el mismo dominio**, bajo `/static/`, por https).
+2. Crear la página de descarga con el texto de `pagina_descarga.md` (el enlace ya apunta al zip real).
+3. Servir `version.json` preferentemente con `Content-Type: application/json` (el programa tolera `text/plain` u `octet-stream`, pero exige que el cuerpo sea JSON válido), sin redirecciones a http y de menos de 64 KB. El zip puede pesar hasta 300 MB. Las redirecciones solo se siguen a https y, para el zip, dentro del mismo dominio.
 
-## Conectar el programa con el sitio (en el repo del Editor Braille)
+## Conexión del programa con el sitio
 
-1. En `app.py`, poner la URL fija de `version.json` en `URL_ACTUALIZACIONES = "https://SITIO/descargas/editor-braille/version.json"`.
-   - Alternativa sin recompilar, por PC: `%LOCALAPPDATA%\EditorBraille\config.json` con `{"url_actualizaciones": "https://..."}`.
-2. Subir `VERSION` en `app.py` (por ejemplo `2.0.1`), volver a correr `herramientas\empaquetar.ps1 -UrlZip https://SITIO/.../EditorBraille-portable-2.0.1.zip -Notas "..."` y publicar el zip nuevo y el `version.json` nuevo.
-3. En el README, reemplazar «página de descarga (próximamente…)» por el enlace real.
+Ya está hecha en esta versión: `URL_ACTUALIZACIONES` en `app.py` apunta a `https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json`. Alternativa sin recompilar, por PC: `%LOCALAPPDATA%\EditorBraille\config.json` con `{"url_actualizaciones": "https://..."}`.
 
-Importante: los portables 2.0.0 ya distribuidos no tienen la URL configurada, así que **no** se van a actualizar solos. La actualización automática funciona a partir de la primera versión que se compile con `URL_ACTUALIZACIONES` puesta. Conviene configurar la URL antes de difundir el programa.
+Para publicar una versión nueva: subir `VERSION` en `app.py`, correr `herramientas\empaquetar.ps1 -UrlZip https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-X.Y.Z.zip -Notas "..."` y subir el zip y el `version.json` generados.
+
+Importante: los portables 2.0.0 ya distribuidos no tienen la URL configurada, así que **no** se actualizan solos; la actualización automática funciona a partir de la 2.0.1.
 
 ## Cómo funciona la actualización (para soporte)
 
 - Botón: Archivo → Programa → «Actualizar».
 - Lee `version.json` (solo https), compara versiones, descarga el zip, verifica el SHA256, lo descomprime en `%LOCALAPPDATA%\EditorBraille\actualizacion\<versión>\` y un `.cmd` reemplaza los archivos y reabre el programa.
 - El perfil de la impresora y la calibración (`%LOCALAPPDATA%\EditorBraille`) no se tocan.
+- El `.cmd` actualizador espera con `ping` y `robocopy` reintenta mientras el programa viejo termina de cerrarse; la carpeta del programa puede tener espacios. Probado el ciclo completo (detectar, descargar, verificar SHA256, reemplazar y reabrir conservando el perfil).
 - Si la carpeta del programa no es escribible (por ejemplo, en `C:\Program Files`), avisa y hay que actualizar a mano.
 
 ## Licencias

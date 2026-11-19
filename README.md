@@ -16,7 +16,7 @@ Manual de uso completo: [LEEME.md](LEEME.md).
 
 ## Descargar (Windows)
 
-Versión portable, sin instalar Python: página de descarga (próximamente; mientras tanto, se puede armar con `herramientas/empaquetar.ps1`).
+Versión portable, sin instalar Python: [página de descarga](https://www.ciencia.chubut.gov.ar/app-inclusion/editor-braille/) (también se puede armar con `herramientas/empaquetar.ps1`).
 Descomprimí toda la carpeta y abrí `Editor Braille.exe`. Si Windows SmartScreen avisa: «Más información» → «Ejecutar de todas formas» (el programa no está firmado).
 
 ## Requisitos
