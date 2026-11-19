@@ -158,7 +158,8 @@ class Actualizador(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             g = act.escribir_actualizador(os.path.join(t, "nuevo"), os.path.join(t, "app"), 1234, t)
             texto = open(g, encoding="cp1252").read()
-            self.assertIn("PID eq 1234", texto)
+            self.assertIn("proceso 1234", texto)
+            self.assertNotIn("tasklist", texto)
             self.assertIn("robocopy", texto)
             self.assertIn("Editor Braille.exe", texto)
 

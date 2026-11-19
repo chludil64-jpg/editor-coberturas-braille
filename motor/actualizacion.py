@@ -292,23 +292,15 @@ def escribir_actualizador(origen, destino, pid, carpeta_temporal):
     guion = os.path.join(carpeta_temporal, "actualizar_editor_braille.cmd")
     exe = os.path.join(destino, NOMBRE_EXE)
     pid = int(pid)
+    # No se usa tasklist ni timeout: sin consola (proceso desacoplado) se cuelgan o fallan.
+    # ping hace la pausa y robocopy reintenta mientras el .exe viejo siga bloqueado.
     lineas = [
         "@echo off",
-        "setlocal",
-        "set /a intentos=0",
-        ":esperar",
-        f'tasklist /FI "PID eq {pid}" 2>nul | find "{pid}" >nul',
-        "if not errorlevel 1 (",
-        "  set /a intentos+=1",
-        "  if %intentos% GEQ 60 goto copiar",
-        "  timeout /t 1 /nobreak >nul",
-        "  goto esperar",
-        ")",
-        ":copiar",
-        f'robocopy "{origen}" "{destino}" /E /R:5 /W:1 /NFL /NDL /NJH /NJS >nul',
-        "if %errorlevel% GEQ 8 exit /b 1",
+        f"rem Espera a que termine el proceso {pid} (los archivos bloqueados se reintentan).",
+        "ping -n 4 127.0.0.1 >nul",
+        f'robocopy "{origen}" "{destino}" /E /R:60 /W:1 /NFL /NDL /NJH /NJS >nul',
+        "if errorlevel 8 exit /b 1",
         f'start "" "{exe}"',
-        "endlocal",
     ]
     with open(guion, "w", encoding="cp1252", newline="") as f:
         f.write("\r\n".join(lineas) + "\r\n")
