@@ -20,10 +20,10 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 # Dirección https del version.json de actualizaciones. Vacía = sin configurar.
 # También se puede definir en %LOCALAPPDATA%\EditorBraille\config.json: {"url_actualizaciones": "https://.../version.json"}
-URL_ACTUALIZACIONES = ""
+URL_ACTUALIZACIONES = "https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json"
 CONGELADO = bool(getattr(sys, "frozen", False))   # True dentro del .exe de PyInstaller
 # Recursos de solo lectura (web/, perfiles/): junto al script o dentro del paquete congelado.
 BASE = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))

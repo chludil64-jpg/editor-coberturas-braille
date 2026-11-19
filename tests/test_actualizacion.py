@@ -165,14 +165,24 @@ class Actualizador(unittest.TestCase):
 
 class _Servidor(http.server.BaseHTTPRequestHandler):
     archivos = {}
+    tipos = {}
+    redirecciones = {}
 
     def do_GET(self):
+        if self.path in self.redirecciones:
+            self.send_response(302)
+            self.send_header("Location", self.redirecciones[self.path])
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         datos = self.archivos.get(self.path)
         if datos is None:
             self.send_response(404)
             self.end_headers()
             return
         self.send_response(200)
+        if self.path in self.tipos:
+            self.send_header("Content-Type", self.tipos[self.path])
         self.send_header("Content-Length", str(len(datos)))
         self.end_headers()
         self.wfile.write(datos)
@@ -262,6 +272,69 @@ class ConServidorLocal(unittest.TestCase):
             with self.assertRaises(act.ErrorActualizacion):
                 act.preparar_instalacion(self._publicar(url="http://ejemplo.org/x.zip"), "2.0.0", datos)
         finally:
+            shutil.rmtree(datos, ignore_errors=True)
+
+    def test_content_type_tolerante(self):
+        for tipo in ("application/json", "application/json; charset=utf-8", "text/plain",
+                     "application/octet-stream"):
+            with self.subTest(tipo=tipo):
+                url = self._publicar()
+                _Servidor.tipos["/version.json"] = tipo
+                r, _ = act.buscar(url, "2.0.0")
+                self.assertEqual(r["nueva"], "9.9.9")
+        _Servidor.tipos.pop("/version.json", None)
+
+    def test_cuerpo_no_json_mensaje_claro(self):
+        _Servidor.archivos["/malo.json"] = b"<html><body>Pagina</body></html>"
+        _Servidor.tipos["/malo.json"] = "text/html; charset=utf-8"
+        with self.assertRaises(act.ErrorActualizacion) as c:
+            act.buscar(self.base + "/malo.json", "2.0.0")
+        self.assertIn("página web", str(c.exception))
+        _Servidor.tipos["/malo.json"] = "text/plain"
+        with self.assertRaises(act.ErrorActualizacion) as c:
+            act.buscar(self.base + "/malo.json", "2.0.0")
+        self.assertIn("JSON", str(c.exception))
+
+    def test_redireccion_valida_en_el_mismo_dominio(self):
+        _Servidor.redirecciones["/viejo.json"] = self.base + "/version.json"
+        self._publicar()
+        r, _ = act.buscar(self.base + "/viejo.json", "2.0.0")
+        self.assertEqual(r["nueva"], "9.9.9")
+        _Servidor.redirecciones.pop("/viejo.json")
+
+    def test_redireccion_a_http_remoto_rechazada(self):
+        _Servidor.redirecciones["/mala.json"] = "http://ejemplo.org/version.json"
+        with self.assertRaises(act.ErrorActualizacion):
+            act.buscar(self.base + "/mala.json", "2.0.0")
+        _Servidor.redirecciones.pop("/mala.json")
+
+    def test_zip_en_otro_dominio_rechazado(self):
+        datos = tempfile.mkdtemp()
+        try:
+            with self.assertRaises(act.ErrorActualizacion) as c:
+                act.preparar_instalacion(self._publicar(url="https://ejemplo.org/static/x.zip"), "2.0.0", datos)
+            self.assertIn("mismo dominio", str(c.exception))
+        finally:
+            shutil.rmtree(datos, ignore_errors=True)
+
+    def test_zip_redirigido_a_otro_dominio_rechazado(self):
+        datos = tempfile.mkdtemp()
+        _Servidor.redirecciones["/salta.zip"] = "https://ejemplo.org/x.zip"
+        try:
+            with self.assertRaises(act.ErrorActualizacion):
+                act.preparar_instalacion(self._publicar(url=self.base + "/salta.zip"), "2.0.0", datos)
+        finally:
+            _Servidor.redirecciones.pop("/salta.zip", None)
+            shutil.rmtree(datos, ignore_errors=True)
+
+    def test_zip_redirigido_mismo_dominio_ok(self):
+        datos = tempfile.mkdtemp()
+        _Servidor.redirecciones["/alias.zip"] = self.base + "/nuevo.zip"
+        try:
+            info, origen = act.preparar_instalacion(self._publicar(url=self.base + "/alias.zip"), "2.0.0", datos)
+            self.assertTrue(os.path.isfile(os.path.join(origen, "Editor Braille.exe")))
+        finally:
+            _Servidor.redirecciones.pop("/alias.zip", None)
             shutil.rmtree(datos, ignore_errors=True)
 
     def test_api_del_servidor(self):

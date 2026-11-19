@@ -1,6 +1,8 @@
 """Búsqueda e instalación de actualizaciones del portable.
 
 Todo es de la biblioteca estándar. Reglas de seguridad:
+- redirecciones solo a https; el zip, además, solo en el mismo dominio que version.json;
+- el Content-Type de version.json no se exige, pero el cuerpo debe ser JSON válido;
 - solo https (http://127.0.0.1 únicamente con EDITOR_BRAILLE_PRUEBAS=1);
 - version.json de 64 KB como máximo y zip de 300 MB como máximo;
 - SHA256 obligatorio antes de descomprimir;
@@ -75,22 +77,42 @@ def validar_url(url):
     raise ErrorActualizacion("La dirección de actualizaciones tiene que ser https.")
 
 
+def _origen(url):
+    p = urlparse(url)
+    return (p.hostname or "").lower(), p.port or (443 if p.scheme == "https" else 80)
+
+
+def mismo_dominio(url_a, url_b):
+    return _origen(url_a) == _origen(url_b)
+
+
 class _Redireccion(urllib.request.HTTPRedirectHandler):
+    """Redirecciones solo a https (o http local en pruebas) y, si se pide, al mismo dominio."""
+
+    def __init__(self, referencia=None):
+        super().__init__()
+        self.referencia = referencia
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         validar_url(newurl)
+        if self.referencia and not mismo_dominio(newurl, self.referencia):
+            raise ErrorActualizacion("El servidor redirige a otro dominio: no se descarga.")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def _abrir(url):
+def _abrir(url, referencia=None):
     validar_url(url)
-    opener = urllib.request.build_opener(_Redireccion)
+    opener = urllib.request.build_opener(_Redireccion(referencia))
     req = urllib.request.Request(url, headers={"User-Agent": "EditorBraille-actualizador"})
     return opener.open(req, timeout=TIMEOUT)
 
 
-def descargar_bytes(url, maximo):
+def descargar_bytes(url, maximo, tipos=None):
+    """Descarga en memoria. Si «tipos» es una lista, se le agrega el Content-Type recibido."""
     try:
         with _abrir(url) as r:
+            if tipos is not None:
+                tipos.append((r.headers.get_content_type() or "").lower())
             largo = r.headers.get("Content-Length")
             if largo and largo.isdigit() and int(largo) > maximo:
                 raise ErrorActualizacion("El archivo es demasiado grande.")
@@ -104,12 +126,12 @@ def descargar_bytes(url, maximo):
     return datos
 
 
-def descargar_archivo(url, destino, maximo=MAX_ZIP):
+def descargar_archivo(url, destino, maximo=MAX_ZIP, referencia=None):
     """Descarga a disco en bloques, con tope de tamaño. Devuelve el SHA256 calculado."""
     h = hashlib.sha256()
     total = 0
     try:
-        with _abrir(url) as r, open(destino, "wb") as f:
+        with _abrir(url, referencia) as r, open(destino, "wb") as f:
             largo = r.headers.get("Content-Length")
             if largo and largo.isdigit() and int(largo) > maximo:
                 raise ErrorActualizacion("El archivo de actualización es demasiado grande.")
@@ -139,12 +161,18 @@ def _borrar(ruta):
 
 
 # ------------------------------------------------------------------ version.json
-def leer_version_json(datos):
-    """Valida el contenido de version.json y devuelve {version, url, sha256, notas}."""
+def leer_version_json(datos, tipo=""):
+    """Valida el contenido de version.json y devuelve {version, url, sha256, notas}.
+
+    El Content-Type no se exige (algunos servidores sirven text/plain u octet-stream): lo que
+    importa es que el cuerpo sea JSON válido. «tipo» solo mejora el mensaje de error."""
     try:
-        d = json.loads(datos.decode("utf-8"))
+        d = json.loads(datos.decode("utf-8-sig"))
     except (ValueError, UnicodeDecodeError):
-        raise ErrorActualizacion("El archivo de versiones no es válido.") from None
+        if "html" in (tipo or ""):
+            raise ErrorActualizacion("La dirección de actualizaciones devolvió una página web "
+                                     "en lugar del archivo de versiones.") from None
+        raise ErrorActualizacion("El archivo de versiones no es un JSON válido.") from None
     if not isinstance(d, dict):
         raise ErrorActualizacion("El archivo de versiones no es válido.")
     try:
@@ -163,7 +191,9 @@ def buscar(url_version, version_actual):
     """Devuelve ({hay, actual, nueva, notas}, info). Lanza ErrorActualizacion si falla."""
     if not url_version:
         raise ErrorActualizacion("No hay dirección de actualizaciones configurada.")
-    info = leer_version_json(descargar_bytes(url_version, MAX_VERSION_JSON))
+    tipos = []
+    datos = descargar_bytes(url_version, MAX_VERSION_JSON, tipos)
+    info = leer_version_json(datos, tipos[0] if tipos else "")
     return {"hay": es_mas_nueva(info["version"], version_actual), "actual": version_actual,
             "nueva": info["version"], "notas": info["notas"]}, info
 
@@ -300,6 +330,9 @@ def preparar_instalacion(url_version, version_actual, carpeta_datos):
     if not es_mas_nueva(info["version"], version_actual):
         raise ErrorActualizacion(f"Ya tenés la última versión ({version_actual}).")
     url_zip = validar_url(info["url"])
+    if not mismo_dominio(url_zip, url_version):
+        raise ErrorActualizacion("El zip de la actualización tiene que estar en el mismo dominio "
+                                 "que el archivo de versiones: no se instala.")
     if not _RE_SHA.match(info["sha256"]):
         raise ErrorActualizacion("Falta la huella SHA256 de la actualización: no se instala.")
     base = os.path.join(carpeta_datos, "actualizacion")
@@ -308,7 +341,7 @@ def preparar_instalacion(url_version, version_actual, carpeta_datos):
         shutil.rmtree(carpeta, ignore_errors=True)
     os.makedirs(base, exist_ok=True)
     ruta_zip = os.path.join(base, f"{info['version']}.zip")
-    descargar_archivo(url_zip, ruta_zip)
+    descargar_archivo(url_zip, ruta_zip, referencia=url_version)
     try:
         verificar_sha256(ruta_zip, info["sha256"])
         descomprimir_seguro(ruta_zip, carpeta)
