@@ -3,20 +3,23 @@
   Crea (si hace falta) una cola de impresora para una Index braille por USB, usando el
   controlador que ya trae Windows ("Generic / Text Only"). Se ejecuta ELEVADO (administrador).
 
-  Solo acepta dos parametros, ambos validados; el nombre de la cola y el controlador son fijos.
-  No ejecuta nada que venga de afuera. Deja el resultado en un JSON (el programa lo lee).
+  Solo acepta un parametro (-Puerto), validado; el nombre de la cola, el controlador y la ruta del
+  resultado son fijos. El resultado va a %ProgramData%\EditorBraille\preparar_impresora.json: puede
+  correr como OTRO usuario (tecnico), cuyo %LOCALAPPDATA% es distinto, y el programa lo lee desde ahi.
 #>
 param(
-  [Parameter(Mandatory = $true)][string]$Puerto,
-  [Parameter(Mandatory = $true)][string]$Resultado
+  [Parameter(Mandatory = $true)][string]$Puerto
 )
 $ErrorActionPreference = 'Stop'
 $NombreCola = 'Braille Index (Editor Braille)'
 $Controlador = 'Generic / Text Only'
+$DirResultado = Join-Path $env:ProgramData 'EditorBraille'
+$Resultado = Join-Path $DirResultado 'preparar_impresora.json'
 
 function Guardar-Resultado($ok, $mensaje, $cola) {
   $obj = [ordered]@{ ok = [bool]$ok; mensaje = [string]$mensaje; cola = [string]$cola; puerto = [string]$Puerto }
   $json = $obj | ConvertTo-Json -Compress
+  if (-not (Test-Path -LiteralPath $DirResultado)) { New-Item -ItemType Directory -Path $DirResultado -Force | Out-Null }
   $tmp = $Resultado + '.tmp'
   [System.IO.File]::WriteAllText($tmp, $json, (New-Object System.Text.UTF8Encoding($false)))
   Move-Item -LiteralPath $tmp -Destination $Resultado -Force
@@ -25,11 +28,6 @@ function Guardar-Resultado($ok, $mensaje, $cola) {
 try {
   # Validacion de parametros: nada que no sea el formato esperado.
   if ($Puerto -notmatch '^USB\d{3}$') { throw 'El puerto no es valido.' }
-  $esperado = Join-Path $env:LOCALAPPDATA 'EditorBraille'
-  $dirRes = [System.IO.Path]::GetDirectoryName([System.IO.Path]::GetFullPath($Resultado))
-  if (($dirRes.TrimEnd('\') -ne $esperado.TrimEnd('\')) -or ([System.IO.Path]::GetFileName($Resultado) -ne 'preparar_impresora.json')) {
-    throw 'La ruta del resultado no es valida.'
-  }
   if (-not (Get-PrinterPort -Name $Puerto -ErrorAction SilentlyContinue)) {
     throw "Windows no tiene el puerto $Puerto. Reconecta la impresora."
   }

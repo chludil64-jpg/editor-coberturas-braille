@@ -425,7 +425,7 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._responder(200, {"ok": False, "mensaje": (
                     "No se encontró una impresora Index conectada por USB. Conectala, encendela y buscá de nuevo.")})
             try:
-                r = instalar_impresora.preparar(puerto, carpeta_datos())
+                r = instalar_impresora.preparar(puerto)
             except instalar_impresora.ErrorImpresora as e:
                 return self._responder(200, {"ok": False, "mensaje": str(e)})
             if r.get("ok") and r.get("cola") and r["cola"] in impresion.listar_impresoras():

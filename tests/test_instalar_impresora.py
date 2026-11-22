@@ -93,15 +93,13 @@ class Validacion(unittest.TestCase):
 
 
 class Argumentos(unittest.TestCase):
-    RES = os.path.join("C:\\", "Datos", "EditorBraille", ip.ARCHIVO_RESULTADO)
-
     def test_los_valores_viajan_por_entorno_no_por_texto(self):
         guion = "C:\\Mi carpeta\\O'Brien\\preparar_impresora.ps1"
-        cmd, env = ip.argumentos_lanzador(guion, "USB004", self.RES)
+        cmd, env = ip.argumentos_lanzador(guion, "USB004")
         self.assertEqual(env["EB_PUERTO"], "USB004")
         self.assertEqual(env["EB_SCRIPT"], guion)
         texto = " ".join(cmd)
-        for valor in (guion, "USB004", self.RES):
+        for valor in (guion, "USB004"):
             self.assertNotIn(valor, texto)
         self.assertEqual(cmd[0], "powershell.exe")
         for bandera in ("-NoProfile", "-NonInteractive"):
@@ -110,13 +108,9 @@ class Argumentos(unittest.TestCase):
     def test_rechaza_entradas_peligrosas(self):
         guion = "C:\\x\\preparar_impresora.ps1"
         with self.assertRaises(ValueError):
-            ip.argumentos_lanzador(guion, "USB004 & calc", self.RES)
+            ip.argumentos_lanzador(guion, "USB004 & calc")
         with self.assertRaises(ValueError):
-            ip.argumentos_lanzador('C:\\x" -Command calc "', "USB004", self.RES)
-        with self.assertRaises(ValueError):
-            ip.argumentos_lanzador(guion, "USB004", "C:\\otro\\cualquiera.json")
-        with self.assertRaises(ValueError):
-            ip.argumentos_lanzador(guion, "USB004", self.RES + '" -x "')
+            ip.argumentos_lanzador('C:\\x" -Command calc "', "USB004")
 
     def test_resultado(self):
         r = ip.parsear_resultado('\ufeff{"ok": true, "mensaje": "Cola creada.", "cola": "Braille Index (Editor Braille)", "puerto": "USB004"}')
@@ -124,6 +118,21 @@ class Argumentos(unittest.TestCase):
         self.assertEqual(r["cola"], "Braille Index (Editor Braille)")
         self.assertIsNone(ip.parsear_resultado("{roto"))
         self.assertFalse(ip.parsear_resultado('{"ok": "true"}')["ok"])
+
+
+class Respaldo(unittest.TestCase):
+    def test_ruta_resultado_en_programdata(self):
+        r = ip.ruta_resultado().lower()
+        self.assertTrue(r.endswith(os.path.join("editorbraille", "preparar_impresora.json")))
+        self.assertNotIn("appdata\\local", r)
+
+    def test_cola_en_puerto(self):
+        d = ip.parsear_deteccion(salida([DISP_OK], [OTRA]))
+        self.assertIsNone(ip.cola_en_puerto(d, "USB004"))
+        d = ip.parsear_deteccion(salida([DISP_OK], [OTRA, COLA_V4]))
+        self.assertEqual(ip.cola_en_puerto(d, "USB004"), "Index Everest-D V4")
+        d = ip.parsear_deteccion(salida([], [dict(COLA_V4, nombre="Otra")]))
+        self.assertEqual(ip.cola_en_puerto(d, "USB004"), "Otra")
 
 
 class ScriptElevado(unittest.TestCase):
@@ -135,11 +144,13 @@ class ScriptElevado(unittest.TestCase):
 
     def test_parametros(self):
         bloque = re.search(r"param\((.*?)\n\)", self.texto, re.S).group(1)
-        self.assertEqual(re.findall(r"\]\$(\w+)", bloque), ["Puerto", "Resultado"])
+        self.assertEqual(re.findall(r"\]\$(\w+)", bloque), ["Puerto"])
 
     def test_valida_y_no_evalua(self):
         self.assertIn("^USB\\d{3}$", self.texto)
         self.assertIn("preparar_impresora.json", self.texto)
+        self.assertIn("$env:ProgramData", self.texto)
+        self.assertNotIn("$env:LOCALAPPDATA", self.texto)
         self.assertNotIn("Invoke-Expression", self.texto)
         self.assertNotIn("iex ", self.texto.lower())
         self.assertIn(ip.NOMBRE_COLA, self.texto)
