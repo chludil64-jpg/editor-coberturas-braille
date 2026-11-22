@@ -8,21 +8,21 @@ Paquete listo en `dist/entrega/` (no está en git; se regenera con `herramientas
 
 | Archivo | Para qué |
 |---|---|
-| `EditorBraille-portable-2.0.1.zip` | El programa (Windows 10/11, sin instalar Python). |
+| `EditorBraille-portable-2.0.2.zip` | El programa (Windows 10/11, sin instalar Python). |
 | `version.json` | Lo que consulta el botón «Actualizar». Ya trae la URL real del zip. |
 | `pagina_descarga.md` | Texto listo para la página (requisitos, pasos, SmartScreen, licencia). |
 | `entrega_portable.md` | Este documento. |
 
-- Versión: **2.0.1**
-- Tamaño: 51.726.590 bytes (49,3 MB)
-- SHA256: `1f2776926921c114be1b7661478c5e64318bdaad5b22297e7ea8488eaa414fb3`
+- Versión: **2.0.2**
+- Tamaño: 51.743.774 bytes (49,3 MB)
+- SHA256: `a78fb0b1b38361e841d72d008cd2a6e031c21467e74522b242b4726e42e8634e`
 - Código fuente (MIT): https://github.com/chludil64-jpg/editor-coberturas-braille
 
 ## Dónde se publica
 
 - Página de descarga: https://www.ciencia.chubut.gov.ar/app-inclusion/editor-braille/
 - Carpeta de estáticos: `https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/`
-  - `EditorBraille-portable-2.0.1.zip`
+  - `EditorBraille-portable-2.0.2.zip`
   - `version.json` (dirección fija: `https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json`)
 
 ## Pasos de integración en el sitio

@@ -20,7 +20,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 # Dirección https del version.json de actualizaciones. Vacía = sin configurar.
 # También se puede definir en %LOCALAPPDATA%\EditorBraille\config.json: {"url_actualizaciones": "https://.../version.json"}
 URL_ACTUALIZACIONES = "https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json"

@@ -2,11 +2,11 @@
 
 Editor de braille y gráficos táctiles para la impresora Index Everest-D V4, con PDF de fondo para calzar cada texto sobre la tinta. Gratis, funciona sin internet y no hace falta instalar nada más.
 
-**[Descargar Editor Braille para Windows](https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.1.zip)**
+**[Descargar Editor Braille para Windows](https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.2.zip)**
 
-- Versión: **2.0.1**
-- Tamaño: **49,3 MB** (51.726.590 bytes)
-- SHA256: `1f2776926921c114be1b7661478c5e64318bdaad5b22297e7ea8488eaa414fb3`
+- Versión: **2.0.2**
+- Tamaño: **49,3 MB** (51.743.774 bytes)
+- SHA256: `a78fb0b1b38361e841d72d008cd2a6e031c21467e74522b242b4726e42e8634e`
 
 > La versión, el tamaño y el SHA256 de arriba corresponden al zip generado el 19/11/2026 en `dist/`. Si volvés a empaquetar, `herramientas/empaquetar.ps1` imprime el SHA256 nuevo y `herramientas/generar_version_json.py` lo escribe en `version.json`: actualizá estos datos.
 
@@ -25,7 +25,7 @@ Editor de braille y gráficos táctiles para la impresora Index Everest-D V4, co
 
 ### Aviso de Windows SmartScreen
 
-El programa no está firmado digitalmente, así que Windows puede mostrar «Windows protegió su PC». Elegí **Más información → Ejecutar de todas formas**. Podés comprobar que el archivo es el original comparando el SHA256 de arriba (en PowerShell: `Get-FileHash .\EditorBraille-portable-2.0.1.zip`).
+El programa no está firmado digitalmente, así que Windows puede mostrar «Windows protegió su PC». Elegí **Más información → Ejecutar de todas formas**. Podés comprobar que el archivo es el original comparando el SHA256 de arriba (en PowerShell: `Get-FileHash .\EditorBraille-portable-2.0.2.zip`).
 
 ## Cómo actualizar
 
@@ -47,7 +47,7 @@ El programa no está firmado digitalmente, así que Windows puede mostrar «Wind
 Ya publicado en https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json (no cambia de dirección entre versiones; en cada versión se reemplaza su contenido). Contenido actual:
 
 ```json
-{"version":"2.0.1","url":"https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.1.zip","sha256":"1f2776926921c114be1b7661478c5e64318bdaad5b22297e7ea8488eaa414fb3","notas":"Activa la actualización automática desde el sitio de la SCyT."}
+{"version":"2.0.2","url":"https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.2.zip","sha256":"a78fb0b1b38361e841d72d008cd2a6e031c21467e74522b242b4726e42e8634e","notas":"Activa la actualización automática desde el sitio de la SCyT."}
 ```
 
 - `version`: número `X.Y.Z`; el programa ofrece actualizar solo si es mayor que el instalado.
@@ -70,6 +70,6 @@ Eso genera el zip y `dist/version.json`; subir ambos a la carpeta de estáticos.
 
 ### Configuración de la URL
 
-La constante `URL_ACTUALIZACIONES` de `app.py` ya apunta a `version.json` desde la versión 2.0.1. Sin recompilar, por PC: `%LOCALAPPDATA%\EditorBraille\config.json` con `{"url_actualizaciones": "https://..."}` (manda sobre la constante).
+La constante `URL_ACTUALIZACIONES` de `app.py` ya apunta a `version.json` desde la versión 2.0.2. Sin recompilar, por PC: `%LOCALAPPDATA%\EditorBraille\config.json` con `{"url_actualizaciones": "https://..."}` (manda sobre la constante).
 
 Notas técnicas: solo se aceptan direcciones https (también en redirecciones; el zip, además, debe estar en el mismo dominio que `version.json`); el `Content-Type` de `version.json` no se exige, pero el cuerpo debe ser JSON válido; `version.json` hasta 64 KB y zip hasta 300 MB; la instalación automática solo funciona en el portable (corriendo con Python, se actualiza con `git pull`). Para pruebas locales se permite `http://127.0.0.1` con la variable de entorno `EDITOR_BRAILLE_PRUEBAS=1`.
