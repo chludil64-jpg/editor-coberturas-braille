@@ -1,7 +1,7 @@
 // Service worker mínimo: permite instalar la app. Network-first (usa siempre la
 // versión nueva si el servidor está prendido) y nunca guarda /api/*.
 // Subir VERSION cada vez que cambie la cáscara: en "activate" se borran los cachés de versiones viejas.
-const VERSION = "13";
+const VERSION = "14";
 const PREFIJO = "editor-braille-";
 const CACHE = PREFIJO + "v" + VERSION;
 const CASCARA = ["./", "index.html", "estilos.css", "tema.css", "manifest.webmanifest",

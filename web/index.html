@@ -51,6 +51,7 @@
     <div class="menu-desplegable">
       <button type="button" class="menu-boton" id="menu-impresora-boton" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-impresora">Impresora ▾</button>
       <div id="menu-impresora" class="menu-panel" role="menu" aria-labelledby="menu-impresora-boton" hidden>
+        <button type="button" role="menuitem" id="btn-preparar-impresora" tabindex="-1">Preparar impresora…</button>
         <button type="button" role="menuitem" id="btn-perfil" tabindex="-1">Perfil de impresora…</button>
         <button type="button" role="menuitem" id="btn-calibracion" tabindex="-1">Calibración…</button>
       </div>
@@ -288,6 +289,56 @@
 
 <div id="anuncio" class="solo-lector" aria-live="assertive" role="status"></div>
 
+<!-- Diálogo: preparar impresora -->
+<dialog id="dlg-preparar" aria-labelledby="t-preparar" aria-describedby="prep-intro">
+  <form method="dialog" class="editor ancho-dlg">
+    <h2 id="t-preparar">Preparar impresora</h2>
+    <p id="prep-intro" class="nota">Deja lista la Index por USB usando el controlador que ya trae Windows. No hace falta descargar ni instalar nada de Index.</p>
+    <ol class="pasos">
+      <li>Conectá la Index por USB y encendela. Después buscá la impresora.
+        <div class="fila botones">
+          <button type="button" id="btn-prep-detectar" class="destacado">Buscar la impresora</button>
+        </div>
+      </li>
+      <li>Resultado de la búsqueda:
+        <p id="prep-resultado" class="estado" role="status"></p>
+        <div class="fila" id="prep-colas-fila" hidden>
+          <label for="prep-colas">Impresoras de Windows ya creadas</label>
+          <select id="prep-colas"></select>
+          <button type="button" id="btn-prep-usar" disabled>Usar esta impresora</button>
+        </div>
+      </li>
+      <li>Si hace falta crearla:
+        <div class="fila botones">
+          <button type="button" id="btn-prep-preparar" disabled>Preparar (Windows pedirá permiso)</button>
+        </div>
+        <p class="nota">Windows muestra un cartel de permiso de administrador una sola vez. Se crea la impresora «Braille Index (Editor Braille)»; no se comparte ni queda como predeterminada.</p>
+      </li>
+      <li>Probá que imprime (se te pide confirmación antes de enviar):
+        <div class="fila botones">
+          <button type="button" id="btn-prep-prueba" disabled>Imprimir hoja de prueba…</button>
+        </div>
+      </li>
+    </ol>
+    <details>
+      <summary>Impresora por red (sin USB)</summary>
+      <div class="fila dos">
+        <label>IP <input type="text" id="prep-ip" inputmode="decimal" autocomplete="off"></label>
+        <label>Puerto <input type="number" id="prep-puerto" value="9100" min="1" max="65535"></label>
+      </div>
+      <div class="fila botones">
+        <button type="button" id="btn-prep-red-probar">Probar conexión</button>
+      </div>
+    </details>
+    <p class="nota">¿Querés el controlador oficial de Index (traducción braille, estado de la impresora)? <button type="button" id="btn-prep-descargas" class="enlace">Abrir la página oficial de descargas de Index</button> (se abre en el navegador; el programa no descarga nada).</p>
+    <p id="prep-cargando" class="estado" hidden>Trabajando, un momento…</p>
+    <p id="prep-estado" class="solo-lector" aria-live="polite"></p>
+    <div class="fila botones">
+      <button value="cancelar">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Diálogo: imprimir -->
 <dialog id="dlg-imprimir" aria-labelledby="t-imprimir">
   <form method="dialog" class="editor" id="form-imprimir">
@@ -316,6 +367,7 @@
     <label class="confirmar"><input type="checkbox" id="imp-confirmo">
       Confirmo que la impresora tiene cargada la hoja correcta y quiero enviar el trabajo ahora.</label>
     <p id="imprimir-estado" class="estado" aria-live="polite"></p>
+    <p id="imprimir-sin-cola" class="nota" hidden>No hay ninguna impresora Index en Windows. <button type="button" id="enlace-preparar-impresora" class="enlace">Preparar impresora</button></p>
     <div class="fila botones">
       <button type="button" id="btn-enviar-impresion" class="destacado" disabled>Enviar a la impresora</button>
       <button value="cancelar">Cerrar</button>
@@ -664,6 +716,7 @@
 <script src="js/vectorizar_dialogo.js"></script>
 <script src="js/calibracion.js"></script>
 <script src="js/principal.js"></script>
+<script src="js/preparar_impresora.js"></script>
 <script src="js/cinta.js"></script>
 <script src="js/interfaz.js"></script>
 <script src="js/inspector.js"></script>

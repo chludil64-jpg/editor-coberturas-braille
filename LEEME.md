@@ -89,6 +89,18 @@ Todos esos valores se cambian en **Perfil de impresora…** (`perfiles/everest_v
 La Everest V4 usa el modo gráfico del driver libre de OpenPrinting (cups-filters) para Index V4:
 `ESC D TM0,BI0,CH<bloques por línea>,LP<líneas de bloques>,LS50,BT0;` + `ESC BEL` + por cada bloque de 2×4 puntos dos bytes (`0x40 | d1+2·d2+4·d3+8·d7` y `0x40 | d4+2·d5+4·d6+8·d8`) + CR al final de cada línea + `ESC ACK` + `SUB`. Los puntos se ajustan a una grilla (2,0 mm por defecto, configurable): la ubicación queda a pasos de 2 mm.
 
+## Preparar la impresora
+
+No hace falta buscar ni instalar controladores de Index. La Everest-D V4 por USB usa la clase de impresora estándar de Windows y el programa envía los datos en crudo (RAW), así que alcanza con una impresora de Windows creada con el controlador «Generic / Text Only» que ya trae el sistema.
+
+1. En la pestaña **Impresora** (o en el menú **Impresora**) elegí **Preparar impresora…**. También aparece el enlace **Preparar impresora** en el diálogo **Imprimir…** cuando Windows no tiene ninguna impresora Index.
+2. Conectá la Index por USB, encendela y tocá **Buscar la impresora**. El programa dice si la encontró (por ejemplo en `USB004`), si ya hay una impresora lista o si no la ve.
+3. Si falta crearla: **Preparar (Windows pedirá permiso)**. Windows muestra **un solo** pedido de permiso de administrador; se crea la impresora «Braille Index (Editor Braille)» (no se comparte ni queda como predeterminada) y queda elegida en el programa. Si cancelás el permiso, no se crea nada. Si ya existía una impresora para la Index (de Index o genérica), no se crea otra: se ofrece usarla.
+4. **Imprimir hoja de prueba…** abre el diálogo de impresión con una hoja chica (una fila de puntos); hay que marcar la confirmación antes de enviar.
+5. Para una impresora de red, desplegá **Impresora por red (sin USB)**, escribí la IP y probá la conexión (puerto 9100, no pide administrador).
+
+Con este método se pierden funciones del controlador de Index que este programa no necesita (traducción braille propia, estado de la impresora, formularios de papel). Si las querés, el botón **Abrir la página oficial de descargas de Index** abre en el navegador la página del fabricante; el programa no descarga ni incluye archivos de Index. Detalles técnicos: `docs/analisis_drivers_index.md`.
+
 ## Calibración
 
 1. **Calibración…** → **Imprimir la hoja…** (o **Descargar hoja .ibe**). Imprimila en **papel**.

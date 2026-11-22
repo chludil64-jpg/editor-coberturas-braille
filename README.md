@@ -13,6 +13,7 @@ Manual de uso completo: [LEEME.md](LEEME.md).
 - Salidas: PDF de prueba 1:1, PNG, `.prn` (grilla calibrada) y `.ibe`; impresión directa por Windows o por red.
 - Proyectos guardables, deshacer/rehacer ilimitado, atajos de teclado y diseño pensado para lector de pantalla.
 - Botón **Actualizar** para buscar versiones nuevas.
+- **Preparar impresora**: deja lista la Index por USB con el controlador que ya trae Windows, sin instalar nada de Index (ver LEEME).
 
 ## Descargar (Windows)
 

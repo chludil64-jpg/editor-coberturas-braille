@@ -48,7 +48,7 @@
     ]],
     ['impresora', 'Impresora', [
       ['Imprimir', ['+imprimir']],
-      ['Configuración', ['btn-perfil', 'btn-calibracion']]
+      ['Configuración', ['btn-preparar-impresora', 'btn-perfil', 'btn-calibracion']]
     ]]
   ];
 

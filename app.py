@@ -29,7 +29,7 @@ CONGELADO = bool(getattr(sys, "frozen", False))   # True dentro del .exe de PyIn
 BASE = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 
-from motor import actualizacion, impresion, index_v4, pdf_io, perfil as perfil_mod  # noqa: E402
+from motor import actualizacion, impresion, index_v4, instalar_impresora, pdf_io, perfil as perfil_mod  # noqa: E402
 
 WEB = os.path.join(BASE, "web")
 PERFIL_DEFECTO = os.path.join(BASE, "perfiles", "everest_v4.json")
@@ -48,6 +48,7 @@ CABECERA_PROPIA = "X-Editor-Braille"
 _pdfs = {}          # id -> (bytes, documento)
 _orden_pdfs = []
 _candado = threading.Lock()
+_candado_preparar = threading.Lock()   # una sola preparación de impresora a la vez
 
 
 def _guardar_pdf(datos):
@@ -245,6 +246,8 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._buscar_actualizacion()
             if ruta == "/api/impresoras":
                 return self._responder(200, {"impresoras": impresion.listar_impresoras()})
+            if ruta == "/api/impresora/detectar":
+                return self._detectar_impresora()
             if ruta.startswith("/api/pdf/"):
                 partes = ruta.split("/")  # ['', 'api', 'pdf', id, recurso, n]
                 if len(partes) == 6 and partes[4] == "pagina" and partes[5].endswith(".png"):
@@ -333,6 +336,15 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._imprimir(self._json())
             if ruta == "/api/actualizacion/instalar":
                 return self._instalar_actualizacion()
+            if ruta == "/api/impresora/preparar":
+                return self._preparar_impresora()
+            if ruta == "/api/impresora/usar":
+                return self._usar_impresora(self._json())
+            if ruta == "/api/impresora/probar-red":
+                return self._probar_red(self._json())
+            if ruta == "/api/impresora/abrir-descargas":
+                instalar_impresora.abrir_descargas()
+                return self._responder(200, {"ok": True, "url": instalar_impresora.URL_DESCARGAS})
             if ruta == "/api/apagar":
                 self._responder(200, {"ok": True})
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
@@ -380,6 +392,65 @@ class Manejador(BaseHTTPRequestHandler):
                               "mensaje": "Actualización lista. El programa se cierra y se vuelve a abrir solo."})
         threading.Thread(target=self.server.shutdown, daemon=True).start()
         return None
+
+    def _detectar_impresora(self):
+        try:
+            return self._responder(200, instalar_impresora.detectar())
+        except instalar_impresora.ErrorImpresora as e:
+            return self._responder(200, {"estado": "error", "mensaje": str(e), "dispositivos": [],
+                                         "otras_colas": [], "colas": []})
+
+    def _elegir_cola(self, nombre):
+        """Deja la cola como impresora de Windows del perfil."""
+        perfil = perfil_mod.cargar(RUTA_PERFIL)
+        perfil["impresora_windows"] = nombre
+        perfil_mod.guardar(RUTA_PERFIL, perfil)
+
+    def _preparar_impresora(self):
+        if not _candado_preparar.acquire(blocking=False):
+            return self._responder(200, {"ok": False, "mensaje": "Ya hay una preparación en curso."})
+        try:
+            try:
+                diag = instalar_impresora.detectar()
+            except instalar_impresora.ErrorImpresora as e:
+                return self._responder(200, {"ok": False, "mensaje": str(e)})
+            for d in diag["dispositivos"]:
+                if d["colas"]:
+                    cola = d["colas"][0]["nombre"]
+                    self._elegir_cola(cola)
+                    return self._responder(200, {"ok": True, "ya_existia": True, "cola": cola, "mensaje": (
+                        f"Ya había una cola para la impresora: «{cola}». Se eligió esa.")})
+            puerto = instalar_impresora.puerto_para_preparar(diag)
+            if not puerto:
+                return self._responder(200, {"ok": False, "mensaje": (
+                    "No se encontró una impresora Index conectada por USB. Conectala, encendela y buscá de nuevo.")})
+            try:
+                r = instalar_impresora.preparar(puerto, carpeta_datos())
+            except instalar_impresora.ErrorImpresora as e:
+                return self._responder(200, {"ok": False, "mensaje": str(e)})
+            if r.get("ok") and r.get("cola") and r["cola"] in impresion.listar_impresoras():
+                self._elegir_cola(r["cola"])
+                r["mensaje"] = f"Impresora lista: «{r['cola']}» en {puerto}. Ya está elegida en el programa."
+            elif r.get("ok"):
+                r = {"ok": False, "mensaje": "Windows dijo que la cola estaba lista, pero no aparece entre las impresoras."}
+            return self._responder(200, r)
+        finally:
+            _candado_preparar.release()
+
+    def _usar_impresora(self, cuerpo):
+        nombre = (cuerpo.get("nombre") or "") if isinstance(cuerpo, dict) else ""
+        if nombre not in impresion.listar_impresoras():
+            return self._error(400, f"La impresora «{nombre}» no está instalada.")
+        self._elegir_cola(nombre)
+        return self._responder(200, {"ok": True, "cola": nombre})
+
+    def _probar_red(self, cuerpo):
+        if not isinstance(cuerpo, dict):
+            return self._error(400, "Pedido no válido.")
+        ip = validar_ip(cuerpo.get("ip") or "")
+        puerto = validar_puerto(cuerpo.get("puerto"))
+        ok, mensaje = instalar_impresora.probar_red(ip, puerto)
+        return self._responder(200, {"ok": ok, "mensaje": mensaje})
 
     def _imprimir(self, cuerpo):
         if cuerpo.get("confirmado") is not True:

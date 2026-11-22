@@ -118,6 +118,7 @@
       ulAvisos.append(li);
     }
     $('imp-confirmo').checked = false;
+    $('imprimir-sin-cola').hidden = true;
     $('imprimir-estado').textContent = 'Buscando impresoras…';
     $('imp-formato').value = App.perfil.codificador || 'grilla';
     // Perfil fresco del servidor: una pestaña abierta desde antes puede tener uno viejo.
@@ -142,6 +143,7 @@
       const preferida = App.perfil.impresora_windows || r.impresoras.find(n => /index|everest|braille/i.test(n));
       if (preferida && r.impresoras.includes(preferida)) sel.value = preferida;
       formatoSegunImpresora();
+      $('imprimir-sin-cola').hidden = r.impresoras.some(n => /index|everest|braille/i.test(n));
       $('imprimir-estado').textContent = r.impresoras.length
         ? `${r.impresoras.length} impresoras instaladas. Elegí la Index.`
         : 'No hay impresoras instaladas en Windows. Podés usar la opción por red o exportar el archivo.';
