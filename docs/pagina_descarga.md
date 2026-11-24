@@ -47,7 +47,7 @@ El programa no está firmado digitalmente, así que Windows puede mostrar «Wind
 Ya publicado en https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json (no cambia de dirección entre versiones; en cada versión se reemplaza su contenido). Contenido actual:
 
 ```json
-{"version":"2.0.2","url":"https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.3.zip","sha256":"a6dab016f405a86676c9c280f48bc9f5b569a9edc11854b180a8a234e610e648","notas":"Activa la actualización automática desde el sitio de la SCyT."}
+{"version":"2.0.3","url":"https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.3.zip","sha256":"a6dab016f405a86676c9c280f48bc9f5b569a9edc11854b180a8a234e610e648","notas":"Activa la actualización automática desde el sitio de la SCyT."}
 ```
 
 - `version`: número `X.Y.Z`; el programa ofrece actualizar solo si es mayor que el instalado.
@@ -70,6 +70,6 @@ Eso genera el zip y `dist/version.json`; subir ambos a la carpeta de estáticos.
 
 ### Configuración de la URL
 
-La constante `URL_ACTUALIZACIONES` de `app.py` ya apunta a `version.json` desde la versión 2.0.2. Sin recompilar, por PC: `%LOCALAPPDATA%\EditorBraille\config.json` con `{"url_actualizaciones": "https://..."}` (manda sobre la constante).
+La constante `URL_ACTUALIZACIONES` de `app.py` ya apunta a `version.json` desde la versión 2.0.1. Sin recompilar, por PC: `%LOCALAPPDATA%\EditorBraille\config.json` con `{"url_actualizaciones": "https://..."}` (manda sobre la constante).
 
 Notas técnicas: solo se aceptan direcciones https (también en redirecciones; el zip, además, debe estar en el mismo dominio que `version.json`); el `Content-Type` de `version.json` no se exige, pero el cuerpo debe ser JSON válido; `version.json` hasta 64 KB y zip hasta 300 MB; la instalación automática solo funciona en el portable (corriendo con Python, se actualiza con `git pull`). Para pruebas locales se permite `http://127.0.0.1` con la variable de entorno `EDITOR_BRAILLE_PRUEBAS=1`.
