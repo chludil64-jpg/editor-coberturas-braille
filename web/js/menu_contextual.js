@@ -62,6 +62,12 @@
       App.Lienzo.menuLazo(r0.left + 20, r0.top + 20, en);
       return;
     }
+    if (en.id === 'lienzo' && App.Lienzo && App.Lienzo.hayTrazoPendiente && App.Lienzo.hayTrazoPendiente()) {
+      ev.preventDefault();
+      const r1 = en.getBoundingClientRect();
+      App.Lienzo.menuTrazo(r1.left + 20, r1.top + 20, en);
+      return;
+    }
     if (!(App.ui.seleccion || []).length && !App.ui.sel) { App.anunciar('Primero elegí un elemento.'); return; }
     ev.preventDefault();
     const r = en.getBoundingClientRect();

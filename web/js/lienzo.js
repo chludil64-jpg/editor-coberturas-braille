@@ -45,6 +45,8 @@
     const p = App.pagina();
     const dpr = window.devicePixelRatio || 1;
     const w = Math.ceil(aPx(p.ancho) + 20), h = Math.ceil(aPx(p.alto) + 20);
+    // Asignar width/height reasigna todo el lienzo: solo si el tamaño cambió.
+    if (lienzo.style.width === w + 'px' && lienzo.style.height === h + 'px' && lienzo.width === Math.round(w * dpr) && lienzo.height === Math.round(h * dpr)) return;
     lienzo.style.width = w + 'px';
     lienzo.style.height = h + 'px';
     lienzo.width = Math.round(w * dpr);
@@ -103,6 +105,16 @@
     if (c) c.textContent = textoCursor + ' · ' + m.corto;
   }
   function limpiarMedicion() { medicion = null; anclaMedir = null; }
+  /** Cancela el gesto en curso sin tocar el documento: trazo de polilínea/polígono, vista previa,
+      medición y vértice elegido. Devuelve true si había algo. */
+  function cancelarPendiente() {
+    const habia = !!verticesPendientes || !!vistaPrevia || !!verticeElegido || !!medicion || !!anclaMedir;
+    verticesPendientes = null; vistaPrevia = null; verticeElegido = null;
+    medicion = null; anclaMedir = null; medirConTeclado = false;
+    if (habia) dibujar();
+    return habia;
+  }
+  function esHerrVertices() { return App.ui.herramienta === 'polilinea' || App.ui.herramienta === 'poligono'; }
   function dibujarMedicion() {
     if (medirConTeclado && App.ui.herramienta === 'medir') {
       ctx.strokeStyle = '#a32600'; ctx.lineWidth = 2; ctx.setLineDash([]);
@@ -132,6 +144,8 @@
     const p = App.pagina();
     if (!p) return;
     dimensionar();
+    ctx.save();
+    ctx.setLineDash([]); ctx.lineWidth = 1; ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
     const e = escala();
     ctx.clearRect(0, 0, lienzo.width, lienzo.height);
     ctx.fillStyle = '#8d8d8d';
@@ -223,7 +237,8 @@
     if(lazo?.anclas.length){const pts=puntosLazo().concat(lazo.preview||[]);ctx.strokeStyle='#9b2d00';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();pts.forEach((q,i)=>i?ctx.lineTo(aPx(q[0]),aPx(q[1])):ctx.moveTo(aPx(q[0]),aPx(q[1])));ctx.stroke();
       // Anclajes: cada clic queda marcado y se puede arrastrar. El primero es cuadrado (clic ahí cierra la forma).
       lazo.anclas.forEach((q,i)=>{ctx.fillStyle=i===lazo.anclas.length-1?'#9b2d00':'#fff';ctx.strokeStyle='#9b2d00';ctx.lineWidth=2;ctx.beginPath();if(i===0)ctx.rect(aPx(q[0])-6,aPx(q[1])-6,12,12);else ctx.arc(aPx(q[0]),aPx(q[1]),6,0,Math.PI*2);ctx.fill();ctx.stroke();});}
-    if(verticeElegido){ctx.fillStyle='#a32600';ctx.beginPath();ctx.arc(aPx(verticeElegido.p[0]),aPx(verticeElegido.p[1]),7,0,Math.PI*2);ctx.fill();}
+    if(verticesPendientes&&verticesPendientes.tipo==='poligono'&&verticesPendientes.puntos.length>=3){const q=verticesPendientes.puntos[0];ctx.strokeStyle='#a32600';ctx.lineWidth=2;ctx.beginPath();ctx.arc(aPx(q[0]),aPx(q[1]),8,0,Math.PI*2);ctx.stroke();}
+    if(verticeElegido&&App.ui.herramienta==='editar-vertices'){ctx.fillStyle='#a32600';ctx.beginPath();ctx.arc(aPx(verticeElegido.p[0]),aPx(verticeElegido.p[1]),7,0,Math.PI*2);ctx.fill();}
     const bs=cajaSeleccion();if(bs){
       ctx.strokeStyle='#a32600';ctx.lineWidth=2;ctx.setLineDash([5,3]);
       ctx.strokeRect(aPx(bs.x0),aPx(bs.y0),(bs.x1-bs.x0)*e,(bs.y1-bs.y0)*e);ctx.setLineDash([]);
@@ -248,6 +263,7 @@
     }
     dibujarMedicion();
     dibujarReglas(p);
+    ctx.restore();
   }
 
   function radioGoma() {
@@ -312,7 +328,7 @@
       t.puntos = t.puntos.filter(q => Math.hypot(q[0] - mm[0], q[1] - mm[1]) > r);
       quitados += antes - t.puntos.length;
     }
-    for(const o of p.objetos.filter(q=>['linea','polilinea','poligono'].includes(q.tipo)&&!q.bloqueado)){
+    for(const o of p.objetos.filter(q=>['linea','polilinea','poligono','rectangulo','elipse'].includes(q.tipo)&&!q.bloqueado)){
       const cerca=Objetos.objetoAPuntos(o,App.medidas()).some(q=>Math.hypot(q[0]-mm[0],q[1]-mm[1])<=r);
       if(cerca){o.borrados=o.borrados||[];o.borrados.push([mm[0],mm[1],r]);quitados++;}
     }
@@ -335,7 +351,7 @@
   function anclaCercana(mm){if(!lazo)return -1;const tol=Math.max(2,8/escala());let mejor=-1,dmin=Infinity;lazo.anclas.forEach((q,i)=>{const d=Math.hypot(q[0]-mm[0],q[1]-mm[1]);if(d<tol&&d<dmin){dmin=d;mejor=i;}});return mejor;}
   function cancelarLazo(){if(!lazo)return;lazo=null;cursorLazoTeclado=false;App.anunciar('Lazo cancelado.');dibujar();}
   /** Menú del lazo (clic derecho o tecla de menú): terminar la línea abierta, cerrar la forma, deshacer o cancelar. */
-  function menuLazo(x,y,desde){if(!lazo)return false;const n=lazo.anclas.length;if(n<2){App.anunciar('Fijá al menos 2 puntos para terminar la línea.');return true;}
+  function menuLazo(x,y,desde){if(!lazo)return false;const n=lazo.anclas.length;if(n<2){App.anunciar('Fijá al menos 2 puntos para terminar la línea.');if(App.MenuContextual)App.MenuContextual.abrirLista(x,y,desde||lienzo,[{texto:'Cancelar lazo',alClic:cancelarLazo}],'Acciones del lazo');return true;}
     const acciones=[{texto:'Terminar línea aquí',alClic:()=>terminarLazo(false)}];if(n>=3)acciones.push({texto:'Cerrar forma',alClic:()=>terminarLazo(true)});acciones.push({texto:'Deshacer último punto',alClic:()=>deshacerLazo()},{texto:'Cancelar lazo',alClic:cancelarLazo});
     if(App.MenuContextual)App.MenuContextual.abrirLista(x,y,desde||lienzo,acciones,'Acciones del lazo');return true;}
   function terminarLazo(cerrar=false){if(!lazo)return;if(cerrar&&lazo.anclas.length>=3){lazo.tramos.push(tramoLazo(lazo.anclas.at(-1),lazo.anclas[0]));}const puntos=puntosLazo();const minimo=cerrar?3:2;if(puntos.length>=minimo){const tipo=cerrar?'poligono':'polilinea',tol=Number(document.getElementById('lazo-simplificar').value)||0,v=window.Lazo.simplificar(puntos,tol);const sig=document.getElementById('lazo-significado').value;App.EditorObjetos.crear(tipo,{nombre:sig[0].toUpperCase()+sig.slice(1),vertices:v,cerrado:cerrar});App.anunciar(`${sig}: ${v.length} vértices. ${cerrar?'Forma cerrada.':'Trazo terminado.'}`);}lazo=null;dibujar();}
@@ -356,7 +372,7 @@
     }
     if(h==='lazo'){if(!lazo){iniciarLazo(mm);dibujar();return;}const i=anclaCercana(mm);if(i>=0){arrastre={tipo:'ancla',i,inicio:mm,movido:false};return;}agregarAncla(mm);lazo.preview=[];dibujar();return;}
     if(h==='editar-vertices'){const v=verticeCercano(mm);if(v){verticeElegido=v;arrastre={tipo:'vertice',id:v.o.id,i:v.i,registrado:false};dibujar();}else{const hit=lineaCercana(mm);if(hit)App.EditorObjetos.seleccionar(hit.o.id,false);}return;}
-    if(h==='borrar-linea'||h==='tijera'){const hit=lineaCercana(mm);if(!hit)return;App.registrar(h==='borrar-linea'?'Borrar línea':'Cortar línea con la tijera');if(h==='borrar-linea'){if(ev.altKey){const partes=Objetos.borrarTramo(hit.o,hit.i);App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);for(const parte of partes){parte.id=App.nuevoId('o');parte.grupo=null;App.pagina().objetos.push(parte);}App.anunciar('Tramo borrado.');}else{App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);App.anunciar('Línea borrada.');}App.EditorObjetos.seleccionar(null,false);}else{try{const partes=Objetos.cortarLinea(hit.o,hit.i,mm);partes[0].id=hit.o.id;partes[1].id=App.nuevoId('o');partes[0].grupo=partes[1].grupo=null;App.EditorObjetos.reemplazar(hit.o.id,partes[0]);App.pagina().objetos.push(partes[1]);App.anunciar('Línea cortada en dos.');}catch(e){App.anunciar(e.message);}}App.cambio('objetos');return;}
+    if(h==='borrar-linea'||h==='tijera'){const hit=lineaCercana(mm);if(!hit)return;App.registrar(h==='borrar-linea'?'Borrar línea':'Cortar línea con la tijera');if(h==='borrar-linea'){if(ev.altKey){const partes=Objetos.borrarTramo(hit.o,hit.i);App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);for(const parte of partes){parte.id=App.nuevoId('o');parte.grupo=null;App.pagina().objetos.push(parte);}App.anunciar('Tramo borrado.');}else{App.pagina().objetos=App.pagina().objetos.filter(o=>o.id!==hit.o.id);App.anunciar('Línea borrada.');}App.EditorObjetos.seleccionar(null,false);}else{try{const partes=Objetos.cortarLinea(hit.o,hit.i,mm);partes[0].id=hit.o.id;partes[1].id=App.nuevoId('o');partes[0].grupo=partes[1].grupo=null;App.EditorObjetos.reemplazar(hit.o.id,partes[0]);App.pagina().objetos.push(partes[1]);App.anunciar('Línea cortada en dos.');}catch(e){App.descartarRegistro();App.anunciar(e.message);return;}}App.cambio('objetos');return;}
     if (h === 'seleccionar') {
       const manija=tocarManija(mm);
       if(manija){
@@ -380,7 +396,11 @@
       return;
     }
     if(h==='polilinea'||h==='poligono') {
-      if(!verticesPendientes)verticesPendientes={tipo:h,puntos:[]};
+      if(verticesPendientes&&verticesPendientes.pagina!==App.ui.pagina)cancelarPendiente();
+      if(!verticesPendientes){verticesPendientes={tipo:h,puntos:[],pagina:App.ui.pagina};App.anunciar(h==='poligono'?'Polígono iniciado. Cada clic agrega un vértice. Para cerrarlo: clic en el primer punto, doble clic o Enter. Escape cancela.':'Polilínea iniciada. Cada clic agrega un vértice. Para terminar: doble clic, Enter o clic derecho y Terminar. Escape cancela.');}
+      else verticesPendientes.tipo=h;
+      // Clic sobre el primer punto de un polígono con 3 vértices o más: cierra la forma.
+      if(h==='poligono'&&verticesPendientes.puntos.length>=3){const p0=verticesPendientes.puntos[0];if(Math.hypot(p0[0]-mm[0],p0[1]-mm[1])<=Math.max(2,8/escala())){terminarVertices();return;}}
       const ult=verticesPendientes.puntos.at(-1);
       if(!ult||Math.hypot(ult[0]-mm[0],ult[1]-mm[1])>0.5)verticesPendientes.puntos.push(mm);
       vistaPrevia=verticesPendientes.puntos.slice();dibujar();return;
@@ -411,7 +431,8 @@
     if(lazo&&!arrastre&&App.ui.herramienta==='lazo'){const now=performance.now();if(!lazo.ultimaVista||now-lazo.ultimaVista>80){lazo.preview=tramoLazo(lazo.anclas.at(-1),mm).slice(1);lazo.ultimaVista=now;dibujar();}}
     if(!arrastre&&App.ui.herramienta==='seleccionar'){
       const h=tocarManija(mm);lienzo.style.cursor=h==='rotar'?'grab':h?({n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',nw:'nwse-resize',se:'nwse-resize',ne:'nesw-resize',sw:'nesw-resize'}[h]):tocar(mm)?'move':'default';}
-    if (!arrastre && verticesPendientes && verticesPendientes.puntos.length) {
+    if (!arrastre && verticesPendientes && verticesPendientes.pagina !== App.ui.pagina) cancelarPendiente();
+    if (!arrastre && verticesPendientes && verticesPendientes.puntos.length && esHerrVertices()) {
       const u = verticesPendientes.puntos.at(-1);
       ponerMedicion(Medir.describir('linea', { a: u, b: mm }), mm, u, mm);
       dibujar();
@@ -422,6 +443,8 @@
       ponerMedicion(Medir.describir('linea', { a: arrastre.inicio, b: mm }), mm, arrastre.inicio, mm);
       dibujar();
     } else if (arrastre.tipo === 'mover') {
+      // Un clic con temblor no mueve nada ni agrega un paso al historial.
+      if (!arrastre.registrado && Math.hypot(mm[0] - arrastre.inicio[0], mm[1] - arrastre.inicio[1]) * escala() < 4) return;
       const dx = mm[0] - arrastre.ultimo[0], dy = mm[1] - arrastre.ultimo[1];
       if (!dx && !dy) return;
       if (!arrastre.registrado) { App.registrar('Mover'); arrastre.registrado = true; }
@@ -491,16 +514,21 @@
     }
     if (a.tipo === 'forma') {
       vistaPrevia = null;
-      const b=mm||a.inicio,datos=a.forma==='linea'?{vertices:[a.inicio,b]}:
+      const b=mm||a.inicio;
+      // Sin arrastre no hay forma: evita objetos de 0 mm y pasos de historial inútiles.
+      if (Math.hypot(b[0] - a.inicio[0], b[1] - a.inicio[1]) < 0.5) { dibujar(); App.anunciar('Arrastrá para dibujar la forma.'); return; }
+      const datos=a.forma==='linea'?{vertices:[a.inicio,b]}:
         {x:Math.min(a.inicio[0],b[0]),y:Math.min(a.inicio[1],b[1]),ancho:Math.abs(b[0]-a.inicio[0]),alto:Math.abs(b[1]-a.inicio[1])};
       const nuevo = App.EditorObjetos.crear(a.forma,datos);
       if (medidaFinal && nuevo) App.anunciar(`${nuevo.nombre} creado. ${medidaFinal}`);
     } else if (a.tipo === 'mano') {
       const pts = Grilla.muestrearTrayecto(a.camino, pasoDibujo(), false);
       vistaPrevia = null;
+      if (a.camino.length < 2) { dibujar(); App.anunciar('Arrastrá el mouse para dibujar a mano alzada.'); return; }
       App.registrar('Mano alzada');
       App.Dibujo.agregarTrazo('mano', pts, 'Mano alzada');
     } else if (a.tipo === 'goma') {
+      if (!a.quitados) App.descartarRegistro();   // no borró nada: no ensucia el historial
       App.anunciar(`Goma: se borraron ${a.quitados} puntos.`);
       App.cambio('dibujo');
     } else if (a.tipo === 'mover' && a.registrado) {
@@ -605,7 +633,7 @@
         const j=Math.min(i,nuevo.vertices.length-1);
         verticeElegido={o:nuevo,i:j,p:nuevo.vertices[j]};
         App.cambio('objetos');anunciarVertice(nuevo,j,'Vértice borrado.');
-      }catch(e){App.anunciar(e.message);}
+      }catch(e){App.descartarRegistro();App.anunciar(e.message);}
       ev.preventDefault();return true;
     }
     return false;
@@ -637,6 +665,7 @@
     }
     if(App.ui.herramienta==='lazo'){if(flechas[ev.key]){cursorLazo=[cursorLazo[0]+flechas[ev.key][0],cursorLazo[1]+flechas[ev.key][1]];cursorLazoTeclado=true;App.anunciar(`Cursor x ${cursorLazo[0].toFixed(1)}, y ${cursorLazo[1].toFixed(1)} mm.`);ev.preventDefault();return;}if(ev.key==='Enter'){if(!lazo){iniciarLazo(cursorLazo);}else if(cursorLazoTeclado&&Math.hypot(cursorLazo[0]-lazo.anclas.at(-1)[0],cursorLazo[1]-lazo.anclas.at(-1)[1])>=.5){agregarAncla(cursorLazo);}else if(lazo.anclas.length>=2){terminarLazo(false);}else{App.anunciar('Fijá al menos 2 puntos para terminar la línea.');}ev.preventDefault();dibujar();return;}if(ev.key==='Backspace'&&lazo){deshacerLazo();ev.preventDefault();return;}if(ev.key==='Escape'&&lazo){cancelarLazo();ev.preventDefault();return;}}
     // Escape sin nada en curso: volver a «Elegir y mover» (para poder mover cuadros y formas).
+    if(teclaTrazo(ev))return;
     if(ev.key==='Escape'&&!lazo&&App.ui.herramienta!=='seleccionar'&&App.elegirHerramienta){App.elegirHerramienta('seleccionar');ev.preventDefault();return;}
     if(App.ui.herramienta==='editar-vertices'&&teclasVertices(ev,flechas))return;
     if (flechas[ev.key]) {
@@ -670,18 +699,42 @@
     } else if (ev.key === 'Escape') {
       verticesPendientes=null;vistaPrevia=null;medicion=null;App.seleccionar(null);
       App.anunciar('Nada elegido.');
-    } else if(ev.key==='Enter'&&verticesPendientes){terminarVertices();ev.preventDefault();
     } else if(ev.ctrlKey&&ev.key.toLowerCase()==='d'){App.EditorObjetos.operar('duplicar');ev.preventDefault();
     } else if(ev.ctrlKey&&ev.key.toLowerCase()==='g'){App.EditorObjetos.operar(ev.shiftKey?'desagrupar':'agrupar');ev.preventDefault();
     } else if(ev.ctrlKey&&ev.key.toLowerCase()==='a'){App.ui.seleccion=App.pagina().objetos.map(o=>o.id);App.ui.sel=App.ui.seleccion.length?{tipo:'objeto',id:App.ui.seleccion.at(-1)}:null;App.cambio('seleccion');ev.preventDefault();
     }
   });
-  function terminarVertices(){if(!verticesPendientes)return;const v=verticesPendientes;verticesPendientes=null;vistaPrevia=null;medicion=null;
-    if(v.puntos.length>=(v.tipo==='poligono'?3:2))App.EditorObjetos.crear(v.tipo,{vertices:v.puntos,cerrado:v.tipo==='poligono'});else dibujar();}
+  /** Termina el trazo de polilínea/polígono. Con menos vértices de los necesarios no crea nada y avisa. */
+  function terminarVertices(){if(!verticesPendientes)return false;const v=verticesPendientes;
+    if(v.pagina!==App.ui.pagina){cancelarPendiente();return false;}
+    const minimo=v.tipo==='poligono'?3:2;
+    if(v.puntos.length<minimo){App.anunciar(`Faltan vértices: hacen falta al menos ${minimo} para ${v.tipo==='poligono'?'el polígono':'la polilínea'}. Seguí con clics o Escape cancela.`);return false;}
+    verticesPendientes=null;vistaPrevia=null;medicion=null;
+    App.EditorObjetos.crear(v.tipo,{vertices:v.puntos,cerrado:v.tipo==='poligono'});dibujar();return true;}
+  /** Antes de guardar: termina el trazo pendiente si ya tiene vértices suficientes; si no, lo descarta. */
+  function resolverPendiente(){if(!verticesPendientes)return false;const v=verticesPendientes,minimo=v.tipo==='poligono'?3:2;
+    if(v.pagina===App.ui.pagina&&v.puntos.length>=minimo)return terminarVertices();cancelarPendiente();return false;}
+  function deshacerVertice(){if(!verticesPendientes)return;verticesPendientes.puntos.pop();
+    if(!verticesPendientes.puntos.length){cancelarPendiente();App.anunciar('Trazo cancelado.');return;}
+    vistaPrevia=verticesPendientes.puntos.slice();medicion=null;App.anunciar(`Vértice borrado. Quedan ${verticesPendientes.puntos.length}.`);dibujar();}
+  /** Teclas del trazo pendiente: Enter lo termina, Escape lo cancela (y un segundo Escape vuelve a «Elegir y mover»).
+      Sirve con el foco en el lienzo o fuera de él. Devuelve true si usó la tecla. */
+  function teclaTrazo(ev){
+    if(!verticesPendientes||ev.ctrlKey||ev.metaKey||ev.altKey)return false;
+    if(ev.key==='Enter'){terminarVertices();ev.preventDefault();return true;}
+    if(ev.key==='Escape'){cancelarPendiente();App.anunciar('Trazo cancelado. Escape otra vez vuelve a Elegir y mover.');ev.preventDefault();return true;}
+    return false;}
+  // Con el foco fuera del lienzo (por ejemplo en un botón de la cinta) Enter y Escape también valen.
+  document.addEventListener('keydown',ev=>{if(ev.target===lienzo||!verticesPendientes||App.atajosBloqueados(ev))return;teclaTrazo(ev);});
+  /** Menú del trazo pendiente (clic derecho o tecla de menú). */
+  function menuTrazo(x,y,desde){if(!verticesPendientes)return false;const v=verticesPendientes,poli=v.tipo==='poligono';
+    const acciones=[{texto:poli?'Terminar (cerrar polígono)':'Terminar polilínea',alClic:()=>{terminarVertices();}},{texto:'Deshacer último vértice',alClic:deshacerVertice},{texto:'Cancelar trazo',alClic:()=>{cancelarPendiente();App.anunciar('Trazo cancelado.');}}];
+    if(App.MenuContextual)App.MenuContextual.abrirLista(x,y,desde||lienzo,acciones,'Acciones del trazo');return true;}
   // Clic derecho sobre un elemento: lo elige (si no estaba elegido) y abre el menú de acciones.
   lienzo.addEventListener('contextmenu', ev => {
     ev.preventDefault();
     if (lazo) { menuLazo(ev.clientX, ev.clientY, lienzo); return; }
+    if (verticesPendientes) { menuTrazo(ev.clientX, ev.clientY, lienzo); return; }
     const mm = posicion(ev), t = tocar(mm);
     if (t && t.tipo === 'objeto' && !(App.ui.seleccion || []).includes(t.id)) App.EditorObjetos.seleccionar(t.id, false);
     else if (t && t.tipo !== 'objeto') App.seleccionar(t.tipo, t.id);
@@ -712,7 +765,7 @@
     const p = App.pagina();
     const x = aMm(contenedor.scrollLeft + contenedor.clientWidth / 2 - lienzo.offsetLeft), y = aMm(contenedor.scrollTop + contenedor.clientHeight / 2 - lienzo.offsetTop);
     return [Math.max(0, Math.min(p.ancho, x)), Math.max(0, Math.min(p.alto, y))];
-  }, limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, lazoActivo: () => !!lazo, menuLazo, terminarLazo, cancelarLazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
-  App.alCambiar(() => dibujar());
+  }, limpiarMedicion: () => { limpiarMedicion(); medirConTeclado = false; dibujar(); }, cancelarPendiente, resolverPendiente, terminarTrazo: terminarVertices, hayTrazoPendiente: () => !!verticesPendientes, menuTrazo, lazoActivo: () => !!lazo, menuLazo, terminarLazo, cancelarLazo, deshacerLazo, rehacerLazo, dibujar, ajustarZoom, actualizarZoom, mover, describirSel, limpiarFondos: () => fondos.clear() };
+  App.alCambiar(() => { if (verticesPendientes && verticesPendientes.pagina !== App.ui.pagina) { verticesPendientes = null; vistaPrevia = null; medicion = null; } dibujar(); });
   window.addEventListener('resize', () => dibujar());
 })();

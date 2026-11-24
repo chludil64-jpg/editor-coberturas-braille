@@ -60,7 +60,9 @@
   document.querySelectorAll('input[name="herramienta"]').forEach(r => {
     r.addEventListener('change', () => {
       App.ui.herramienta = r.value;
-      if (App.Lienzo && App.Lienzo.limpiarMedicion) App.Lienzo.limpiarMedicion();
+      // Cambiar de herramienta cancela el trazo pendiente, la medición y el vértice elegido.
+      if (App.Lienzo && App.Lienzo.cancelarPendiente) App.Lienzo.cancelarPendiente();
+      else if (App.Lienzo && App.Lienzo.limpiarMedicion) App.Lienzo.limpiarMedicion();
       $('lienzo').style.cursor = r.value === 'seleccionar' ? 'default' : 'crosshair';
       App.anunciar(`Herramienta: ${nombresHerr[r.value]}.`);
     });
