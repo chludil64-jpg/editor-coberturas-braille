@@ -278,6 +278,7 @@
   async function abrirIbe(archivo) {
     try {
       const r = await App.api('/api/ibe/abrir', { method: 'POST', body: await archivo.arrayBuffer(), headers: { 'Content-Type': 'application/octet-stream' } });
+      if (App.Lienzo) App.Lienzo.cancelarPendiente();
       App.registrar('Abrir archivo .ibe');
       r.paginas.forEach((pg, i) => {
         const ancho = pg.ancho || 297, alto = pg.alto || 210;
@@ -368,6 +369,7 @@
     }
   });
   function nuevaPagina(ancho, alto, nombre) {
+    if (App.Lienzo) App.Lienzo.cancelarPendiente();
     App.registrar('Página nueva');
     App.doc.paginas.push(App.paginaVacia(ancho, alto, { nombre }));
     App.ui.pagina = App.doc.paginas.length - 1;
@@ -397,6 +399,7 @@
 
   // ------------------------------------------------------------ vista
   $('sel-pagina').addEventListener('change', () => {
+    if (App.Lienzo) App.Lienzo.cancelarPendiente();
     App.ui.pagina = Number($('sel-pagina').value);
     App.ui.sel = null;
     App.cambio('pagina');
@@ -493,7 +496,7 @@
     App.anunciar('Listo. Abrí un PDF para empezar o creá una página A4 desde Archivo.');
   }
 
-  App.Principal = { abrirImprimir, exportar, paraExportar };
-  iniciar();
+  App.Principal = { abrirImprimir, exportar, paraExportar, aplicarPerfilUi };
+  iniciar().then(() => { if (App.Autoguardado) App.Autoguardado.ofrecerAlIniciar(); });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

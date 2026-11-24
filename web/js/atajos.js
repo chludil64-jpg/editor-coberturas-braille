@@ -15,12 +15,20 @@
 
   document.addEventListener('keydown', ev => {
     if (ev.key === 'F1') { ev.preventDefault(); abrirAyuda(); return; }
-    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.shiftKey && ev.key.toLowerCase() === 's') {
-      ev.preventDefault(); App.guardarComo(); return;
+    // Ctrl+S y Ctrl+Mayús+S valen SIEMPRE (también con un trazo pendiente o un diálogo abierto) y
+    // nunca dejan que el navegador abra su propio «Guardar página».
+    const esS = ev.key.toLowerCase() === 's' || ev.code === 'KeyS';
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.shiftKey && esS) {
+      ev.preventDefault(); ev.stopPropagation();
+      Promise.resolve(App.guardarComo()).catch(e => App.avisarErrorGuardado('No se pudo guardar el proyecto.', e, null));
+      return;
     }
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey) {
       const k = ev.key.toLowerCase();
-      if (k === 's') { ev.preventDefault(); App.guardarProyecto(); }
+      if (esS) {
+        ev.preventDefault(); ev.stopPropagation();
+        Promise.resolve(App.guardarProyecto()).catch(e => App.avisarErrorGuardado('No se pudo guardar el proyecto.', e, null));
+      }
       else if (k === 'o') { ev.preventDefault(); if (!document.querySelector('dialog[open]')) $('archivo-pdf').click(); }
       else if (k === 'p') {
         ev.preventDefault();   // evita el diálogo de impresión del navegador

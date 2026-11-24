@@ -14,7 +14,7 @@
 
   // ------------------------------------------------------------ íconos
   const ICONOS = {
-    'btn-nuevo-proyecto': 'file-plus', 'btn-guardar-como': 'save-all',
+    'btn-nuevo-proyecto': 'file-plus', 'btn-guardar-como': 'save-all', 'btn-recuperar-copia': 'history',
     'btn-abrir-pdf': 'file-up', 'btn-abrir-proyecto': 'folder-open', 'btn-guardar-proyecto': 'save',
     'btn-nueva-horizontal': 'rectangle-horizontal', 'btn-nueva-vertical': 'rectangle-vertical',
     'btn-exportar-disposicion': 'download', 'btn-importar-disposicion': 'upload',
@@ -125,6 +125,8 @@
       'editar-vertices': 'Arrastrá un vértice para moverlo; doble clic en un tramo agrega uno; Suprimir borra el elegido.',
       'borrar-linea': 'Clic sobre una línea para borrarla (Alt+clic borra solo ese tramo).',
       tijera: 'Clic sobre una línea para cortarla en dos en ese punto.',
+      polilinea: 'Cada clic agrega un vértice y la vista previa sigue al cursor. Para terminar: doble clic, Enter, o clic derecho y «Terminar polilínea». Escape cancela el trazo (otro Escape vuelve a Elegir y mover). También se puede escribir la lista de vértices en el panel de la herramienta.',
+      poligono: 'Cada clic agrega un vértice. Para cerrar la forma: clic en el primer punto, doble clic, Enter, o clic derecho y «Terminar» (hacen falta 3 vértices). Escape cancela el trazo (otro Escape vuelve a Elegir y mover).',
       goma: 'Arrastrá sobre los puntos para borrarlos.',
       medir: 'Arrastrá sobre la hoja: se muestran la distancia (mm) y el ángulo. No crea nada. Con teclado: flechas mueven el cursor, Enter fija el primer y el segundo punto. M activa esta herramienta.'
     };
@@ -197,7 +199,7 @@
     const medio = document.createElement('div');
     medio.className = 'barra-estado-datos';
     ['estado-lienzo'].forEach(id => $(id) && izq.append($(id)));
-    ['cursor-mm', 'total-puntos'].forEach(id => $(id) && medio.append($(id)));
+    ['estado-guardado', 'cursor-mm', 'total-puntos'].forEach(id => $(id) && medio.append($(id)));
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'btn-avisos';

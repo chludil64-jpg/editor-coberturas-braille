@@ -4,6 +4,8 @@
   'use strict';
 
   const A4H = { ancho: 297, alto: 210 };
+  // Avisos de cambio() que no modifican el documento (no lo dejan «sin guardar»).
+  const MOTIVOS_SIN_CAMBIO = new Set(['seleccion', 'inicio', 'proyecto', 'pdf', 'pagina', 'perfil']);
 
   function paginaVacia(ancho, alto, extra) {
     return Object.assign({ ancho, alto, cuadros: [], objetos: [], trazos: [], capasVisibles: {}, pdfPagina: null, nombre: '' }, extra || {});
@@ -88,7 +90,20 @@
      */
     registrar(nombre) {
       this._pendiente = Historial.registrar(this._est(), this._ser(), nombre);
+      this._ultimo = this._pendiente;
       this.sucio = true;
+      this._version = (this._version || 0) + 1;
+    },
+    /** Saca del historial el último paso registrado (gestos que no cambiaron nada o que fallaron). */
+    descartarRegistro() {
+      const e = this._ultimo;
+      this._ultimo = null;
+      if (!e) return false;
+      const i = this._historial.lastIndexOf(e);
+      if (i < 0) return false;
+      this._historial.splice(i, 1);
+      if (this._pendiente === e) this._pendiente = null;
+      return true;
     },
     deshacer() {
       const est = this._est(), nombre = est.pasados.length && est.pasados[est.pasados.length - 1].nombre;
@@ -118,16 +133,19 @@
       return true;
     },
     _ajustarTrasRestaurar() {
+      if (this.Lienzo && this.Lienzo.cancelarPendiente) this.Lienzo.cancelarPendiente();
       if (this.ui.pagina >= this.doc.paginas.length) this.ui.pagina = this.doc.paginas.length - 1;
       if (this.ui.sel && !this.buscarSel()) this.ui.sel = null;
       this.ui.seleccion=(this.ui.seleccion||[]).filter(id=>this.pagina().objetos.some(o=>o.id===id));
       this.cambio('historial');
     },
-    limpiarHistorial() { this._historial.length = 0; this._rehacer.length = 0; this._pendiente = null; this._imagenes.clear(); },
+    limpiarHistorial() { this._historial.length = 0; this._rehacer.length = 0; this._pendiente = null; this._ultimo = null; this._imagenes.clear(); },
 
     /** Avisa a todas las vistas que algo cambió. */
     cambio(motivo) {
       this._calc = null;
+      // Todo lo que modifica el documento lo deja «sin guardar» y suma una versión (para el autoguardado).
+      if (!MOTIVOS_SIN_CAMBIO.has(motivo)) { this.sucio = true; this._version = (this._version || 0) + 1; }
       // La acción recién registrada, si no tenía nombre, toma el del motivo (una sola vez).
       if (this._pendiente && motivo !== 'seleccion' && motivo !== 'historial') {
         Historial.nombrar(this._pendiente, Historial.nombrePorMotivo(motivo));
@@ -223,6 +241,7 @@
       });
       this.pdf = { id: r.id, nombre, base64: bytesABase64(new Uint8Array(arrayBuffer)), info: r.paginas };
       if (!conservarDoc) {
+        if (this.Lienzo && this.Lienzo.cancelarPendiente) this.Lienzo.cancelarPendiente();
         this.doc = {
           paginas: r.paginas.map((p, i) => paginaVacia(p.ancho, p.alto, { pdfPagina: i, nombre: `${nombre} · página ${i + 1}` })),
           opciones: { separarDibujo: true, separacionDibujo: Number(this.perfil && this.perfil.separacion_dibujo_braille_mm) || 3 }
@@ -231,6 +250,7 @@
         this.ui.sel = null;
         this.limpiarHistorial();
         this.sucio = false;
+        if (this.Autoguardado) this.Autoguardado.reiniciar();
       }
       this.cambio('pdf');
       return r;
@@ -252,31 +272,91 @@
      * reescribe el mismo archivo. Sin ella (o si falla), descarga el archivo como antes.
      */
     async guardarProyecto(comoNuevo) {
-      const nombre = (this.pdf.nombre || 'proyecto').replace(/\.[^.]+$/, '') + '.braille.json';
-      const texto = this._textoProyecto();
-      if (typeof window.showSaveFilePicker === 'function') {
-        try {
-          // «Guardar como…» siempre pregunta; si se cancela, se conserva el archivo anterior.
-          if (!this._archivo || comoNuevo) {
-            this._archivo = await window.showSaveFilePicker({
-              suggestedName: nombre, id: 'editor-braille',
-              types: [{ description: 'Proyecto de Editor Braille', accept: { 'application/json': ['.json'] } }]
-            });
-          }
-          const w = await this._archivo.createWritable();
-          await w.write(texto);
-          await w.close();
-          this.sucio = false;
-          this.anunciar(`Proyecto guardado en ${this._archivo.name}.`);
-          return;
-        } catch (e) {
-          if (e && e.name === 'AbortError') { this.anunciar('Guardado cancelado.'); return; }
-          this._archivo = null;   // el permiso se perdió o falló: se cae a la descarga
+      // Nunca falla en silencio: cualquier error se muestra en un diálogo y en la barra de estado.
+      if (this._guardando) { this.anunciar('Ya se está guardando…'); return false; }
+      this._guardando = true;
+      try {
+        // Un trazo de polilínea/polígono a medio hacer no puede trabar el guardado: se termina (si ya
+        // tiene vértices suficientes) o se descarta, y se guarda lo demás.
+        if (this.Lienzo && this.Lienzo.resolverPendiente) {
+          try { this.Lienzo.resolverPendiente(); } catch (e) { console.error(e); }
         }
+        const nombre = (this.pdf.nombre || 'proyecto').replace(/\.[^.]+$/, '') + '.braille.json';
+        let texto;
+        try {
+          texto = this._textoProyecto();
+        } catch (e) {
+          this.avisarErrorGuardado('No se pudo preparar el proyecto para guardarlo.', e, null);
+          return false;
+        }
+        let motivo = '';
+        if (typeof window.showSaveFilePicker === 'function') {
+          try {
+            // «Guardar como…» siempre pregunta; si se cancela, se conserva el archivo anterior.
+            if (!this._archivo || comoNuevo) {
+              this._archivo = await window.showSaveFilePicker({
+                suggestedName: nombre, id: 'editor-braille',
+                types: [{ description: 'Proyecto de Editor Braille', accept: { 'application/json': ['.json'] } }]
+              });
+            }
+            const w = await this._archivo.createWritable();
+            await w.write(texto);
+            await w.close();
+            this._terminoGuardado(this._archivo.name, false);
+            return true;
+          } catch (e) {
+            if (e && e.name === 'AbortError') { this.anunciar('Guardado cancelado.'); return false; }
+            this._archivo = null;   // el permiso se perdió o falló: se cae a la descarga
+            motivo = (e && e.message) || String(e);
+            console.error('Falló showSaveFilePicker, se guarda como descarga:', e);
+          }
+        }
+        try {
+          this.descargarBlob(nombre, new Blob([texto], { type: 'application/json' }));
+        } catch (e) {
+          this.avisarErrorGuardado('No se pudo guardar el proyecto.', e, texto);
+          return false;
+        }
+        this._terminoGuardado(nombre, true, motivo);
+        return true;
+      } catch (e) {
+        this.avisarErrorGuardado('No se pudo guardar el proyecto.', e, null);
+        return false;
+      } finally {
+        this._guardando = false;
       }
-      this.descargarBlob(nombre, new Blob([texto], { type: 'application/json' }));
+    },
+
+    /** Marca el proyecto como guardado y lo confirma de forma visible. */
+    _terminoGuardado(nombre, esDescarga, motivo) {
       this.sucio = false;
-      this.anunciar(`Proyecto guardado como ${nombre} (en la carpeta de descargas).`);
+      const hora = this.Autoguardado ? this.Autoguardado.marcarGuardado(nombre) : '';
+      const base = `Guardado en ${nombre}${hora ? ' a las ' + hora : ''}`;
+      this.anunciar(esDescarga
+        ? `${base} (carpeta de descargas).${motivo ? ' No se pudo escribir en el archivo elegido (' + motivo + '): se guardó como descarga.' : ''}`
+        : `${base}.`);
+    },
+
+    /** Error al guardar: diálogo accesible + barra de estado. `texto` (si hay) permite ofrecer la descarga. */
+    avisarErrorGuardado(mensaje, error, texto) {
+      const detalle = (error && error.message) || (error ? String(error) : '');
+      const completo = `${mensaje}${detalle ? ' Motivo: ' + detalle + '.' : ''} Tu trabajo sigue abierto en el programa; no cerres la pestaña.`;
+      console.error(mensaje, error);
+      this.anunciar('Error al guardar. ' + completo);
+      const est = document.getElementById('estado-guardado');
+      if (est) { est.textContent = 'Error al guardar'; est.className = 'estado aviso'; }
+      const dlg = document.getElementById('dlg-error-guardado');
+      if (!dlg) { try { window.alert(completo); } catch (e) { /* nada */ } return; }
+      document.getElementById('error-guardado-texto').textContent = completo;
+      const bDesc = document.getElementById('error-guardado-descargar');
+      if (bDesc) {
+        bDesc.hidden = !texto;
+        bDesc.onclick = () => {
+          try { this.descargarBlob((this.pdf.nombre || 'proyecto').replace(/\.[^.]+$/, '') + '.braille.json', new Blob([texto], { type: 'application/json' })); dlg.close(); this._terminoGuardado('descarga', true); }
+          catch (e) { document.getElementById('error-guardado-texto').textContent = 'Tampoco se pudo descargar: ' + e.message; }
+        };
+      }
+      if (!dlg.open) dlg.showModal();
     },
 
     /** Guardar como…: siempre pregunta dónde (o descarga si el navegador no puede elegir ubicación). */
@@ -284,6 +364,7 @@
 
     /** Documento nuevo: página A4 horizontal vacía, sin PDF de fondo y sin archivo de guardado anterior. */
     nuevoProyecto() {
+      if (this.Lienzo && this.Lienzo.cancelarPendiente) this.Lienzo.cancelarPendiente();
       this.pdf = { id: null, nombre: '', base64: null, info: [] };
       this.doc = docNuevo();
       this.doc.opciones.separacionDibujo = Number(this.perfil && this.perfil.separacion_dibujo_braille_mm) || 3;
@@ -293,10 +374,11 @@
       this.limpiarHistorial();
       this._archivo = null;
       this.sucio = false;
+      if (this.Autoguardado) this.Autoguardado.reiniciar();
       this.cambio('proyecto');
     },
 
-    async abrirProyecto(texto) {
+    async abrirProyecto(texto, sinReiniciar) {
       const datos = JSON.parse(texto);
       if (datos.formato !== 'editor-coberturas-braille' || !datos.doc || !Array.isArray(datos.doc.paginas)) {
         throw new Error('El archivo no es un proyecto de este editor.');
@@ -309,6 +391,7 @@
       }
       // El perfil (calibración de la impresora) NO se toma del proyecto: se usa siempre el
       // perfil actual de la impresora, para que un proyecto viejo no traiga calibraciones viejas.
+      if (this.Lienzo && this.Lienzo.cancelarPendiente) this.Lienzo.cancelarPendiente();
       this.doc = datos.doc;
       this.doc.opciones = Object.assign({ separarDibujo: true, separacionDibujo: 3 }, this.doc.opciones || {});
       this.doc.paginas.forEach(p => { Objetos.migrarTrazos(p); p.capasVisibles = p.capasVisibles || {}; });
@@ -318,6 +401,7 @@
       this.ui.seleccion = [];
       this.limpiarHistorial();
       this.sucio = false;
+      if (this.Autoguardado && !sinReiniciar) this.Autoguardado.reiniciar();
       this.cambio('proyecto');
     }
   };

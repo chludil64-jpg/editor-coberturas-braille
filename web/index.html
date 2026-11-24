@@ -30,6 +30,7 @@
         <button type="button" role="menuitem" id="btn-svg-menu" tabindex="-1">Importar SVG…</button>
         <button type="button" role="menuitem" id="btn-guardar-proyecto" tabindex="-1">Guardar proyecto</button>
         <button type="button" role="menuitem" id="btn-guardar-como" tabindex="-1">Guardar como…</button>
+        <button type="button" role="menuitem" id="btn-recuperar-copia" tabindex="-1">Recuperar copia automática…</button>
         <button type="button" role="menuitem" id="btn-exportar-disposicion" tabindex="-1">Exportar disposición braille…</button>
         <button type="button" role="menuitem" id="btn-importar-disposicion" tabindex="-1">Importar disposición braille…</button>
         <button type="button" role="menuitem" id="btn-abrir-ibe" tabindex="-1">Abrir .ibe…</button>
@@ -98,9 +99,10 @@
       <canvas id="lienzo" tabindex="0" role="application" aria-roledescription="lienzo de dibujo"
         aria-label="Lienzo de la página"
         aria-describedby="ayuda-lienzo"></canvas>
-      <p id="ayuda-lienzo" class="solo-lector">Con un elemento elegido: las flechas lo mueven un paso de grilla; Mayúscula más flecha mueve cinco pasos; Suprimir lo borra; Av Pág y Re Pág cambian de elemento; Escape lo suelta. Con la herramienta Editar vértices: Tab y Mayúscula Tab eligen el vértice, las flechas lo mueven, Insertar o más agrega un vértice después, Suprimir lo borra. La lista de páginas y elementos es la alternativa textual. F1 abre la ayuda de atajos.</p>
+      <p id="ayuda-lienzo" class="solo-lector">Con un elemento elegido: las flechas lo mueven un paso de grilla; Mayúscula más flecha mueve cinco pasos; Suprimir lo borra; Av Pág y Re Pág cambian de elemento; Escape lo suelta. Con Polilínea o Polígono: cada clic agrega un vértice; Enter o doble clic termina el trazo (el polígono también se cierra con un clic en el primer punto); clic derecho abre el menú con Terminar; Escape cancela el trazo. Con la herramienta Editar vértices: Tab y Mayúscula Tab eligen el vértice, las flechas lo mueven, Insertar o más agrega un vértice después, Suprimir lo borra. La lista de páginas y elementos es la alternativa textual. F1 abre la ayuda de atajos.</p>
     </div>
     <p id="estado-lienzo" class="estado"></p>
+    <p id="estado-guardado" class="estado"></p>
     <p id="cursor-mm" class="estado" aria-hidden="true"></p>
   </section>
 
@@ -554,6 +556,40 @@
   </form>
 </dialog>
 
+<!-- Diálogo: ofrecer recuperar el trabajo no guardado -->
+<dialog id="dlg-recuperar" aria-labelledby="t-recuperar" aria-describedby="recuperar-texto">
+  <div class="editor">
+    <h2 id="t-recuperar">Trabajo sin guardar</h2>
+    <p id="recuperar-texto"></p>
+    <div class="fila botones">
+      <button type="button" id="btn-recuperar-si" class="destacado">Recuperar</button>
+      <button type="button" id="btn-recuperar-no">Descartar</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Diálogo: copias automáticas -->
+<dialog id="dlg-copias" aria-labelledby="t-copias" aria-describedby="copias-estado">
+  <div class="editor ancho-dlg">
+    <h2 id="t-copias">Recuperar copia automática</h2>
+    <p id="copias-estado" class="nota"></p>
+    <ul id="lista-copias" class="lista-elementos"></ul>
+    <div class="fila botones"><button type="button" data-cerrar class="destacado">Cerrar</button></div>
+  </div>
+</dialog>
+
+<!-- Diálogo: error al guardar -->
+<dialog id="dlg-error-guardado" role="alertdialog" aria-labelledby="t-error-guardado" aria-describedby="error-guardado-texto">
+  <div class="editor">
+    <h2 id="t-error-guardado">No se pudo guardar</h2>
+    <p id="error-guardado-texto"></p>
+    <div class="fila botones">
+      <button type="button" id="error-guardado-descargar" class="destacado" hidden>Descargar una copia</button>
+      <button type="button" data-cerrar>Cerrar</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- Diálogo: ayuda de atajos -->
 <dialog id="dlg-atajos" aria-labelledby="t-atajos">
   <div class="editor ancho-dlg">
@@ -578,7 +614,8 @@
         <tr><th scope="row">Tab / Mayús+Tab</th><td>Con Editar vértices: elegir el vértice siguiente o anterior</td></tr>
         <tr><th scope="row">Insertar o +</th><td>Con Editar vértices: agregar un vértice después del elegido</td></tr>
         <tr><th scope="row">Supr</th><td>Borrar el elemento o el vértice elegido</td></tr>
-        <tr><th scope="row">Escape</th><td>Soltar el elemento o volver a Elegir y mover</td></tr>
+        <tr><th scope="row">Enter / doble clic (lienzo)</th><td>Terminar la polilínea o cerrar el polígono que se está dibujando</td></tr>
+        <tr><th scope="row">Escape</th><td>Cancelar el trazo que se está dibujando; si no hay trazo, soltar el elemento o volver a Elegir y mover</td></tr>
         <tr><th scope="row">Tecla de menú o Mayús+F10</th><td>Menú de acciones del elemento</td></tr>
         <tr><th scope="row">F1 o ?</th><td>Esta ayuda</td></tr>
       </tbody>
@@ -727,6 +764,7 @@
 <script src="js/plantillas.js"></script>
 <script src="js/historial_ui.js"></script>
 <script src="js/atajos.js"></script>
+<script src="js/autoguardado.js"></script>
 <script src="js/actualizacion.js"></script>
 </body>
 </html>

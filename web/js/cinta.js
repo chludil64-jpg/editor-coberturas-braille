@@ -18,7 +18,7 @@
   // Pestañas: [id, título, grupos]; cada grupo: [nombre, [ids de elementos existentes o marcadores]]
   const PESTANAS = [
     ['archivo', 'Archivo', [
-      ['Documento', ['btn-nuevo-proyecto', 'btn-abrir-proyecto', 'btn-guardar-proyecto', 'btn-guardar-como']],
+      ['Documento', ['btn-nuevo-proyecto', 'btn-abrir-proyecto', 'btn-guardar-proyecto', 'btn-guardar-como', 'btn-recuperar-copia']],
       ['Importar', ['btn-abrir-pdf', 'btn-abrir-ibe', 'btn-importar-disposicion']],
       ['Exportar', ['btn-exportar-disposicion', 'btn-exp-pdf', 'btn-exp-png', 'btn-exp-prn', 'btn-exp-ibe']],
       ['Programa', ['+imprimir', 'btn-salir']]
@@ -151,7 +151,7 @@
   // Rótulos cortos en la cinta; el nombre completo queda para el lector de pantalla y la ayuda emergente.
   const CORTOS = {
     'btn-nuevo-proyecto': 'Nuevo', 'btn-abrir-proyecto': 'Abrir', 'btn-guardar-proyecto': 'Guardar',
-    'btn-guardar-como': 'Guardar como', 'btn-abrir-pdf': 'Abrir PDF', 'btn-nueva-horizontal': 'Horizontal',
+    'btn-guardar-como': 'Guardar como', 'btn-recuperar-copia': 'Recuperar copia', 'btn-abrir-pdf': 'Abrir PDF', 'btn-nueva-horizontal': 'Horizontal',
     'btn-nueva-vertical': 'Vertical', 'btn-exportar-disposicion': 'Disposición', 'btn-importar-disposicion': 'Disposición',
     'btn-exp-pdf': 'PDF 1:1', 'btn-exp-prn': '.prn', 'btn-exp-ibe': '.ibe', 'btn-abrir-ibe': 'Abrir .ibe', 'btn-salir': 'Cerrar'
   };
@@ -222,6 +222,8 @@
   // Atajos de una letra (fuera de campos de texto): V = elegir y mover, L = lazo.
   document.addEventListener('keydown', ev => {
     if (ev.ctrlKey || ev.metaKey || ev.altKey || App.atajosBloqueados(ev)) return;
+    const t = ev.target;
+    if (t && t.closest && (t.closest('button') || t.closest('summary') || t.closest('a'))) return;
     if (ev.key === 'v' || ev.key === 'V') { App.elegirHerramienta('seleccionar'); }
     else if (ev.key === 'l' || ev.key === 'L') { App.elegirHerramienta('lazo'); }
     else if (ev.key === 'm' || ev.key === 'M') { App.elegirHerramienta('medir'); }
