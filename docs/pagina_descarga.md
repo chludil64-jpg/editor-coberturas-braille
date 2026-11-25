@@ -5,8 +5,8 @@ Editor de braille y gráficos táctiles para la impresora Index Everest-D V4, co
 **[Descargar Editor Braille para Windows](https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.3.zip)**
 
 - Versión: **2.0.3**
-- Tamaño: **49,3 MB** (51.749.814 bytes)
-- SHA256: `a6dab016f405a86676c9c280f48bc9f5b569a9edc11854b180a8a234e610e648`
+- Tamaño: **49,3 MB** (51.754.804 bytes)
+- SHA256: `a112a1c6a3a4804c0c19a32b516040397cfd7387c71cdbd5687af9d8fca126c1`
 
 > La versión, el tamaño y el SHA256 de arriba corresponden al zip generado el 19/11/2026 en `dist/`. Si volvés a empaquetar, `herramientas/empaquetar.ps1` imprime el SHA256 nuevo y `herramientas/generar_version_json.py` lo escribe en `version.json`: actualizá estos datos.
 
@@ -47,7 +47,7 @@ El programa no está firmado digitalmente, así que Windows puede mostrar «Wind
 Ya publicado en https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/version.json (no cambia de dirección entre versiones; en cada versión se reemplaza su contenido). Contenido actual:
 
 ```json
-{"version":"2.0.3","url":"https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.3.zip","sha256":"a6dab016f405a86676c9c280f48bc9f5b569a9edc11854b180a8a234e610e648","notas":"Activa la actualización automática desde el sitio de la SCyT."}
+{"version":"2.0.3","url":"https://www.ciencia.chubut.gov.ar/static/app_inclusion_uploads/2026/editor-braille/EditorBraille-portable-2.0.3.zip","sha256":"a112a1c6a3a4804c0c19a32b516040397cfd7387c71cdbd5687af9d8fca126c1","notas":"Activa la actualización automática desde el sitio de la SCyT."}
 ```
 
 - `version`: número `X.Y.Z`; el programa ofrece actualizar solo si es mayor que el instalado.
